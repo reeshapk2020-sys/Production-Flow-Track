@@ -1,0 +1,8 @@
+packages:
+  "recharts": "Data visualization for reports and dashboard"
+  "date-fns": "Date formatting and manipulation"
+  "lucide-react": "Beautiful consistent icons"
+images: []
+notes:
+  - "Using native select elements for easier FormData serialization in uncontrolled forms"
+  - "Assuming @workspace/replit-auth-web exports useAuth returning { user, isLoading, isAuthenticated, login, logout }"

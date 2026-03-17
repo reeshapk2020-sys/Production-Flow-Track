@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Abaya Production Tracker"
+version = "1.0.0"
+id = "artifacts/abaya-tracker"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+localPort = 18354
+name = "web"
+paths = ["/"]
+
+[services.development]
+run = "pnpm --filter @workspace/abaya-tracker run dev"
+
+[services.env]
+PORT = "18354"
+BASE_PATH = "/"
+
+[services.production]
+build = ["pnpm", "--filter", "@workspace/abaya-tracker", "run", "build"]
+publicDir = "artifacts/abaya-tracker/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"

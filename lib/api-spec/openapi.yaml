@@ -1,22 +1,43 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Abaya Production Tracking and Inventory Management API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: master
+    description: Master data management
+  - name: fabric-rolls
+    description: Fabric roll management
+  - name: cutting
+    description: Cutting batch management
+  - name: allocation
+    description: Allocation to stitchers
+  - name: receiving
+    description: Receiving from stitchers
+  - name: finishing
+    description: Finishing stages management
+  - name: finished-goods
+    description: Finished goods store
+  - name: inventory
+    description: Inventory management
+  - name: reports
+    description: Reports and analytics
+  - name: traceability
+    description: Batch traceability
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +45,822 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/user:
+    get:
+      operationId: getCurrentAuthUser
+      tags: [auth]
+      summary: Get current authenticated user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetCurrentAuthUserResponse"
+
+  # MASTER DATA
+  /master/categories:
+    get:
+      operationId: listCategories
+      tags: [master]
+      summary: List all categories
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+    post:
+      operationId: createCategory
+      tags: [master]
+      summary: Create a category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryBody"
+      responses:
+        "201":
+          description: Created category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+
+  /master/categories/{id}:
+    put:
+      operationId: updateCategory
+      tags: [master]
+      summary: Update a category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryBody"
+      responses:
+        "200":
+          description: Updated category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+    delete:
+      operationId: deleteCategory
+      tags: [master]
+      summary: Delete a category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /master/sizes:
+    get:
+      operationId: listSizes
+      tags: [master]
+      summary: List all sizes
+      responses:
+        "200":
+          description: List of sizes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Size"
+    post:
+      operationId: createSize
+      tags: [master]
+      summary: Create a size
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSizeBody"
+      responses:
+        "201":
+          description: Created size
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Size"
+
+  /master/colors:
+    get:
+      operationId: listColors
+      tags: [master]
+      summary: List all colors
+      responses:
+        "200":
+          description: List of colors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Color"
+    post:
+      operationId: createColor
+      tags: [master]
+      summary: Create a color
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateColorBody"
+      responses:
+        "201":
+          description: Created color
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Color"
+
+  /master/fabrics:
+    get:
+      operationId: listFabrics
+      tags: [master]
+      summary: List all fabrics
+      responses:
+        "200":
+          description: List of fabrics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Fabric"
+    post:
+      operationId: createFabric
+      tags: [master]
+      summary: Create a fabric type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFabricBody"
+      responses:
+        "201":
+          description: Created fabric
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fabric"
+
+  /master/products:
+    get:
+      operationId: listProducts
+      tags: [master]
+      summary: List all products/designs
+      responses:
+        "200":
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+    post:
+      operationId: createProduct
+      tags: [master]
+      summary: Create a product/design
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProductBody"
+      responses:
+        "201":
+          description: Created product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+
+  /master/stitchers:
+    get:
+      operationId: listStitchers
+      tags: [master]
+      summary: List all stitchers
+      responses:
+        "200":
+          description: List of stitchers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Stitcher"
+    post:
+      operationId: createStitcher
+      tags: [master]
+      summary: Create a stitcher
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStitcherBody"
+      responses:
+        "201":
+          description: Created stitcher
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stitcher"
+
+  /master/teams:
+    get:
+      operationId: listTeams
+      tags: [master]
+      summary: List all teams
+      responses:
+        "200":
+          description: List of teams
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Team"
+    post:
+      operationId: createTeam
+      tags: [master]
+      summary: Create a team
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTeamBody"
+      responses:
+        "201":
+          description: Created team
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+
+  /master/users:
+    get:
+      operationId: listUsers
+      tags: [master]
+      summary: List all users
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AppUser"
+    post:
+      operationId: createUser
+      tags: [master]
+      summary: Create a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserBody"
+      responses:
+        "201":
+          description: Created user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppUser"
+
+  /master/users/{id}:
+    put:
+      operationId: updateUser
+      tags: [master]
+      summary: Update user role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserBody"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppUser"
+
+  # FABRIC ROLLS
+  /fabric-rolls:
+    get:
+      operationId: listFabricRolls
+      tags: [fabric-rolls]
+      summary: List all fabric rolls
+      responses:
+        "200":
+          description: List of fabric rolls
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FabricRoll"
+    post:
+      operationId: createFabricRoll
+      tags: [fabric-rolls]
+      summary: Create a fabric roll
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFabricRollBody"
+      responses:
+        "201":
+          description: Created fabric roll
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FabricRoll"
+
+  /fabric-rolls/{id}:
+    get:
+      operationId: getFabricRoll
+      tags: [fabric-rolls]
+      summary: Get fabric roll details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Fabric roll details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FabricRoll"
+
+  # CUTTING
+  /cutting/batches:
+    get:
+      operationId: listCuttingBatches
+      tags: [cutting]
+      summary: List all cutting batches
+      responses:
+        "200":
+          description: List of cutting batches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CuttingBatch"
+    post:
+      operationId: createCuttingBatch
+      tags: [cutting]
+      summary: Create a cutting batch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCuttingBatchBody"
+      responses:
+        "201":
+          description: Created cutting batch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CuttingBatch"
+
+  /cutting/batches/{id}:
+    get:
+      operationId: getCuttingBatch
+      tags: [cutting]
+      summary: Get cutting batch details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Cutting batch details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CuttingBatchDetail"
+
+  # ALLOCATION
+  /allocation:
+    get:
+      operationId: listAllocations
+      tags: [allocation]
+      summary: List all allocations
+      responses:
+        "200":
+          description: List of allocations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Allocation"
+    post:
+      operationId: createAllocation
+      tags: [allocation]
+      summary: Allocate cut pieces to stitcher
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAllocationBody"
+      responses:
+        "201":
+          description: Created allocation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Allocation"
+
+  /allocation/{id}:
+    get:
+      operationId: getAllocation
+      tags: [allocation]
+      summary: Get allocation details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Allocation details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Allocation"
+
+  # RECEIVING
+  /receiving:
+    get:
+      operationId: listReceivings
+      tags: [receiving]
+      summary: List all receivings from stitchers
+      responses:
+        "200":
+          description: List of receivings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Receiving"
+    post:
+      operationId: createReceiving
+      tags: [receiving]
+      summary: Record receiving from stitcher
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReceivingBody"
+      responses:
+        "201":
+          description: Created receiving record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Receiving"
+
+  # FINISHING
+  /finishing:
+    get:
+      operationId: listFinishingRecords
+      tags: [finishing]
+      summary: List finishing stage records
+      parameters:
+        - name: stage
+          in: query
+          schema:
+            type: string
+            enum: [pressing, buttons, hanger, packing]
+      responses:
+        "200":
+          description: List of finishing records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FinishingRecord"
+    post:
+      operationId: createFinishingRecord
+      tags: [finishing]
+      summary: Record a finishing stage entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFinishingRecordBody"
+      responses:
+        "201":
+          description: Created finishing record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinishingRecord"
+
+  # FINISHED GOODS
+  /finished-goods:
+    get:
+      operationId: listFinishedGoods
+      tags: [finished-goods]
+      summary: List finished goods inventory
+      responses:
+        "200":
+          description: Finished goods inventory
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FinishedGoodsEntry"
+    post:
+      operationId: createFinishedGoodsEntry
+      tags: [finished-goods]
+      summary: Add finished goods to store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFinishedGoodsBody"
+      responses:
+        "201":
+          description: Created finished goods entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinishedGoodsEntry"
+
+  /finished-goods/stock:
+    get:
+      operationId: getFinishedGoodsStock
+      tags: [finished-goods]
+      summary: Get current finished goods stock summary
+      responses:
+        "200":
+          description: Stock summary by design/size/color
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StockSummary"
+
+  # INVENTORY
+  /inventory/summary:
+    get:
+      operationId: getInventorySummary
+      tags: [inventory]
+      summary: Get inventory summary across all stages
+      responses:
+        "200":
+          description: Inventory summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventorySummary"
+
+  # DASHBOARD
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [reports]
+      summary: Get dashboard data
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardData"
+
+  # REPORTS
+  /reports/stitcher-performance:
+    get:
+      operationId: getStitcherPerformanceReport
+      tags: [reports]
+      summary: Stitcher-wise performance report
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+        - name: stitcherId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Stitcher performance report
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StitcherPerformance"
+
+  /reports/daily-production:
+    get:
+      operationId: getDailyProductionReport
+      tags: [reports]
+      summary: Daily production report
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Daily production report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyProductionReport"
+
+  /reports/stage-pending:
+    get:
+      operationId: getStagePendingReport
+      tags: [reports]
+      summary: Stage-wise pending report
+      responses:
+        "200":
+          description: Stage pending report
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StagePending"
+
+  /reports/batch-status:
+    get:
+      operationId: getBatchStatusReport
+      tags: [reports]
+      summary: Batch-wise status report
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Batch status report
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BatchStatus"
+
+  /reports/wip:
+    get:
+      operationId: getWipReport
+      tags: [reports]
+      summary: Work in progress report
+      responses:
+        "200":
+          description: WIP report
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WipItem"
+
+  /reports/audit-log:
+    get:
+      operationId: getAuditLog
+      tags: [reports]
+      summary: Audit log
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+        - name: userId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLog"
+
+  # TRACEABILITY
+  /traceability/batch/{batchNumber}:
+    get:
+      operationId: getBatchTrace
+      tags: [traceability]
+      summary: Get full batch journey trace
+      parameters:
+        - name: batchNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Full batch journey
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchTrace"
+
+  /traceability/search:
+    get:
+      operationId: searchTraceability
+      tags: [traceability]
+      summary: Search traceability records
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [batch, stitcher, product, color, size]
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TraceSearchResult"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +868,887 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required: [success]
+
+    GetCurrentAuthUserResponse:
+      type: object
+      properties:
+        isAuthenticated:
+          type: boolean
+        user:
+          $ref: "#/components/schemas/AuthUser"
+      required: [isAuthenticated]
+
+    AuthUser:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        profileImage:
+          type: string
+        role:
+          type: string
+        appUserId:
+          type: integer
+      required: [id, username]
+
+    # MASTER DATA SCHEMAS
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+      required: [id, name]
+
+    CreateCategoryBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+      required: [name]
+
+    Size:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        sortOrder:
+          type: integer
+      required: [id, name]
+
+    CreateSizeBody:
+      type: object
+      properties:
+        name:
+          type: string
+        sortOrder:
+          type: integer
+      required: [name]
+
+    Color:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        code:
+          type: string
+      required: [id, name]
+
+    CreateColorBody:
+      type: object
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+      required: [name]
+
+    Fabric:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        unit:
+          type: string
+      required: [id, name]
+
+    CreateFabricBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        unit:
+          type: string
+      required: [name]
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+        name:
+          type: string
+        categoryId:
+          type: integer
+        categoryName:
+          type: string
+        description:
+          type: string
+        isActive:
+          type: boolean
+      required: [id, name]
+
+    CreateProductBody:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        categoryId:
+          type: integer
+        description:
+          type: string
+      required: [name]
+
+    Stitcher:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        phone:
+          type: string
+        teamId:
+          type: integer
+        teamName:
+          type: string
+        isActive:
+          type: boolean
+        totalIssued:
+          type: integer
+        totalReceived:
+          type: integer
+        pendingQuantity:
+          type: integer
+      required: [id, name]
+
+    CreateStitcherBody:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        teamId:
+          type: integer
+      required: [name]
+
+    Team:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        supervisorName:
+          type: string
+      required: [id, name]
+
+    CreateTeamBody:
+      type: object
+      properties:
+        name:
+          type: string
+        supervisorName:
+          type: string
+      required: [name]
+
+    AppUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        replitUserId:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+        role:
+          type: string
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+      required: [id, username, role]
+
+    CreateUserBody:
+      type: object
+      properties:
+        replitUserId:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+        role:
+          type: string
+      required: [username, role]
+
+    UpdateUserBody:
+      type: object
+      properties:
+        role:
+          type: string
+        isActive:
+          type: boolean
+      required: [role]
+
+    # FABRIC ROLLS
+    FabricRoll:
+      type: object
+      properties:
+        id:
+          type: integer
+        rollNumber:
+          type: string
+        fabricId:
+          type: integer
+        fabricName:
+          type: string
+        colorId:
+          type: integer
+        colorName:
+          type: string
+        supplier:
+          type: string
+        totalQuantity:
+          type: number
+        availableQuantity:
+          type: number
+        unit:
+          type: string
+        costPerUnit:
+          type: number
+        receivedDate:
+          type: string
+        remarks:
+          type: string
+        status:
+          type: string
+      required: [id, rollNumber, totalQuantity, availableQuantity]
+
+    CreateFabricRollBody:
+      type: object
+      properties:
+        rollNumber:
+          type: string
+        fabricId:
+          type: integer
+        colorId:
+          type: integer
+        supplier:
+          type: string
+        totalQuantity:
+          type: number
+        unit:
+          type: string
+        costPerUnit:
+          type: number
+        receivedDate:
+          type: string
+        remarks:
+          type: string
+      required: [rollNumber, fabricId, totalQuantity, unit, receivedDate]
+
+    # CUTTING
+    CuttingBatch:
+      type: object
+      properties:
+        id:
+          type: integer
+        batchNumber:
+          type: string
+        productId:
+          type: integer
+        productName:
+          type: string
+        sizeId:
+          type: integer
+        sizeName:
+          type: string
+        colorId:
+          type: integer
+        colorName:
+          type: string
+        quantityCut:
+          type: integer
+        availableForAllocation:
+          type: integer
+        totalAllocated:
+          type: integer
+        cutter:
+          type: string
+        cuttingDate:
+          type: string
+        remarks:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+      required: [id, batchNumber, quantityCut]
+
+    CuttingBatchDetail:
+      type: object
+      properties:
+        batch:
+          $ref: "#/components/schemas/CuttingBatch"
+        fabricRolls:
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchFabricUsage"
+        allocations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Allocation"
+      required: [batch, fabricRolls, allocations]
+
+    BatchFabricUsage:
+      type: object
+      properties:
+        rollNumber:
+          type: string
+        fabricName:
+          type: string
+        quantityUsed:
+          type: number
+        unit:
+          type: string
+      required: [rollNumber, quantityUsed]
+
+    CreateCuttingBatchBody:
+      type: object
+      properties:
+        productId:
+          type: integer
+        sizeId:
+          type: integer
+        colorId:
+          type: integer
+        quantityCut:
+          type: integer
+        cutter:
+          type: string
+        cuttingDate:
+          type: string
+        remarks:
+          type: string
+        fabricUsages:
+          type: array
+          items:
+            type: object
+            properties:
+              fabricRollId:
+                type: integer
+              quantityUsed:
+                type: number
+            required: [fabricRollId, quantityUsed]
+      required: [productId, quantityCut, cuttingDate]
+
+    # ALLOCATION
+    Allocation:
+      type: object
+      properties:
+        id:
+          type: integer
+        allocationNumber:
+          type: string
+        cuttingBatchId:
+          type: integer
+        batchNumber:
+          type: string
+        productName:
+          type: string
+        sizeName:
+          type: string
+        colorName:
+          type: string
+        stitcherId:
+          type: integer
+        stitcherName:
+          type: string
+        teamName:
+          type: string
+        quantityIssued:
+          type: integer
+        quantityReceived:
+          type: integer
+        quantityPending:
+          type: integer
+        quantityRejected:
+          type: integer
+        issueDate:
+          type: string
+        remarks:
+          type: string
+        status:
+          type: string
+      required: [id, quantityIssued]
+
+    CreateAllocationBody:
+      type: object
+      properties:
+        cuttingBatchId:
+          type: integer
+        stitcherId:
+          type: integer
+        quantityIssued:
+          type: integer
+        issueDate:
+          type: string
+        remarks:
+          type: string
+      required: [cuttingBatchId, stitcherId, quantityIssued, issueDate]
+
+    # RECEIVING
+    Receiving:
+      type: object
+      properties:
+        id:
+          type: integer
+        allocationId:
+          type: integer
+        allocationNumber:
+          type: string
+        stitcherName:
+          type: string
+        batchNumber:
+          type: string
+        productName:
+          type: string
+        quantityReceived:
+          type: integer
+        quantityRejected:
+          type: integer
+        quantityDamaged:
+          type: integer
+        receiveDate:
+          type: string
+        remarks:
+          type: string
+        receivedBy:
+          type: string
+      required: [id, allocationId, quantityReceived, receiveDate]
+
+    CreateReceivingBody:
+      type: object
+      properties:
+        allocationId:
+          type: integer
+        quantityReceived:
+          type: integer
+        quantityRejected:
+          type: integer
+        quantityDamaged:
+          type: integer
+        receiveDate:
+          type: string
+        remarks:
+          type: string
+      required: [allocationId, quantityReceived, receiveDate]
+
+    # FINISHING
+    FinishingRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        batchNumber:
+          type: string
+        cuttingBatchId:
+          type: integer
+        stage:
+          type: string
+          enum: [pressing, buttons, hanger, packing]
+        productName:
+          type: string
+        sizeName:
+          type: string
+        colorName:
+          type: string
+        inputQuantity:
+          type: integer
+        outputQuantity:
+          type: integer
+        defectiveQuantity:
+          type: integer
+        pendingQuantity:
+          type: integer
+        operator:
+          type: string
+        processDate:
+          type: string
+        remarks:
+          type: string
+      required: [id, stage, inputQuantity, outputQuantity]
+
+    CreateFinishingRecordBody:
+      type: object
+      properties:
+        cuttingBatchId:
+          type: integer
+        stage:
+          type: string
+          enum: [pressing, buttons, hanger, packing]
+        inputQuantity:
+          type: integer
+        outputQuantity:
+          type: integer
+        defectiveQuantity:
+          type: integer
+        operator:
+          type: string
+        processDate:
+          type: string
+        remarks:
+          type: string
+      required: [cuttingBatchId, stage, inputQuantity, outputQuantity, processDate]
+
+    # FINISHED GOODS
+    FinishedGoodsEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        cuttingBatchId:
+          type: integer
+        batchNumber:
+          type: string
+        productId:
+          type: integer
+        productName:
+          type: string
+        sizeId:
+          type: integer
+        sizeName:
+          type: string
+        colorId:
+          type: integer
+        colorName:
+          type: string
+        quantity:
+          type: integer
+        entryDate:
+          type: string
+        remarks:
+          type: string
+        enteredBy:
+          type: string
+      required: [id, quantity, entryDate]
+
+    CreateFinishedGoodsBody:
+      type: object
+      properties:
+        cuttingBatchId:
+          type: integer
+        quantity:
+          type: integer
+        entryDate:
+          type: string
+        remarks:
+          type: string
+      required: [cuttingBatchId, quantity, entryDate]
+
+    StockSummary:
+      type: object
+      properties:
+        productId:
+          type: integer
+        productName:
+          type: string
+        sizeId:
+          type: integer
+        sizeName:
+          type: string
+        colorId:
+          type: integer
+        colorName:
+          type: string
+        totalQuantity:
+          type: integer
+      required: [productName, totalQuantity]
+
+    # INVENTORY
+    InventorySummary:
+      type: object
+      properties:
+        rawMaterial:
+          type: object
+          properties:
+            totalRolls:
+              type: integer
+            totalQuantity:
+              type: number
+          required: [totalRolls, totalQuantity]
+        cuttingWip:
+          type: object
+          properties:
+            totalBatches:
+              type: integer
+            totalQuantity:
+              type: integer
+          required: [totalBatches, totalQuantity]
+        pendingWithStitchers:
+          type: object
+          properties:
+            totalAllocations:
+              type: integer
+            totalQuantity:
+              type: integer
+          required: [totalAllocations, totalQuantity]
+        inFinishing:
+          type: object
+          properties:
+            pressing:
+              type: integer
+            buttons:
+              type: integer
+            hanger:
+              type: integer
+            packing:
+              type: integer
+          required: [pressing, buttons, hanger, packing]
+        finishedGoods:
+          type: object
+          properties:
+            totalQuantity:
+              type: integer
+          required: [totalQuantity]
+      required: [rawMaterial, cuttingWip, pendingWithStitchers, inFinishing, finishedGoods]
+
+    # DASHBOARD
+    DashboardData:
+      type: object
+      properties:
+        todayCuttingQty:
+          type: integer
+        todayAllocationQty:
+          type: integer
+        todayReceivedQty:
+          type: integer
+        todayFinishedQty:
+          type: integer
+        totalRawMaterialRolls:
+          type: integer
+        pendingWithStitchers:
+          type: integer
+        pendingInFinishing:
+          type: integer
+        finishedStockQty:
+          type: integer
+        topStitchers:
+          type: array
+          items:
+            $ref: "#/components/schemas/StitcherPerformance"
+        recentBatches:
+          type: array
+          items:
+            $ref: "#/components/schemas/CuttingBatch"
+        stageWisePending:
+          type: array
+          items:
+            $ref: "#/components/schemas/StagePending"
+      required: [todayCuttingQty, todayAllocationQty, todayReceivedQty, todayFinishedQty, pendingWithStitchers, pendingInFinishing, finishedStockQty]
+
+    # REPORTS
+    StitcherPerformance:
+      type: object
+      properties:
+        stitcherId:
+          type: integer
+        stitcherName:
+          type: string
+        teamName:
+          type: string
+        totalIssued:
+          type: integer
+        totalReceived:
+          type: integer
+        totalPending:
+          type: integer
+        totalRejected:
+          type: integer
+        efficiencyPct:
+          type: number
+      required: [stitcherName, totalIssued, totalReceived]
+
+    DailyProductionReport:
+      type: object
+      properties:
+        date:
+          type: string
+        cutting:
+          type: integer
+        allocated:
+          type: integer
+        received:
+          type: integer
+        pressing:
+          type: integer
+        buttons:
+          type: integer
+        hanger:
+          type: integer
+        finished:
+          type: integer
+      required: [date, cutting, allocated, received, finished]
+
+    StagePending:
+      type: object
+      properties:
+        stage:
+          type: string
+        pendingQuantity:
+          type: integer
+        batchCount:
+          type: integer
+      required: [stage, pendingQuantity]
+
+    BatchStatus:
+      type: object
+      properties:
+        batchNumber:
+          type: string
+        productName:
+          type: string
+        sizeName:
+          type: string
+        colorName:
+          type: string
+        quantityCut:
+          type: integer
+        quantityAllocated:
+          type: integer
+        quantityReceived:
+          type: integer
+        quantityFinished:
+          type: integer
+        currentStage:
+          type: string
+        cuttingDate:
+          type: string
+        status:
+          type: string
+      required: [batchNumber, quantityCut, currentStage]
+
+    WipItem:
+      type: object
+      properties:
+        batchNumber:
+          type: string
+        productName:
+          type: string
+        stage:
+          type: string
+        quantity:
+          type: integer
+        daysSinceLastMovement:
+          type: integer
+        isDelayed:
+          type: boolean
+      required: [batchNumber, stage, quantity]
+
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        username:
+          type: string
+        action:
+          type: string
+        tableName:
+          type: string
+        recordId:
+          type: string
+        details:
+          type: string
+        createdAt:
+          type: string
+      required: [id, action, createdAt]
+
+    # TRACEABILITY
+    BatchTrace:
+      type: object
+      properties:
+        batchNumber:
+          type: string
+        productName:
+          type: string
+        sizeName:
+          type: string
+        colorName:
+          type: string
+        currentStage:
+          type: string
+        currentStatus:
+          type: string
+        timeline:
+          type: array
+          items:
+            $ref: "#/components/schemas/TraceEvent"
+      required: [batchNumber, currentStage, timeline]
+
+    TraceEvent:
+      type: object
+      properties:
+        stage:
+          type: string
+        eventType:
+          type: string
+        quantity:
+          type: integer
+        actor:
+          type: string
+        date:
+          type: string
+        details:
+          type: string
+        status:
+          type: string
+      required: [stage, eventType, quantity, date]
+
+    TraceSearchResult:
+      type: object
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+        label:
+          type: string
+        subLabel:
+          type: string
+        batchNumber:
+          type: string
+      required: [type, id, label]

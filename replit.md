@@ -1,8 +1,8 @@
-# Workspace
+# Abaya Production Tracking & Inventory Management System
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+Full-stack multi-user web application for tracking abaya manufacturing production from raw fabric rolls through to finished goods store.
 
 ## Stack
 
@@ -10,87 +10,118 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Node.js version**: 24
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
-- **API framework**: Express 5
+- **Frontend**: React + Vite (artifacts/abaya-tracker)
+- **API framework**: Express 5 (artifacts/api-server)
 - **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
+- **Authentication**: Replit Auth (OpenID Connect with PKCE)
+- **Validation**: Zod, drizzle-zod
 - **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+- **UI**: Tailwind CSS, shadcn/ui, Recharts, Lucide icons
+
+## Production Flow Supported
+
+1. Fabric Roll / Raw Material Entry
+2. Cutting (with fabric roll consumption)
+3. Allocation to Stitchers
+4. Receiving from Stitchers
+5. Finishing (Pressing → Buttons → Hanger → Packing)
+6. Finished Goods Store
 
 ## Structure
 
 ```text
-artifacts-monorepo/
-├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
-├── lib/                    # Shared libraries
-│   ├── api-spec/           # OpenAPI spec + Orval codegen config
-│   ├── api-client-react/   # Generated React Query hooks
-│   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts (single workspace package)
-│   └── src/                # Individual .ts scripts, run via `pnpm --filter @workspace/scripts run <script>`
-├── pnpm-workspace.yaml     # pnpm workspace (artifacts/*, lib/*, lib/integrations/*, scripts)
-├── tsconfig.base.json      # Shared TS options (composite, bundler resolution, es2022)
-├── tsconfig.json           # Root TS project references
-└── package.json            # Root package with hoisted devDeps
+artifacts/
+├── api-server/         # Express API server (port 8080)
+│   └── src/
+│       ├── routes/     # All API route handlers
+│       │   ├── auth.ts           # Replit OIDC auth
+│       │   ├── master.ts         # Categories, sizes, colors, fabrics, products, stitchers, teams, users
+│       │   ├── fabric-rolls.ts   # Fabric roll management
+│       │   ├── cutting.ts        # Cutting batch management
+│       │   ├── allocation.ts     # Allocation to stitchers
+│       │   ├── receiving.ts      # Receiving from stitchers
+│       │   ├── finishing.ts      # Finishing stages
+│       │   ├── finished-goods.ts # Finished goods store
+│       │   ├── inventory.ts      # Inventory summary
+│       │   ├── reports.ts        # Dashboard + all reports
+│       │   └── traceability.ts   # Batch journey tracing
+│       ├── lib/
+│       │   ├── auth.ts           # OIDC session management
+│       │   └── audit.ts          # Audit log utility
+│       └── middlewares/
+│           └── authMiddleware.ts # Session → req.user
+└── abaya-tracker/      # React frontend (port 18354, serves at /)
+    └── src/
+        ├── pages/      # All application pages
+        └── components/ # Shared UI components
+
+lib/
+├── api-spec/           # OpenAPI 3.1 spec + Orval config
+├── api-client-react/   # Generated React Query hooks
+├── api-zod/            # Generated Zod schemas
+├── db/                 # Drizzle ORM schema + DB connection
+│   └── src/schema/
+│       ├── auth.ts     # sessions, users (Replit Auth tables)
+│       └── production.ts # All production tables
+└── replit-auth-web/    # Browser auth hook (useAuth)
 ```
 
-## TypeScript & Composite Projects
+## Database Schema
 
-Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references. This means:
+### Master Tables
+- `categories` - Product categories
+- `sizes` - Size master
+- `colors` - Color master
+- `fabrics` - Fabric type master
+- `products` - Product/design master
+- `teams` - Stitching teams
+- `stitchers` - Stitcher master
+- `app_users` - Application users with roles
 
-- **Always typecheck from the root** — run `pnpm run typecheck` (which runs `tsc --build --emitDeclarationOnly`). This builds the full dependency graph so that cross-package imports resolve correctly. Running `tsc` inside a single package will fail if its dependencies haven't been built yet.
-- **`emitDeclarationOnly`** — we only emit `.d.ts` files during typecheck; actual JS bundling is handled by esbuild/tsx/vite...etc, not `tsc`.
-- **Project references** — when package A depends on package B, A's `tsconfig.json` must list B in its `references` array. `tsc --build` uses this to determine build order and skip up-to-date packages.
+### Production Tables
+- `fabric_rolls` - Raw material / fabric roll inventory
+- `cutting_batches` - Cutting batch records (with auto-generated batch numbers)
+- `cutting_fabric_usage` - Links fabric rolls to cutting batches
+- `allocations` - Allocation of cut pieces to stitchers
+- `receivings` - Receiving records from stitchers
+- `finishing_records` - Finishing stage records (pressing/buttons/hanger/packing)
+- `finished_goods` - Finished goods store entries
 
-## Root Scripts
+### System Tables
+- `sessions` - Replit Auth session store
+- `users` - Replit Auth user profiles
+- `audit_logs` - Full audit trail
 
-- `pnpm run build` — runs `typecheck` first, then recursively runs `build` in all packages that define it
-- `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
+## User Roles
 
-## Packages
+- `admin` - Full access to everything
+- `cutting` - Fabric rolls + cutting module
+- `allocation` - Allocation module
+- `stitching` - Receiving from stitchers
+- `finishing` - Finishing stages
+- `store` - Finished goods store
+- `reporting` - Reports and dashboard (read-only)
 
-### `artifacts/api-server` (`@workspace/api-server`)
+## Key Features
 
-Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
+- Full batch traceability (Fabric Roll → Cutting → Allocation → Receiving → Finishing → Finished Goods)
+- Real-time inventory tracking at all stages
+- Stitcher performance reports
+- Dashboard with today's production metrics
+- Audit log for all create/update operations
+- Role-based access control
+- Secure login via Replit Auth
 
-- Entry: `src/index.ts` — reads `PORT`, starts Express
-- App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`
-- `pnpm --filter @workspace/api-server run dev` — run the dev server
-- `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
-- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
+## Commands
 
-### `lib/db` (`@workspace/db`)
+```bash
+# Run dev server
+pnpm --filter @workspace/api-server run dev
+pnpm --filter @workspace/abaya-tracker run dev
 
-Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client instance and schema models.
+# Push DB schema
+pnpm --filter @workspace/db run push
 
-- `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
-- `src/schema/index.ts` — barrel re-export of all models
-- `src/schema/<modelname>.ts` — table definitions with `drizzle-zod` insert schemas (no models definitions exist right now)
-- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
-- Exports: `.` (pool, db, schema), `./schema` (schema only)
-
-Production migrations are handled by Replit when publishing. In development, we just use `pnpm --filter @workspace/db run push`, and we fallback to `pnpm --filter @workspace/db run push-force`.
-
-### `lib/api-spec` (`@workspace/api-spec`)
-
-Owns the OpenAPI 3.1 spec (`openapi.yaml`) and the Orval config (`orval.config.ts`). Running codegen produces output into two sibling packages:
-
-1. `lib/api-client-react/src/generated/` — React Query hooks + fetch client
-2. `lib/api-zod/src/generated/` — Zod schemas
-
-Run codegen: `pnpm --filter @workspace/api-spec run codegen`
-
-### `lib/api-zod` (`@workspace/api-zod`)
-
-Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used by `api-server` for response validation.
-
-### `lib/api-client-react` (`@workspace/api-client-react`)
-
-Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
-
-### `scripts` (`@workspace/scripts`)
-
-Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+# Run codegen (after OpenAPI spec changes)
+pnpm --filter @workspace/api-spec run codegen
+```
