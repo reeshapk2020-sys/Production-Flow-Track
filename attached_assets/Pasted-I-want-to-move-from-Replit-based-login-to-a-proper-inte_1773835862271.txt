@@ -1,0 +1,79 @@
+I want to move from Replit-based login to a proper internal staff login system for my Abaya Production Tracker.
+
+This is for a real factory/business, so my staff should not need Replit accounts.
+
+Please implement a simple username/password based login system with role-based access control.
+
+Requirements:
+
+1. Keep one super admin account
+- Admin can access everything
+- Admin can create, edit, activate/deactivate users
+- Admin can reset passwords
+- Admin can assign department roles
+
+2. Create internal staff users
+Each staff member should have:
+- full name
+- username
+- password
+- role
+- active/inactive status
+
+3. Create these roles:
+- Admin
+- Cutting User
+- Allocation User
+- Receiving User
+- Finishing User
+- Finished Goods Store User
+- Reporting User
+
+4. Login behavior
+- Staff should log in using username and password
+- After login, the system should automatically identify their role
+- Do not ask them to choose role manually on login
+- Show only the modules allowed for their role
+
+5. Restrict access by role
+- Admin: full access
+- Cutting User: only Cutting
+- Allocation User: only Allocation
+- Receiving User: only Receiving
+- Finishing User: only Finishing/Production
+- Finished Goods Store User: only Finished Goods/Store
+- Reporting User: dashboard + reports only
+
+6. Restrict both frontend and backend
+- Hide unauthorized menu items in sidebar
+- Block unauthorized page access
+- Block unauthorized API access too
+
+7. User Management page
+Create an Admin-only screen where admin can:
+- add staff users
+- edit user details
+- assign/change role
+- reset password
+- deactivate users
+- view all users
+
+8. App header
+Show logged-in user info clearly:
+- full name
+- username
+- role
+
+9. Audit trail
+All created_by and updated_by values should use the actual logged-in internal user.
+
+10. Data safety
+Do not break existing modules, production data, or database records.
+Keep current production logic and only improve authentication and authorization.
+
+11. Migration
+If needed, keep Replit auth temporarily for admin only, but add internal staff login for actual factory users.
+If better, replace Replit auth fully with internal auth.
+
+Goal:
+I want a practical factory-ready login system where each staff member logs in with username/password and only sees their own department’s work.

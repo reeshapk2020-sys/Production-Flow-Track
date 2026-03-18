@@ -95,25 +95,19 @@ router.get("/auth/user", async (req: Request, res: Response) => {
     return;
   }
   const user = req.user as any;
-  // Try to fetch role from app_users
-  let role = "reporting";
-  let appUserId: number | undefined;
-  if (user.id) {
-    const [appUser] = await db
-      .select()
-      .from(appUsersTable)
-      .where(eq(appUsersTable.replitUserId, user.id));
-    if (appUser) {
-      role = appUser.role;
-      appUserId = appUser.id;
-    }
-  }
   res.json({
     isAuthenticated: true,
     user: {
-      ...user,
-      role,
-      appUserId,
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      profileImageUrl: user.profileImageUrl,
+      appUserId: user.appUserId,
+      role: user.role,
+      fullName: user.fullName,
+      username: user.username,
+      loginType: user.loginType,
     },
   });
 });
@@ -194,6 +188,7 @@ router.get("/callback", async (req: Request, res: Response) => {
 
   const now = Math.floor(Date.now() / 1000);
   const sessionData: SessionData = {
+    loginType: "replit",
     user: {
       id: claims.sub as string,
       email: (claims.email as string) || null,
@@ -260,6 +255,7 @@ router.post("/mobile-auth/token-exchange", async (req: Request, res: Response) =
 
     const now = Math.floor(Date.now() / 1000);
     const sessionData: SessionData = {
+      loginType: "replit",
       user: {
         id: claims.sub as string,
         email: (claims.email as string) || null,

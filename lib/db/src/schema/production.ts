@@ -50,11 +50,15 @@ export const rollStatusEnum = pgEnum("roll_status", [
 export const appUsersTable = pgTable("app_users", {
   id: serial("id").primaryKey(),
   replitUserId: text("replit_user_id").unique(),
-  username: text("username").notNull(),
+  username: text("username").notNull().unique(),
+  fullName: text("full_name"),
   displayName: text("display_name"),
+  passwordHash: text("password_hash"),
   role: userRoleEnum("role").notNull().default("reporting"),
   isActive: boolean("is_active").notNull().default(true),
+  lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const categoriesTable = pgTable("categories", {

@@ -17,8 +17,10 @@ export interface SessionUser {
 }
 
 export interface SessionData {
-  user: SessionUser;
-  access_token: string;
+  loginType: "replit" | "staff";
+  user?: SessionUser;
+  staffUserId?: number;
+  access_token?: string;
   refresh_token?: string;
   expires_at?: number;
 }

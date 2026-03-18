@@ -1,6 +1,8 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health.js";
 import authRouter from "./auth.js";
+import staffAuthRouter from "./staff-auth.js";
+import usersRouter from "./users.js";
 import masterRouter from "./master.js";
 import fabricRollsRouter from "./fabric-rolls.js";
 import cuttingRouter from "./cutting.js";
@@ -16,6 +18,8 @@ const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
+router.use(staffAuthRouter);
+router.use(usersRouter);
 router.use(masterRouter);
 router.use(fabricRollsRouter);
 router.use(cuttingRouter);
