@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface CreateColorBody {
+export interface UpdateColorBody {
   name: string;
   /** Short unique color code, e.g. BLK, NVY, BRN */
   code: string;

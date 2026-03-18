@@ -90,7 +90,7 @@ export default function FabricRollsPage() {
                   <label className="text-sm font-medium block mb-1.5">Color</label>
                   <select name="colorId" className="form-input-styled bg-white" required>
                     <option value="">Select Color...</option>
-                    {colors?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    {colors?.map(c => <option key={c.id} value={c.id}>{c.code ? `${c.code} — ${c.name}` : c.name}</option>)}
                   </select>
                 </div>
 

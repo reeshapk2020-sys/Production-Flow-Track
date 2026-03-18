@@ -4,11 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Loader2 } from "lucide-react";
+import { AlertCircle, Pencil, Plus, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { 
   useListCategories, useCreateCategory, getListCategoriesQueryKey,
-  useListColors, useCreateColor, getListColorsQueryKey,
+  useListColors, useCreateColor, useUpdateColor, getListColorsQueryKey,
   useListSizes, useCreateSize, getListSizesQueryKey,
   useListFabrics, useCreateFabric, getListFabricsQueryKey,
   useListProducts, useCreateProduct, getListProductsQueryKey
@@ -104,46 +104,229 @@ function CategoriesTab() {
   );
 }
 
+function ColorCodeInput({
+  value,
+  onChange,
+  existingCodes,
+  excludeId,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  existingCodes: Array<{ id: number; code: string | null }>;
+  excludeId?: number;
+}) {
+  const upper = value.trim().toUpperCase();
+  const isDup =
+    upper.length > 0 &&
+    existingCodes.some(
+      (c) =>
+        c.id !== excludeId &&
+        c.code?.trim().toUpperCase() === upper
+    );
+  return (
+    <div>
+      <label className="text-sm font-medium block mb-1.5">
+        Color Code <span className="text-red-500">*</span>
+        <span className="text-xs font-normal text-slate-400 ml-1">(e.g. BLK, NVY, BRN)</span>
+      </label>
+      <input
+        name="code"
+        className={`form-input-styled font-mono uppercase ${isDup ? "border-red-400 bg-red-50" : ""}`}
+        placeholder="BLK"
+        required
+        maxLength={10}
+        value={value}
+        onChange={(e) => onChange(e.target.value.toUpperCase())}
+        autoComplete="off"
+      />
+      {isDup && (
+        <div className="flex items-center gap-2 mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          Code <strong>"{upper}"</strong> is already in use.
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ColorsTab() {
   const { data, isLoading } = useListColors();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const { mutate, isPending } = useCreateColor({
+  const { toast } = useToast();
+
+  // Create state
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newCode, setNewCode] = useState("");
+  const [newName, setNewName] = useState("");
+
+  // Edit state
+  const [editColor, setEditColor] = useState<{ id: number; name: string; code: string } | null>(null);
+  const [editCode, setEditCode] = useState("");
+  const [editName, setEditName] = useState("");
+
+  const existingCodes = (data ?? []).map((c) => ({ id: c.id, code: c.code ?? null }));
+
+  const createCodeDup =
+    newCode.trim().length > 0 &&
+    existingCodes.some((c) => c.code?.trim().toUpperCase() === newCode.trim().toUpperCase());
+
+  const editCodeDup =
+    editColor !== null &&
+    editCode.trim().length > 0 &&
+    existingCodes.some(
+      (c) =>
+        c.id !== editColor.id &&
+        c.code?.trim().toUpperCase() === editCode.trim().toUpperCase()
+    );
+
+  const onInvalidate = () => queryClient.invalidateQueries({ queryKey: getListColorsQueryKey() });
+
+  const { mutate: createColor, isPending: creating } = useCreateColor({
     mutation: {
-      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListColorsQueryKey() }); setOpen(false); }
-    }
+      onSuccess: () => {
+        onInvalidate();
+        setCreateOpen(false);
+        setNewCode("");
+        setNewName("");
+        toast({ title: "Color created" });
+      },
+      onError: (err: any) => {
+        toast({ title: "Error", description: err?.response?.data?.error ?? "Failed to create color.", variant: "destructive" });
+      },
+    },
   });
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const { mutate: updateColor, isPending: updating } = useUpdateColor({
+    mutation: {
+      onSuccess: () => {
+        onInvalidate();
+        setEditColor(null);
+        toast({ title: "Color updated" });
+      },
+      onError: (err: any) => {
+        toast({ title: "Error", description: err?.response?.data?.error ?? "Failed to update color.", variant: "destructive" });
+      },
+    },
+  });
+
+  const onCreateSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    mutate({ data: { name: fd.get("name") as string, code: fd.get("code") as string } });
+    if (createCodeDup) return;
+    createColor({ data: { name: newName.trim(), code: newCode.trim().toUpperCase() } });
+  };
+
+  const onEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editColor || editCodeDup) return;
+    updateColor({ id: editColor.id, data: { name: editName.trim(), code: editCode.trim().toUpperCase() } });
+  };
+
+  const openEdit = (c: { id: number; name: string; code: string | null }) => {
+    setEditColor({ id: c.id, name: c.name, code: c.code ?? "" });
+    setEditCode(c.code ?? "");
+    setEditName(c.name);
   };
 
   return (
-    <MasterCard title="Colors" onAdd={() => setOpen(true)} addLabel="Add Color" open={open} onOpenChange={setOpen}>
-      <form onSubmit={onSubmit} className="space-y-4 pt-4">
-        <div><label className="text-sm font-medium block mb-1.5">Color Name</label><input name="name" className="form-input-styled" required /></div>
-        <div><label className="text-sm font-medium block mb-1.5">Color Code (Hex/Identifier)</label><input name="code" className="form-input-styled" /></div>
-        <Button type="submit" disabled={isPending} className="w-full h-11 rounded-xl">Save</Button>
-      </form>
-      <div className="mt-6 border rounded-xl overflow-hidden bg-white">
-        <Table>
-          <TableHeader className="bg-slate-50"><TableRow><TableHead>ID</TableHead><TableHead>Name</TableHead><TableHead>Code</TableHead></TableRow></TableHeader>
-          <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={3} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
-              data?.map(c => (
-                <TableRow key={c.id}>
-                  <TableCell>#{c.id}</TableCell>
-                  <TableCell className="font-semibold">{c.name}</TableCell>
-                  <TableCell><span className="px-2 py-1 bg-slate-100 rounded text-xs font-mono border">{c.code || "N/A"}</span></TableCell>
-                </TableRow>
-              ))
-            }
-          </TableBody>
-        </Table>
-      </div>
-    </MasterCard>
+    <>
+      <MasterCard
+        title="Colors"
+        onAdd={() => setCreateOpen(true)}
+        addLabel="Add Color"
+        open={createOpen}
+        onOpenChange={(v) => { setCreateOpen(v); if (!v) { setNewCode(""); setNewName(""); } }}
+      >
+        <form onSubmit={onCreateSubmit} className="space-y-4 pt-4">
+          <ColorCodeInput value={newCode} onChange={setNewCode} existingCodes={existingCodes} />
+          <div>
+            <label className="text-sm font-medium block mb-1.5">Color Name <span className="text-red-500">*</span></label>
+            <input
+              name="name" className="form-input-styled" required
+              value={newName} onChange={(e) => setNewName(e.target.value)}
+              placeholder="e.g. Black"
+            />
+          </div>
+          <Button
+            type="submit"
+            disabled={creating || createCodeDup}
+            className="w-full h-11 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {creating ? "Saving..." : "Save Color"}
+          </Button>
+        </form>
+
+        <div className="mt-6 border rounded-xl overflow-hidden bg-white">
+          <Table>
+            <TableHeader className="bg-slate-50">
+              <TableRow>
+                <TableHead className="w-24">Code</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead className="w-16 text-right">Edit</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow><TableCell colSpan={3} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+              ) : (
+                data?.map((c) => (
+                  <TableRow key={c.id}>
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded text-xs font-mono font-bold border ${c.code ? "bg-primary/10 text-primary border-primary/20" : "bg-amber-50 text-amber-600 border-amber-200"}`}>
+                        {c.code || "—"}
+                      </span>
+                    </TableCell>
+                    <TableCell className="font-semibold text-slate-800">{c.name}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm" variant="ghost"
+                        className="h-7 w-7 p-0 text-slate-400 hover:text-primary"
+                        onClick={() => openEdit(c)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+              {!isLoading && data?.length === 0 && (
+                <TableRow><TableCell colSpan={3} className="text-center py-8 text-slate-500">No colors yet.</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </MasterCard>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editColor} onOpenChange={(v) => { if (!v) setEditColor(null); }}>
+        <DialogContent className="sm:max-w-[380px] rounded-2xl p-6 border-0 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-display">Edit Color</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={onEditSubmit} className="space-y-4 pt-2">
+            <ColorCodeInput
+              value={editCode}
+              onChange={setEditCode}
+              existingCodes={existingCodes}
+              excludeId={editColor?.id}
+            />
+            <div>
+              <label className="text-sm font-medium block mb-1.5">Color Name <span className="text-red-500">*</span></label>
+              <input
+                name="name" className="form-input-styled" required
+                value={editName} onChange={(e) => setEditName(e.target.value)}
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={updating || editCodeDup}
+              className="w-full h-11 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {updating ? "Saving..." : "Update Color"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

@@ -66,5 +66,6 @@ export * from "./successResponse";
 export * from "./team";
 export * from "./traceEvent";
 export * from "./traceSearchResult";
+export * from "./updateColorBody";
 export * from "./updateUserBody";
 export * from "./wipItem";

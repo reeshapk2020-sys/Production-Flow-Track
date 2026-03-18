@@ -115,6 +115,24 @@ export const ListColorsResponse = zod.array(ListColorsResponseItem);
  */
 export const CreateColorBody = zod.object({
   name: zod.string(),
+  code: zod.string().describe("Short unique color code, e.g. BLK, NVY, BRN"),
+});
+
+/**
+ * @summary Update a color
+ */
+export const UpdateColorParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateColorBody = zod.object({
+  name: zod.string(),
+  code: zod.string().describe("Short unique color code, e.g. BLK, NVY, BRN"),
+});
+
+export const UpdateColorResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
   code: zod.string().optional(),
 });
 

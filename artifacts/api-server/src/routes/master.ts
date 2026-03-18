@@ -10,7 +10,7 @@ import {
   stitchersTable,
   appUsersTable,
 } from "@workspace/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, ilike, ne, and } from "drizzle-orm";
 import { logAudit } from "../lib/audit.js";
 
 const router: IRouter = Router();
@@ -66,9 +66,49 @@ router.get("/master/colors", async (_req, res) => {
 
 router.post("/master/colors", async (req, res) => {
   const { name, code } = req.body;
-  const [row] = await db.insert(colorsTable).values({ name, code }).returning();
-  await logAudit(req, "CREATE", "colors", String(row.id), `Created color: ${name}`);
+  if (!code || !String(code).trim()) {
+    return res.status(400).json({ error: "Color code is required." });
+  }
+  const trimmedCode = String(code).trim().toUpperCase();
+  // Uniqueness check for code
+  const existing = await db
+    .select({ id: colorsTable.id })
+    .from(colorsTable)
+    .where(ilike(colorsTable.code, trimmedCode));
+  if (existing.length > 0) {
+    return res.status(409).json({ error: `Color code "${trimmedCode}" already exists.` });
+  }
+  const [row] = await db
+    .insert(colorsTable)
+    .values({ name: String(name).trim(), code: trimmedCode })
+    .returning();
+  await logAudit(req, "CREATE", "colors", String(row.id), `Created color: ${name} (${trimmedCode})`);
   res.status(201).json(row);
+});
+
+router.put("/master/colors/:id", async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { name, code } = req.body;
+  if (!code || !String(code).trim()) {
+    return res.status(400).json({ error: "Color code is required." });
+  }
+  const trimmedCode = String(code).trim().toUpperCase();
+  // Uniqueness check for code (excluding this record)
+  const existing = await db
+    .select({ id: colorsTable.id })
+    .from(colorsTable)
+    .where(and(ilike(colorsTable.code, trimmedCode), ne(colorsTable.id, id)));
+  if (existing.length > 0) {
+    return res.status(409).json({ error: `Color code "${trimmedCode}" already exists.` });
+  }
+  const [row] = await db
+    .update(colorsTable)
+    .set({ name: String(name).trim(), code: trimmedCode })
+    .where(eq(colorsTable.id, id))
+    .returning();
+  if (!row) return res.status(404).json({ error: "Color not found." });
+  await logAudit(req, "UPDATE", "colors", String(row.id), `Updated color: ${name} (${trimmedCode})`);
+  res.json(row);
 });
 
 // FABRICS

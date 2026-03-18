@@ -198,6 +198,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/Color"
 
+  /master/colors/{id}:
+    put:
+      operationId: updateColor
+      tags: [master]
+      summary: Update a color
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateColorBody"
+      responses:
+        "200":
+          description: Updated color
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Color"
+
   /master/fabrics:
     get:
       operationId: listFabrics
@@ -1000,7 +1025,18 @@ components:
           type: string
         code:
           type: string
-      required: [name]
+          description: Short unique color code, e.g. BLK, NVY, BRN
+      required: [name, code]
+
+    UpdateColorBody:
+      type: object
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+          description: Short unique color code, e.g. BLK, NVY, BRN
+      required: [name, code]
 
     Fabric:
       type: object

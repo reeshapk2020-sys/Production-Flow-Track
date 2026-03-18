@@ -60,7 +60,14 @@ export interface Color {
 
 export interface CreateColorBody {
   name: string;
-  code?: string;
+  /** Short unique color code, e.g. BLK, NVY, BRN */
+  code: string;
+}
+
+export interface UpdateColorBody {
+  name: string;
+  /** Short unique color code, e.g. BLK, NVY, BRN */
+  code: string;
 }
 
 export interface Fabric {

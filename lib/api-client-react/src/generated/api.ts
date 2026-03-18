@@ -66,6 +66,7 @@ import type {
   SuccessResponse,
   Team,
   TraceSearchResult,
+  UpdateColorBody,
   UpdateUserBody,
   WipItem,
 } from "./api.schemas";
@@ -869,6 +870,93 @@ export const useCreateColor = <
   TContext
 > => {
   return useMutation(getCreateColorMutationOptions(options));
+};
+
+/**
+ * @summary Update a color
+ */
+export const getUpdateColorUrl = (id: number) => {
+  return `/api/master/colors/${id}`;
+};
+
+export const updateColor = async (
+  id: number,
+  updateColorBody: UpdateColorBody,
+  options?: RequestInit,
+): Promise<Color> => {
+  return customFetch<Color>(getUpdateColorUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateColorBody),
+  });
+};
+
+export const getUpdateColorMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateColor>>,
+    TError,
+    { id: number; data: BodyType<UpdateColorBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateColor>>,
+  TError,
+  { id: number; data: BodyType<UpdateColorBody> },
+  TContext
+> => {
+  const mutationKey = ["updateColor"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateColor>>,
+    { id: number; data: BodyType<UpdateColorBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateColor(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateColorMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateColor>>
+>;
+export type UpdateColorMutationBody = BodyType<UpdateColorBody>;
+export type UpdateColorMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a color
+ */
+export const useUpdateColor = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateColor>>,
+    TError,
+    { id: number; data: BodyType<UpdateColorBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateColor>>,
+  TError,
+  { id: number; data: BodyType<UpdateColorBody> },
+  TContext
+> => {
+  return useMutation(getUpdateColorMutationOptions(options));
 };
 
 /**
