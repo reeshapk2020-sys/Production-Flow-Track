@@ -105,13 +105,16 @@ export const productsTable = pgTable("products", {
 export const teamsTable = pgTable("teams", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
+  code: text("code"),
   supervisorName: text("supervisor_name"),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const stitchersTable = pgTable("stitchers", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  code: text("code"),
   phone: text("phone"),
   teamId: integer("team_id").references(() => teamsTable.id),
   isActive: boolean("is_active").notNull().default(true),

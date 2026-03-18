@@ -186,6 +186,7 @@ export const CreateProductBody = zod.object({
 export const ListStitchersResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
+  code: zod.string().optional(),
   phone: zod.string().optional(),
   teamId: zod.number().optional(),
   teamName: zod.string().optional(),
@@ -201,8 +202,37 @@ export const ListStitchersResponse = zod.array(ListStitchersResponseItem);
  */
 export const CreateStitcherBody = zod.object({
   name: zod.string(),
+  code: zod.string().optional(),
   phone: zod.string().optional(),
   teamId: zod.number().optional(),
+});
+
+/**
+ * @summary Update a stitcher (admin only)
+ */
+export const UpdateStitcherParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateStitcherBody = zod.object({
+  name: zod.string(),
+  code: zod.string().optional(),
+  phone: zod.string().optional(),
+  teamId: zod.number().optional(),
+  isActive: zod.boolean().optional(),
+});
+
+export const UpdateStitcherResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  code: zod.string().optional(),
+  phone: zod.string().optional(),
+  teamId: zod.number().optional(),
+  teamName: zod.string().optional(),
+  isActive: zod.boolean().optional(),
+  totalIssued: zod.number().optional(),
+  totalReceived: zod.number().optional(),
+  pendingQuantity: zod.number().optional(),
 });
 
 /**
@@ -211,7 +241,9 @@ export const CreateStitcherBody = zod.object({
 export const ListTeamsResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
+  code: zod.string().optional(),
   supervisorName: zod.string().optional(),
+  isActive: zod.boolean().optional(),
 });
 export const ListTeamsResponse = zod.array(ListTeamsResponseItem);
 
@@ -220,7 +252,30 @@ export const ListTeamsResponse = zod.array(ListTeamsResponseItem);
  */
 export const CreateTeamBody = zod.object({
   name: zod.string(),
+  code: zod.string().optional(),
   supervisorName: zod.string().optional(),
+});
+
+/**
+ * @summary Update a team (admin only)
+ */
+export const UpdateTeamParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateTeamBody = zod.object({
+  name: zod.string(),
+  code: zod.string().optional(),
+  supervisorName: zod.string().optional(),
+  isActive: zod.boolean().optional(),
+});
+
+export const UpdateTeamResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  code: zod.string().optional(),
+  supervisorName: zod.string().optional(),
+  isActive: zod.boolean().optional(),
 });
 
 /**

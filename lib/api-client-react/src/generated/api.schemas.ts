@@ -103,6 +103,7 @@ export interface CreateProductBody {
 export interface Stitcher {
   id: number;
   name: string;
+  code?: string;
   phone?: string;
   teamId?: number;
   teamName?: string;
@@ -114,19 +115,38 @@ export interface Stitcher {
 
 export interface CreateStitcherBody {
   name: string;
+  code?: string;
   phone?: string;
   teamId?: number;
+}
+
+export interface UpdateStitcherBody {
+  name: string;
+  code?: string;
+  phone?: string;
+  teamId?: number;
+  isActive?: boolean;
 }
 
 export interface Team {
   id: number;
   name: string;
+  code?: string;
   supervisorName?: string;
+  isActive?: boolean;
 }
 
 export interface CreateTeamBody {
   name: string;
+  code?: string;
   supervisorName?: string;
+}
+
+export interface UpdateTeamBody {
+  name: string;
+  code?: string;
+  supervisorName?: string;
+  isActive?: boolean;
 }
 
 export interface AppUser {

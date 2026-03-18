@@ -9,6 +9,7 @@
 export interface Stitcher {
   id: number;
   name: string;
+  code?: string;
   phone?: string;
   teamId?: number;
   teamName?: string;

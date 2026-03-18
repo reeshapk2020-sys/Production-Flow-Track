@@ -6,8 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface CreateTeamBody {
+export interface UpdateTeamBody {
   name: string;
   code?: string;
   supervisorName?: string;
+  isActive?: boolean;
 }

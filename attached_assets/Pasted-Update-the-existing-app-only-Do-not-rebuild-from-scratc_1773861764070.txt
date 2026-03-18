@@ -1,0 +1,100 @@
+Update the existing app only. Do not rebuild from scratch.
+
+I need two improvements:
+1) Manage Stitchers and Teams from the app UI
+2) Allow editing ONLY for Admin across all modules
+
+-----------------------------
+1. Stitchers Master
+-----------------------------
+- create a Stitchers Master screen in Master Data
+- allow admin to:
+  - add stitchers
+  - edit stitchers
+  - activate/deactivate stitchers
+- fields:
+  - name
+  - code (optional)
+  - phone (optional)
+  - team_id (optional)
+  - active status
+
+-----------------------------
+2. Teams Master
+-----------------------------
+- create a Teams Master screen in Master Data
+- allow admin to:
+  - add teams
+  - edit teams
+  - activate/deactivate teams
+- fields:
+  - team name
+  - team code (optional)
+  - active status
+
+-----------------------------
+3. Dropdown Integration
+-----------------------------
+- Allocation module should load stitchers from Stitchers Master
+- team dropdowns should load from Teams Master
+- display as:
+  code - name (if code exists)
+- do not require manual DB entry anymore
+
+-----------------------------
+4. Admin-only Edit Access (ALL modules)
+-----------------------------
+Only Admin role can edit existing records in:
+
+Master Data:
+- Products
+- Sizes
+- Colors
+- Stitchers
+- Teams
+
+Operational Modules:
+- Fabric Rolls
+- Cutting
+- Allocation
+- Receiving
+- Finishing
+- Finished Goods
+
+-----------------------------
+5. Non-admin Users
+-----------------------------
+Users (Cutting, Allocation, Receiving, Finishing, Store, Reporting):
+- can ADD new records in their module
+- can VIEW records
+- CANNOT edit existing records
+- CANNOT delete records
+
+-----------------------------
+6. UI Behavior
+-----------------------------
+- show Edit button only for Admin
+- hide Edit/Delete for non-admin users
+- non-admin records appear read-only after saving
+
+-----------------------------
+7. Backend/API Enforcement
+-----------------------------
+- enforce admin-only edit restriction in update APIs
+- do not rely only on frontend hiding
+
+-----------------------------
+8. Data Safety
+-----------------------------
+- preserve existing stitchers and teams already in DB
+- do not break foreign keys or allocations
+- do not rebuild from scratch
+- do not change unrelated modules
+- use active/inactive instead of delete if needed
+
+-----------------------------
+Goal
+-----------------------------
+- Admin controls all data and edits
+- staff users only add and use records
+- stitchers and teams can be managed fully from UI (no manual SQL needed)

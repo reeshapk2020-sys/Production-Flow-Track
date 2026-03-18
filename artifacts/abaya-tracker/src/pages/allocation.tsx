@@ -133,7 +133,7 @@ export default function AllocationPage() {
                   <select name="stitcherId" className="form-input-styled bg-white" required>
                     <option value="">Select Stitcher...</option>
                     {stitchers?.filter(s => s.isActive).map(s => (
-                      <option key={s.id} value={s.id}>{s.name}{s.teamName ? ` (${s.teamName})` : ''}</option>
+                      <option key={s.id} value={s.id}>{fmtCode(s.code, s.name)}{s.teamName ? ` (${s.teamName})` : ''}</option>
                     ))}
                   </select>
                 </div>

@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import { db } from "@workspace/db";
 import {
   categoriesTable,
@@ -15,6 +15,14 @@ import { logAudit } from "../lib/audit.js";
 
 const router: IRouter = Router();
 
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.isAuthenticated() || req.user?.role !== "admin") {
+    res.status(403).json({ error: "Admin access required." });
+    return;
+  }
+  next();
+}
+
 // CATEGORIES
 router.get("/master/categories", async (_req, res) => {
   const rows = await db.select().from(categoriesTable).orderBy(categoriesTable.name);
@@ -28,7 +36,7 @@ router.post("/master/categories", async (req, res) => {
   res.status(201).json(row);
 });
 
-router.put("/master/categories/:id", async (req, res) => {
+router.put("/master/categories/:id", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   const { name, description } = req.body;
   const [row] = await db
@@ -39,7 +47,7 @@ router.put("/master/categories/:id", async (req, res) => {
   res.json(row);
 });
 
-router.delete("/master/categories/:id", async (req, res) => {
+router.delete("/master/categories/:id", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   await db.delete(categoriesTable).where(eq(categoriesTable.id, id));
   res.json({ success: true, message: "Deleted" });
@@ -70,7 +78,6 @@ router.post("/master/colors", async (req, res) => {
     return res.status(400).json({ error: "Color code is required." });
   }
   const trimmedCode = String(code).trim().toUpperCase();
-  // Uniqueness check for code
   const existing = await db
     .select({ id: colorsTable.id })
     .from(colorsTable)
@@ -86,14 +93,13 @@ router.post("/master/colors", async (req, res) => {
   res.status(201).json(row);
 });
 
-router.put("/master/colors/:id", async (req, res) => {
+router.put("/master/colors/:id", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   const { name, code } = req.body;
   if (!code || !String(code).trim()) {
     return res.status(400).json({ error: "Color code is required." });
   }
   const trimmedCode = String(code).trim().toUpperCase();
-  // Uniqueness check for code (excluding this record)
   const existing = await db
     .select({ id: colorsTable.id })
     .from(colorsTable)
@@ -154,15 +160,51 @@ router.post("/master/products", async (req, res) => {
 
 // TEAMS
 router.get("/master/teams", async (_req, res) => {
-  const rows = await db.select().from(teamsTable).orderBy(teamsTable.name);
+  const rows = await db
+    .select({
+      id: teamsTable.id,
+      name: teamsTable.name,
+      code: teamsTable.code,
+      supervisorName: teamsTable.supervisorName,
+      isActive: teamsTable.isActive,
+    })
+    .from(teamsTable)
+    .orderBy(teamsTable.name);
   res.json(rows);
 });
 
 router.post("/master/teams", async (req, res) => {
-  const { name, supervisorName } = req.body;
-  const [row] = await db.insert(teamsTable).values({ name, supervisorName }).returning();
+  const { name, code, supervisorName } = req.body;
+  if (!name || !String(name).trim()) {
+    return res.status(400).json({ error: "Team name is required." });
+  }
+  const [row] = await db
+    .insert(teamsTable)
+    .values({ name: String(name).trim(), code: code ? String(code).trim().toUpperCase() : null, supervisorName })
+    .returning();
   await logAudit(req, "CREATE", "teams", String(row.id), `Created team: ${name}`);
   res.status(201).json(row);
+});
+
+router.put("/master/teams/:id", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { name, code, supervisorName, isActive } = req.body;
+  if (!name || !String(name).trim()) {
+    return res.status(400).json({ error: "Team name is required." });
+  }
+  const [row] = await db
+    .update(teamsTable)
+    .set({
+      name: String(name).trim(),
+      code: code ? String(code).trim().toUpperCase() : null,
+      supervisorName,
+      isActive: typeof isActive === "boolean" ? isActive : undefined,
+    })
+    .where(eq(teamsTable.id, id))
+    .returning();
+  if (!row) return res.status(404).json({ error: "Team not found." });
+  await logAudit(req, "UPDATE", "teams", String(id), `Updated team: ${name}`);
+  res.json(row);
 });
 
 // STITCHERS
@@ -171,6 +213,7 @@ router.get("/master/stitchers", async (_req, res) => {
     .select({
       id: stitchersTable.id,
       name: stitchersTable.name,
+      code: stitchersTable.code,
       phone: stitchersTable.phone,
       teamId: stitchersTable.teamId,
       teamName: teamsTable.name,
@@ -190,10 +233,38 @@ router.get("/master/stitchers", async (_req, res) => {
 });
 
 router.post("/master/stitchers", async (req, res) => {
-  const { name, phone, teamId } = req.body;
-  const [row] = await db.insert(stitchersTable).values({ name, phone, teamId }).returning();
+  const { name, code, phone, teamId } = req.body;
+  if (!name || !String(name).trim()) {
+    return res.status(400).json({ error: "Stitcher name is required." });
+  }
+  const [row] = await db
+    .insert(stitchersTable)
+    .values({ name: String(name).trim(), code: code ? String(code).trim().toUpperCase() : null, phone, teamId })
+    .returning();
   await logAudit(req, "CREATE", "stitchers", String(row.id), `Created stitcher: ${name}`);
   res.status(201).json({ ...row, totalIssued: 0, totalReceived: 0, pendingQuantity: 0 });
+});
+
+router.put("/master/stitchers/:id", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { name, code, phone, teamId, isActive } = req.body;
+  if (!name || !String(name).trim()) {
+    return res.status(400).json({ error: "Stitcher name is required." });
+  }
+  const [row] = await db
+    .update(stitchersTable)
+    .set({
+      name: String(name).trim(),
+      code: code ? String(code).trim().toUpperCase() : null,
+      phone: phone || null,
+      teamId: teamId || null,
+      isActive: typeof isActive === "boolean" ? isActive : undefined,
+    })
+    .where(eq(stitchersTable.id, id))
+    .returning();
+  if (!row) return res.status(404).json({ error: "Stitcher not found." });
+  await logAudit(req, "UPDATE", "stitchers", String(id), `Updated stitcher: ${name}`);
+  res.json({ ...row, totalIssued: 0, totalReceived: 0, pendingQuantity: 0 });
 });
 
 // USERS
@@ -211,7 +282,7 @@ router.post("/master/users", async (req, res) => {
   res.status(201).json(row);
 });
 
-router.put("/master/users/:id", async (req, res) => {
+router.put("/master/users/:id", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   const { role, isActive } = req.body;
   const [row] = await db

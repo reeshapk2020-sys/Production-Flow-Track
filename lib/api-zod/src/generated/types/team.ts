@@ -9,5 +9,7 @@
 export interface Team {
   id: number;
   name: string;
+  code?: string;
   supervisorName?: string;
+  isActive?: boolean;
 }

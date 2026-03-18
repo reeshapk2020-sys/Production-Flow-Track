@@ -67,6 +67,8 @@ import type {
   Team,
   TraceSearchResult,
   UpdateColorBody,
+  UpdateStitcherBody,
+  UpdateTeamBody,
   UpdateUserBody,
   WipItem,
 } from "./api.schemas";
@@ -1441,6 +1443,93 @@ export const useCreateStitcher = <
 };
 
 /**
+ * @summary Update a stitcher (admin only)
+ */
+export const getUpdateStitcherUrl = (id: number) => {
+  return `/api/master/stitchers/${id}`;
+};
+
+export const updateStitcher = async (
+  id: number,
+  updateStitcherBody: UpdateStitcherBody,
+  options?: RequestInit,
+): Promise<Stitcher> => {
+  return customFetch<Stitcher>(getUpdateStitcherUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateStitcherBody),
+  });
+};
+
+export const getUpdateStitcherMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateStitcher>>,
+    TError,
+    { id: number; data: BodyType<UpdateStitcherBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateStitcher>>,
+  TError,
+  { id: number; data: BodyType<UpdateStitcherBody> },
+  TContext
+> => {
+  const mutationKey = ["updateStitcher"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateStitcher>>,
+    { id: number; data: BodyType<UpdateStitcherBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateStitcher(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateStitcherMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateStitcher>>
+>;
+export type UpdateStitcherMutationBody = BodyType<UpdateStitcherBody>;
+export type UpdateStitcherMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a stitcher (admin only)
+ */
+export const useUpdateStitcher = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateStitcher>>,
+    TError,
+    { id: number; data: BodyType<UpdateStitcherBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateStitcher>>,
+  TError,
+  { id: number; data: BodyType<UpdateStitcherBody> },
+  TContext
+> => {
+  return useMutation(getUpdateStitcherMutationOptions(options));
+};
+
+/**
  * @summary List all teams
  */
 export const getListTeamsUrl = () => {
@@ -1589,6 +1678,93 @@ export const useCreateTeam = <
   TContext
 > => {
   return useMutation(getCreateTeamMutationOptions(options));
+};
+
+/**
+ * @summary Update a team (admin only)
+ */
+export const getUpdateTeamUrl = (id: number) => {
+  return `/api/master/teams/${id}`;
+};
+
+export const updateTeam = async (
+  id: number,
+  updateTeamBody: UpdateTeamBody,
+  options?: RequestInit,
+): Promise<Team> => {
+  return customFetch<Team>(getUpdateTeamUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateTeamBody),
+  });
+};
+
+export const getUpdateTeamMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateTeam>>,
+    TError,
+    { id: number; data: BodyType<UpdateTeamBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateTeam>>,
+  TError,
+  { id: number; data: BodyType<UpdateTeamBody> },
+  TContext
+> => {
+  const mutationKey = ["updateTeam"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateTeam>>,
+    { id: number; data: BodyType<UpdateTeamBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateTeam(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateTeamMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateTeam>>
+>;
+export type UpdateTeamMutationBody = BodyType<UpdateTeamBody>;
+export type UpdateTeamMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a team (admin only)
+ */
+export const useUpdateTeam = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateTeam>>,
+    TError,
+    { id: number; data: BodyType<UpdateTeamBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateTeam>>,
+  TError,
+  { id: number; data: BodyType<UpdateTeamBody> },
+  TContext
+> => {
+  return useMutation(getUpdateTeamMutationOptions(options));
 };
 
 /**

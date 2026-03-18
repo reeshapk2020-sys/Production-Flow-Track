@@ -6,8 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface CreateTeamBody {
+export interface UpdateStitcherBody {
   name: string;
   code?: string;
-  supervisorName?: string;
+  phone?: string;
+  teamId?: number;
+  isActive?: boolean;
 }

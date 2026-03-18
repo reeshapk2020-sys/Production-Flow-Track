@@ -8,6 +8,7 @@
 
 export interface CreateStitcherBody {
   name: string;
+  code?: string;
   phone?: string;
   teamId?: number;
 }

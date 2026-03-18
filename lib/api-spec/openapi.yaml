@@ -319,6 +319,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/Stitcher"
 
+  /master/stitchers/{id}:
+    put:
+      operationId: updateStitcher
+      tags: [master]
+      summary: Update a stitcher (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStitcherBody"
+      responses:
+        "200":
+          description: Updated stitcher
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stitcher"
+
   /master/teams:
     get:
       operationId: listTeams
@@ -346,6 +371,31 @@ paths:
       responses:
         "201":
           description: Created team
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+
+  /master/teams/{id}:
+    put:
+      operationId: updateTeam
+      tags: [master]
+      summary: Update a team (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTeamBody"
+      responses:
+        "200":
+          description: Updated team
           content:
             application/json:
               schema:
@@ -1101,6 +1151,8 @@ components:
           type: integer
         name:
           type: string
+        code:
+          type: string
         phone:
           type: string
         teamId:
@@ -1122,10 +1174,27 @@ components:
       properties:
         name:
           type: string
+        code:
+          type: string
         phone:
           type: string
         teamId:
           type: integer
+      required: [name]
+
+    UpdateStitcherBody:
+      type: object
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+        phone:
+          type: string
+        teamId:
+          type: integer
+        isActive:
+          type: boolean
       required: [name]
 
     Team:
@@ -1135,8 +1204,12 @@ components:
           type: integer
         name:
           type: string
+        code:
+          type: string
         supervisorName:
           type: string
+        isActive:
+          type: boolean
       required: [id, name]
 
     CreateTeamBody:
@@ -1144,8 +1217,23 @@ components:
       properties:
         name:
           type: string
+        code:
+          type: string
         supervisorName:
           type: string
+      required: [name]
+
+    UpdateTeamBody:
+      type: object
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+        supervisorName:
+          type: string
+        isActive:
+          type: boolean
       required: [name]
 
     AppUser:
