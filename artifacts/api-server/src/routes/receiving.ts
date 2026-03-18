@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import { db } from "@workspace/db";
 import {
   receivingsTable,
@@ -13,6 +13,14 @@ import {
 } from "@workspace/db/schema";
 import { eq, sql, and } from "drizzle-orm";
 import { logAudit } from "../lib/audit.js";
+
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.isAuthenticated() || req.user?.role !== "admin") {
+    res.status(403).json({ error: "Admin access required." });
+    return;
+  }
+  next();
+}
 
 const router: IRouter = Router();
 
@@ -225,4 +233,20 @@ router.post("/receiving", denyAllocationRole, async (req, res) => {
 
 // Export helper for use by other routes
 export { updateBatchStatus };
+router.put("/receiving/:id", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { receiveDate, remarks } = req.body;
+  const [row] = await db
+    .update(receivingsTable)
+    .set({
+      receiveDate: receiveDate ? new Date(receiveDate) : undefined,
+      remarks: remarks !== undefined ? remarks : undefined,
+    })
+    .where(eq(receivingsTable.id, id))
+    .returning();
+  if (!row) return res.status(404).json({ error: "Receiving record not found." });
+  await logAudit(req, "UPDATE", "receivings", String(id), `Updated receiving record #${id}`);
+  res.json(row);
+});
+
 export default router;

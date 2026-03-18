@@ -66,7 +66,13 @@ import type {
   SuccessResponse,
   Team,
   TraceSearchResult,
+  UpdateAllocationBody,
   UpdateColorBody,
+  UpdateCuttingBatchBody,
+  UpdateFabricRollBody,
+  UpdateFinishedGoodsBody,
+  UpdateFinishingRecordBody,
+  UpdateReceivingBody,
   UpdateStitcherBody,
   UpdateTeamBody,
   UpdateUserBody,
@@ -2254,6 +2260,93 @@ export function useGetFabricRoll<
 }
 
 /**
+ * @summary Update fabric roll (admin only — safe fields)
+ */
+export const getUpdateFabricRollUrl = (id: number) => {
+  return `/api/fabric-rolls/${id}`;
+};
+
+export const updateFabricRoll = async (
+  id: number,
+  updateFabricRollBody: UpdateFabricRollBody,
+  options?: RequestInit,
+): Promise<FabricRoll> => {
+  return customFetch<FabricRoll>(getUpdateFabricRollUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateFabricRollBody),
+  });
+};
+
+export const getUpdateFabricRollMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateFabricRoll>>,
+    TError,
+    { id: number; data: BodyType<UpdateFabricRollBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateFabricRoll>>,
+  TError,
+  { id: number; data: BodyType<UpdateFabricRollBody> },
+  TContext
+> => {
+  const mutationKey = ["updateFabricRoll"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateFabricRoll>>,
+    { id: number; data: BodyType<UpdateFabricRollBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateFabricRoll(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateFabricRollMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateFabricRoll>>
+>;
+export type UpdateFabricRollMutationBody = BodyType<UpdateFabricRollBody>;
+export type UpdateFabricRollMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update fabric roll (admin only — safe fields)
+ */
+export const useUpdateFabricRoll = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateFabricRoll>>,
+    TError,
+    { id: number; data: BodyType<UpdateFabricRollBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateFabricRoll>>,
+  TError,
+  { id: number; data: BodyType<UpdateFabricRollBody> },
+  TContext
+> => {
+  return useMutation(getUpdateFabricRollMutationOptions(options));
+};
+
+/**
  * @summary List all cutting batches
  */
 export const getListCuttingBatchesUrl = () => {
@@ -2500,6 +2593,93 @@ export function useGetCuttingBatch<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Update cutting batch (admin only — safe fields)
+ */
+export const getUpdateCuttingBatchUrl = (id: number) => {
+  return `/api/cutting/batches/${id}`;
+};
+
+export const updateCuttingBatch = async (
+  id: number,
+  updateCuttingBatchBody: UpdateCuttingBatchBody,
+  options?: RequestInit,
+): Promise<CuttingBatch> => {
+  return customFetch<CuttingBatch>(getUpdateCuttingBatchUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateCuttingBatchBody),
+  });
+};
+
+export const getUpdateCuttingBatchMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateCuttingBatch>>,
+    TError,
+    { id: number; data: BodyType<UpdateCuttingBatchBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateCuttingBatch>>,
+  TError,
+  { id: number; data: BodyType<UpdateCuttingBatchBody> },
+  TContext
+> => {
+  const mutationKey = ["updateCuttingBatch"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateCuttingBatch>>,
+    { id: number; data: BodyType<UpdateCuttingBatchBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateCuttingBatch(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateCuttingBatchMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateCuttingBatch>>
+>;
+export type UpdateCuttingBatchMutationBody = BodyType<UpdateCuttingBatchBody>;
+export type UpdateCuttingBatchMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update cutting batch (admin only — safe fields)
+ */
+export const useUpdateCuttingBatch = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateCuttingBatch>>,
+    TError,
+    { id: number; data: BodyType<UpdateCuttingBatchBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateCuttingBatch>>,
+  TError,
+  { id: number; data: BodyType<UpdateCuttingBatchBody> },
+  TContext
+> => {
+  return useMutation(getUpdateCuttingBatchMutationOptions(options));
+};
 
 /**
  * @summary List all allocations
@@ -2750,6 +2930,93 @@ export function useGetAllocation<
 }
 
 /**
+ * @summary Update allocation (admin only — safe fields)
+ */
+export const getUpdateAllocationUrl = (id: number) => {
+  return `/api/allocation/${id}`;
+};
+
+export const updateAllocation = async (
+  id: number,
+  updateAllocationBody: UpdateAllocationBody,
+  options?: RequestInit,
+): Promise<Allocation> => {
+  return customFetch<Allocation>(getUpdateAllocationUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateAllocationBody),
+  });
+};
+
+export const getUpdateAllocationMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAllocation>>,
+    TError,
+    { id: number; data: BodyType<UpdateAllocationBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateAllocation>>,
+  TError,
+  { id: number; data: BodyType<UpdateAllocationBody> },
+  TContext
+> => {
+  const mutationKey = ["updateAllocation"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateAllocation>>,
+    { id: number; data: BodyType<UpdateAllocationBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateAllocation(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateAllocationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateAllocation>>
+>;
+export type UpdateAllocationMutationBody = BodyType<UpdateAllocationBody>;
+export type UpdateAllocationMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update allocation (admin only — safe fields)
+ */
+export const useUpdateAllocation = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAllocation>>,
+    TError,
+    { id: number; data: BodyType<UpdateAllocationBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateAllocation>>,
+  TError,
+  { id: number; data: BodyType<UpdateAllocationBody> },
+  TContext
+> => {
+  return useMutation(getUpdateAllocationMutationOptions(options));
+};
+
+/**
  * @summary List all receivings from stitchers
  */
 export const getListReceivingsUrl = () => {
@@ -2908,6 +3175,93 @@ export const useCreateReceiving = <
   TContext
 > => {
   return useMutation(getCreateReceivingMutationOptions(options));
+};
+
+/**
+ * @summary Update receiving record (admin only — safe fields)
+ */
+export const getUpdateReceivingUrl = (id: number) => {
+  return `/api/receiving/${id}`;
+};
+
+export const updateReceiving = async (
+  id: number,
+  updateReceivingBody: UpdateReceivingBody,
+  options?: RequestInit,
+): Promise<Receiving> => {
+  return customFetch<Receiving>(getUpdateReceivingUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateReceivingBody),
+  });
+};
+
+export const getUpdateReceivingMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateReceiving>>,
+    TError,
+    { id: number; data: BodyType<UpdateReceivingBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateReceiving>>,
+  TError,
+  { id: number; data: BodyType<UpdateReceivingBody> },
+  TContext
+> => {
+  const mutationKey = ["updateReceiving"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateReceiving>>,
+    { id: number; data: BodyType<UpdateReceivingBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateReceiving(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateReceivingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateReceiving>>
+>;
+export type UpdateReceivingMutationBody = BodyType<UpdateReceivingBody>;
+export type UpdateReceivingMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update receiving record (admin only — safe fields)
+ */
+export const useUpdateReceiving = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateReceiving>>,
+    TError,
+    { id: number; data: BodyType<UpdateReceivingBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateReceiving>>,
+  TError,
+  { id: number; data: BodyType<UpdateReceivingBody> },
+  TContext
+> => {
+  return useMutation(getUpdateReceivingMutationOptions(options));
 };
 
 /**
@@ -3070,6 +3424,94 @@ export const useCreateFinishingRecord = <
   TContext
 > => {
   return useMutation(getCreateFinishingRecordMutationOptions(options));
+};
+
+/**
+ * @summary Update finishing record (admin only — safe fields)
+ */
+export const getUpdateFinishingRecordUrl = (id: number) => {
+  return `/api/finishing/${id}`;
+};
+
+export const updateFinishingRecord = async (
+  id: number,
+  updateFinishingRecordBody: UpdateFinishingRecordBody,
+  options?: RequestInit,
+): Promise<FinishingRecord> => {
+  return customFetch<FinishingRecord>(getUpdateFinishingRecordUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateFinishingRecordBody),
+  });
+};
+
+export const getUpdateFinishingRecordMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateFinishingRecord>>,
+    TError,
+    { id: number; data: BodyType<UpdateFinishingRecordBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateFinishingRecord>>,
+  TError,
+  { id: number; data: BodyType<UpdateFinishingRecordBody> },
+  TContext
+> => {
+  const mutationKey = ["updateFinishingRecord"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateFinishingRecord>>,
+    { id: number; data: BodyType<UpdateFinishingRecordBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateFinishingRecord(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateFinishingRecordMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateFinishingRecord>>
+>;
+export type UpdateFinishingRecordMutationBody =
+  BodyType<UpdateFinishingRecordBody>;
+export type UpdateFinishingRecordMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update finishing record (admin only — safe fields)
+ */
+export const useUpdateFinishingRecord = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateFinishingRecord>>,
+    TError,
+    { id: number; data: BodyType<UpdateFinishingRecordBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateFinishingRecord>>,
+  TError,
+  { id: number; data: BodyType<UpdateFinishingRecordBody> },
+  TContext
+> => {
+  return useMutation(getUpdateFinishingRecordMutationOptions(options));
 };
 
 /**
@@ -3321,6 +3763,94 @@ export const useCreateFinishedGoodsEntry = <
   TContext
 > => {
   return useMutation(getCreateFinishedGoodsEntryMutationOptions(options));
+};
+
+/**
+ * @summary Update finished goods entry (admin only — safe fields)
+ */
+export const getUpdateFinishedGoodsEntryUrl = (id: number) => {
+  return `/api/finished-goods/${id}`;
+};
+
+export const updateFinishedGoodsEntry = async (
+  id: number,
+  updateFinishedGoodsBody: UpdateFinishedGoodsBody,
+  options?: RequestInit,
+): Promise<FinishedGoodsEntry> => {
+  return customFetch<FinishedGoodsEntry>(getUpdateFinishedGoodsEntryUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateFinishedGoodsBody),
+  });
+};
+
+export const getUpdateFinishedGoodsEntryMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateFinishedGoodsEntry>>,
+    TError,
+    { id: number; data: BodyType<UpdateFinishedGoodsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateFinishedGoodsEntry>>,
+  TError,
+  { id: number; data: BodyType<UpdateFinishedGoodsBody> },
+  TContext
+> => {
+  const mutationKey = ["updateFinishedGoodsEntry"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateFinishedGoodsEntry>>,
+    { id: number; data: BodyType<UpdateFinishedGoodsBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateFinishedGoodsEntry(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateFinishedGoodsEntryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateFinishedGoodsEntry>>
+>;
+export type UpdateFinishedGoodsEntryMutationBody =
+  BodyType<UpdateFinishedGoodsBody>;
+export type UpdateFinishedGoodsEntryMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update finished goods entry (admin only — safe fields)
+ */
+export const useUpdateFinishedGoodsEntry = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateFinishedGoodsEntry>>,
+    TError,
+    { id: number; data: BodyType<UpdateFinishedGoodsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateFinishedGoodsEntry>>,
+  TError,
+  { id: number; data: BodyType<UpdateFinishedGoodsBody> },
+  TContext
+> => {
+  return useMutation(getUpdateFinishedGoodsEntryMutationOptions(options));
 };
 
 /**

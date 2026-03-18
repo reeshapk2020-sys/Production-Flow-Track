@@ -4,15 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Loader2, Inbox, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Plus, Loader2, Inbox, AlertCircle, CheckCircle2, Pencil } from "lucide-react";
 import {
   useListReceivings, useCreateReceiving, getListReceivingsQueryKey,
-  useListAllocations, getListAllocationsQueryKey
+  useListAllocations, getListAllocationsQueryKey, useUpdateReceiving
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fmtCode } from "@/lib/utils";
+import { useAppAuth } from "@/lib/auth-context";
 
 function BatchStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
@@ -38,12 +39,17 @@ export default function ReceivingPage() {
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAppAuth();
+  const isAdmin = user?.role === "admin";
+
   const [open, setOpen] = useState(false);
   const [selectedAllocationId, setSelectedAllocationId] = useState<number | null>(null);
   const [qtyReceived, setQtyReceived] = useState(0);
   const [qtyRejected, setQtyRejected] = useState(0);
   const [qtyDamaged, setQtyDamaged] = useState(0);
   const [formError, setFormError] = useState("");
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<any>(null);
 
   const { mutate, isPending } = useCreateReceiving({
     mutation: {
@@ -60,6 +66,20 @@ export default function ReceivingPage() {
     }
   });
 
+  const { mutate: updateReceiving, isPending: isUpdating } = useUpdateReceiving({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListReceivingsQueryKey() });
+        setEditOpen(false);
+        setEditTarget(null);
+        toast({ title: "Receipt updated" });
+      },
+      onError: (e: any) => {
+        toast({ title: "Error", description: e?.response?.data?.error || "Update failed", variant: "destructive" });
+      }
+    }
+  });
+
   function resetForm() {
     setSelectedAllocationId(null);
     setQtyReceived(0);
@@ -68,14 +88,12 @@ export default function ReceivingPage() {
     setFormError("");
   }
 
-  // The selected allocation's details
   const selectedAlloc = allocations?.find(a => a.id === selectedAllocationId) ?? null;
   const pendingQty = selectedAlloc
     ? (selectedAlloc.quantityPending ?? selectedAlloc.quantityIssued - (selectedAlloc.quantityReceived || 0) - (selectedAlloc.quantityRejected || 0))
     : 0;
   const thisEntryTotal = qtyReceived + qtyRejected + qtyDamaged;
 
-  // Real-time validation feedback
   useEffect(() => {
     if (!selectedAlloc) { setFormError(""); return; }
     if (thisEntryTotal <= 0) { setFormError(""); return; }
@@ -102,7 +120,19 @@ export default function ReceivingPage() {
     });
   };
 
-  // Show allocations that still have pending quantity
+  const onEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editTarget) return;
+    const fd = new FormData(e.currentTarget);
+    updateReceiving({
+      id: editTarget.id,
+      data: {
+        receiveDate: fd.get("receiveDate") as string,
+        remarks: fd.get("remarks") as string || undefined,
+      }
+    });
+  };
+
   const pendingAllocations = allocations?.filter(a => {
     const p = a.quantityPending ?? (a.quantityIssued - (a.quantityReceived || 0) - (a.quantityRejected || 0));
     return p > 0;
@@ -160,7 +190,6 @@ export default function ReceivingPage() {
                   )}
                 </div>
 
-                {/* Live pending info when allocation selected */}
                 {selectedAlloc && (
                   <div className="bg-slate-50 rounded-xl border border-slate-100 px-4 py-3 grid grid-cols-3 gap-2 text-center">
                     <div>
@@ -228,7 +257,6 @@ export default function ReceivingPage() {
                   </div>
                 </div>
 
-                {/* Live totals row */}
                 {selectedAlloc && thisEntryTotal > 0 && (
                   <div className={`rounded-xl px-4 py-2.5 border text-sm flex items-center gap-2 ${formError ? "bg-red-50 border-red-200 text-red-700" : "bg-emerald-50 border-emerald-200 text-emerald-700"}`}>
                     {formError ? <AlertCircle className="h-4 w-4 shrink-0" /> : <CheckCircle2 className="h-4 w-4 shrink-0" />}
@@ -265,11 +293,12 @@ export default function ReceivingPage() {
                 <TableHead className="text-right">Good Rcvd</TableHead>
                 <TableHead className="text-right">Rej / Dmg</TableHead>
                 <TableHead>Receive Date</TableHead>
+                {isAdmin && <TableHead className="w-16"></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
               ) : (
                 data?.map(rec => (
                   <TableRow key={rec.id} className="group hover:bg-slate-50/50">
@@ -298,16 +327,58 @@ export default function ReceivingPage() {
                     <TableCell className="text-slate-600 text-sm">
                       {rec.receiveDate ? format(new Date(rec.receiveDate), 'MMM d, yyyy') : '-'}
                     </TableCell>
+                    {isAdmin && (
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => { setEditTarget(rec); setEditOpen(true); }}
+                        >
+                          <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}
               {!isLoading && data?.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center py-12 text-slate-500">No receivings logged yet.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-12 text-slate-500">No receivings logged yet.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={(v) => { setEditOpen(v); if (!v) setEditTarget(null); }}>
+        <DialogContent className="sm:max-w-[400px] rounded-2xl p-6 border-0 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-display">Edit Receipt</DialogTitle>
+          </DialogHeader>
+          {editTarget && (
+            <form onSubmit={onEditSubmit} className="grid grid-cols-1 gap-4 pt-4">
+              <div className="bg-slate-50 rounded-xl p-3 text-sm text-slate-600">
+                <div className="font-semibold text-slate-800">{editTarget.batchNumber}</div>
+                <div className="text-xs text-slate-500 mt-0.5">{editTarget.stitcherName} · {editTarget.quantityReceived} pcs received</div>
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1.5">Receive Date</label>
+                <input type="date" name="receiveDate" className="form-input-styled" required defaultValue={editTarget.receiveDate?.split('T')[0] || ""} />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1.5">Remarks</label>
+                <input name="remarks" className="form-input-styled" defaultValue={editTarget.remarks || ""} placeholder="Quality notes..." />
+              </div>
+              <div className="mt-2">
+                <Button type="submit" disabled={isUpdating} className="w-full h-11 rounded-xl">
+                  {isUpdating ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

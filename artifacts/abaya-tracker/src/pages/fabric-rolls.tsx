@@ -4,15 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Loader2, Layers } from "lucide-react";
+import { Plus, Loader2, Layers, Pencil } from "lucide-react";
 import { 
   useListFabricRolls, useCreateFabricRoll, getListFabricRollsQueryKey,
-  useListFabrics, useListColors
+  useListFabrics, useListColors, useUpdateFabricRoll
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { useAppAuth } from "@/lib/auth-context";
 
 export default function FabricRollsPage() {
   const { data, isLoading } = useListFabricRolls();
@@ -21,7 +22,12 @@ export default function FabricRollsPage() {
   
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAppAuth();
+  const isAdmin = user?.role === "admin";
+
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<any>(null);
 
   const { mutate, isPending } = useCreateFabricRoll({
     mutation: {
@@ -29,6 +35,20 @@ export default function FabricRollsPage() {
         queryClient.invalidateQueries({ queryKey: getListFabricRollsQueryKey() });
         setOpen(false);
         toast({ title: "Fabric roll added to inventory" });
+      }
+    }
+  });
+
+  const { mutate: updateRoll, isPending: isUpdating } = useUpdateFabricRoll({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListFabricRollsQueryKey() });
+        setEditOpen(false);
+        setEditTarget(null);
+        toast({ title: "Fabric roll updated" });
+      },
+      onError: (e: any) => {
+        toast({ title: "Error", description: e?.response?.data?.error || "Update failed", variant: "destructive" });
       }
     }
   });
@@ -46,6 +66,21 @@ export default function FabricRollsPage() {
       receivedDate: fd.get("receivedDate") as string,
       remarks: fd.get("remarks") as string
     } });
+  };
+
+  const onEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editTarget) return;
+    const fd = new FormData(e.currentTarget);
+    updateRoll({
+      id: editTarget.id,
+      data: {
+        rollNumber: fd.get("rollNumber") as string,
+        supplier: fd.get("supplier") as string || undefined,
+        receivedDate: fd.get("receivedDate") as string,
+        remarks: fd.get("remarks") as string || undefined,
+      }
+    });
   };
 
   return (
@@ -136,12 +171,12 @@ export default function FabricRollsPage() {
                 <TableHead className="text-right">Available Qty</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
+                {isAdmin && <TableHead className="w-16"></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow> :
+              {isLoading ? <TableRow><TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow> :
                 data?.map(roll => {
-                  const usagePct = ((roll.totalQuantity - roll.availableQuantity) / roll.totalQuantity) * 100;
                   return (
                     <TableRow key={roll.id} className="group">
                       <TableCell className="font-mono text-slate-700 font-medium">{roll.rollNumber}</TableCell>
@@ -162,17 +197,63 @@ export default function FabricRollsPage() {
                       <TableCell className="text-slate-500 text-sm">
                         {roll.receivedDate ? format(new Date(roll.receivedDate), 'MMM d, yyyy') : '-'}
                       </TableCell>
+                      {isAdmin && (
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => { setEditTarget(roll); setEditOpen(true); }}
+                          >
+                            <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })
               }
               {data?.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center py-12 text-slate-500">No fabric rolls found. Add one to start.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-12 text-slate-500">No fabric rolls found. Add one to start.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={(v) => { setEditOpen(v); if (!v) setEditTarget(null); }}>
+        <DialogContent className="sm:max-w-[460px] rounded-2xl p-6 border-0 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-display">Edit Fabric Roll</DialogTitle>
+          </DialogHeader>
+          {editTarget && (
+            <form onSubmit={onEditSubmit} className="grid grid-cols-2 gap-4 pt-4">
+              <div className="col-span-2">
+                <label className="text-sm font-medium block mb-1.5">Roll Number</label>
+                <input name="rollNumber" className="form-input-styled font-mono" required defaultValue={editTarget.rollNumber} />
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-sm font-medium block mb-1.5">Supplier</label>
+                <input name="supplier" className="form-input-styled" defaultValue={editTarget.supplier || ""} placeholder="Supplier Name" />
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-sm font-medium block mb-1.5">Received Date</label>
+                <input type="date" name="receivedDate" className="form-input-styled" required defaultValue={editTarget.receivedDate?.split('T')[0] || ""} />
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-medium block mb-1.5">Remarks</label>
+                <input name="remarks" className="form-input-styled" defaultValue={editTarget.remarks || ""} placeholder="Notes..." />
+              </div>
+              <div className="col-span-2 mt-2">
+                <Button type="submit" disabled={isUpdating} className="w-full h-11 rounded-xl">
+                  {isUpdating ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

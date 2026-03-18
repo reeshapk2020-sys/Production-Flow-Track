@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import { db } from "@workspace/db";
 import {
   finishedGoodsTable,
@@ -10,6 +10,14 @@ import {
 } from "@workspace/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { logAudit } from "../lib/audit.js";
+
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.isAuthenticated() || req.user?.role !== "admin") {
+    res.status(403).json({ error: "Admin access required." });
+    return;
+  }
+  next();
+}
 
 const router: IRouter = Router();
 
@@ -153,6 +161,22 @@ router.get("/finished-goods/stock", async (_req, res) => {
     .groupBy(productsTable.id, productsTable.code, productsTable.name, sizesTable.id, sizesTable.name, colorsTable.id, colorsTable.code, colorsTable.name)
     .orderBy(productsTable.name);
   res.json(rows);
+});
+
+router.put("/finished-goods/:id", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { entryDate, remarks } = req.body;
+  const [row] = await db
+    .update(finishedGoodsTable)
+    .set({
+      entryDate: entryDate ? new Date(entryDate) : undefined,
+      remarks: remarks !== undefined ? remarks : undefined,
+    })
+    .where(eq(finishedGoodsTable.id, id))
+    .returning();
+  if (!row) return res.status(404).json({ error: "Finished goods entry not found." });
+  await logAudit(req, "UPDATE", "finished_goods", String(id), `Updated finished goods entry #${id}`);
+  res.json(row);
 });
 
 export default router;

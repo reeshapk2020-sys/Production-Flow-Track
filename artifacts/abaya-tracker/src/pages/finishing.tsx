@@ -4,18 +4,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertCircle, Info, Plus, Loader2, Settings2 } from "lucide-react";
+import { AlertCircle, Info, Plus, Loader2, Settings2, Pencil } from "lucide-react";
 import {
   useListFinishingRecords,
   useCreateFinishingRecord,
   useGetFinishingBatchInfo,
   getListFinishingRecordsQueryKey,
   useListCuttingBatches,
+  useUpdateFinishingRecord,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fmtCode } from "@/lib/utils";
+import { useAppAuth } from "@/lib/auth-context";
 
 export default function FinishingPage() {
   return (
@@ -31,12 +33,16 @@ function FinishingView() {
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [open, setOpen] = useState(false);
+  const { user } = useAppAuth();
+  const isAdmin = user?.role === "admin";
 
+  const [open, setOpen] = useState(false);
   const [selectedBatchId, setSelectedBatchId] = useState<number | null>(null);
   const [inputQty, setInputQty] = useState("");
   const [outputQty, setOutputQty] = useState("");
   const [defectiveQty, setDefectiveQty] = useState("0");
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<any>(null);
 
   const { data: batchInfo, isLoading: loadingInfo } = useGetFinishingBatchInfo(
     selectedBatchId!,
@@ -83,6 +89,20 @@ function FinishingView() {
     },
   });
 
+  const { mutate: updateRecord, isPending: isUpdating } = useUpdateFinishingRecord({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListFinishingRecordsQueryKey() });
+        setEditOpen(false);
+        setEditTarget(null);
+        toast({ title: "Finishing record updated" });
+      },
+      onError: (e: any) => {
+        toast({ title: "Error", description: e?.response?.data?.error || "Update failed", variant: "destructive" });
+      }
+    }
+  });
+
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (qtyError || !selectedBatchId) return;
@@ -97,6 +117,20 @@ function FinishingView() {
         processDate: fd.get("processDate") as string,
         remarks: fd.get("remarks") as string,
       },
+    });
+  };
+
+  const onEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editTarget) return;
+    const fd = new FormData(e.currentTarget);
+    updateRecord({
+      id: editTarget.id,
+      data: {
+        operator: fd.get("operator") as string || undefined,
+        processDate: fd.get("processDate") as string,
+        remarks: fd.get("remarks") as string || undefined,
+      }
     });
   };
 
@@ -122,7 +156,6 @@ function FinishingView() {
             </DialogHeader>
             <form onSubmit={onSubmit} className="grid grid-cols-1 gap-4 pt-4">
 
-              {/* Batch Selector */}
               <div>
                 <label className="text-sm font-medium block mb-1.5">Batch</label>
                 <select
@@ -146,7 +179,6 @@ function FinishingView() {
                 </select>
               </div>
 
-              {/* Availability Panel */}
               {selectedBatchId && (
                 <div className={`rounded-lg border px-4 py-3 text-sm ${
                   loadingInfo
@@ -163,9 +195,7 @@ function FinishingView() {
                     <div className="flex items-start gap-2">
                       <Info className={`h-4 w-4 mt-0.5 shrink-0 ${available === 0 ? "text-red-500" : "text-emerald-600"}`} />
                       <div className="space-y-0.5">
-                        <div className="font-medium text-slate-700">
-                          Availability from Receiving
-                        </div>
+                        <div className="font-medium text-slate-700">Availability from Receiving</div>
                         <div className="text-slate-600">
                           Total Received: <strong>{batchInfo?.totalReceived ?? 0}</strong> pcs &nbsp;|&nbsp;
                           Already Finished: <strong>{batchInfo?.totalFinishingOutput ?? 0}</strong> pcs &nbsp;|&nbsp;
@@ -179,7 +209,6 @@ function FinishingView() {
                 </div>
               )}
 
-              {/* Quantities */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium block mb-1.5">
@@ -209,7 +238,6 @@ function FinishingView() {
                 </div>
               </div>
 
-              {/* Error Banner */}
               {qtyError && (
                 <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                   <AlertCircle className="h-4 w-4 shrink-0" />
@@ -271,18 +299,19 @@ function FinishingView() {
               <TableHead className="text-right text-slate-400">Pending</TableHead>
               <TableHead>Operator</TableHead>
               <TableHead>Date</TableHead>
+              {isAdmin && <TableHead className="w-16"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-12">
+                <TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" />
                 </TableCell>
               </TableRow>
             ) : (
               data?.map((rec) => (
-                <TableRow key={rec.id} className="hover:bg-slate-50/50">
+                <TableRow key={rec.id} className="group hover:bg-slate-50/50">
                   <TableCell>
                     <div className="font-semibold text-primary">{rec.batchNumber}</div>
                     <div className="text-xs text-slate-500">{fmtCode(rec.productCode, rec.productName)}</div>
@@ -297,12 +326,24 @@ function FinishingView() {
                   <TableCell className="text-slate-600 text-sm">
                     {rec.processDate ? format(new Date(rec.processDate), "MMM d, yyyy") : "—"}
                   </TableCell>
+                  {isAdmin && (
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => { setEditTarget(rec); setEditOpen(true); }}
+                      >
+                        <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                      </Button>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}
             {!isLoading && data?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-12 text-slate-500">
+                <TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-12 text-slate-500">
                   No finishing records yet.
                 </TableCell>
               </TableRow>
@@ -310,6 +351,40 @@ function FinishingView() {
           </TableBody>
         </Table>
       </CardContent>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={(v) => { setEditOpen(v); if (!v) setEditTarget(null); }}>
+        <DialogContent className="sm:max-w-[420px] rounded-2xl p-6 border-0 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-display">Edit Finishing Record</DialogTitle>
+          </DialogHeader>
+          {editTarget && (
+            <form onSubmit={onEditSubmit} className="grid grid-cols-2 gap-4 pt-4">
+              <div className="col-span-2 bg-slate-50 rounded-xl p-3 text-sm text-slate-600">
+                <div className="font-semibold text-slate-800">{editTarget.batchNumber}</div>
+                <div className="text-xs text-slate-500 mt-0.5">Input: {editTarget.inputQuantity} · Output: {editTarget.outputQuantity}</div>
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-sm font-medium block mb-1.5">Operator / Team</label>
+                <input name="operator" className="form-input-styled" defaultValue={editTarget.operator || ""} placeholder="Name..." />
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-sm font-medium block mb-1.5">Process Date</label>
+                <input type="date" name="processDate" className="form-input-styled" required defaultValue={editTarget.processDate?.split('T')[0] || ""} />
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-medium block mb-1.5">Remarks</label>
+                <input name="remarks" className="form-input-styled" defaultValue={editTarget.remarks || ""} placeholder="Notes..." />
+              </div>
+              <div className="col-span-2 mt-2">
+                <Button type="submit" disabled={isUpdating} className="w-full h-11 rounded-xl">
+                  {isUpdating ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

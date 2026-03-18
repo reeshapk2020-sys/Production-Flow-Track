@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import { db } from "@workspace/db";
 import {
   fabricRollsTable,
@@ -7,6 +7,14 @@ import {
 } from "@workspace/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { logAudit } from "../lib/audit.js";
+
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.isAuthenticated() || req.user?.role !== "admin") {
+    res.status(403).json({ error: "Admin access required." });
+    return;
+  }
+  next();
+}
 
 const router: IRouter = Router();
 
@@ -94,6 +102,24 @@ router.get("/fabric-rolls/:id", async (req, res) => {
     .where(eq(fabricRollsTable.id, id));
 
   if (!row) return res.status(404).json({ error: "Not found" });
+  res.json(row);
+});
+
+router.put("/fabric-rolls/:id", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { rollNumber, supplier, receivedDate, remarks } = req.body;
+  const [row] = await db
+    .update(fabricRollsTable)
+    .set({
+      rollNumber: rollNumber ? String(rollNumber).trim() : undefined,
+      supplier: supplier !== undefined ? supplier : undefined,
+      receivedDate: receivedDate ? new Date(receivedDate) : undefined,
+      remarks: remarks !== undefined ? remarks : undefined,
+    })
+    .where(eq(fabricRollsTable.id, id))
+    .returning();
+  if (!row) return res.status(404).json({ error: "Fabric roll not found." });
+  await logAudit(req, "UPDATE", "fabric_rolls", String(id), `Updated fabric roll: ${rollNumber}`);
   res.json(row);
 });
 

@@ -4,15 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertCircle, Plus, Loader2, Scissors } from "lucide-react";
+import { AlertCircle, Plus, Loader2, Scissors, Pencil } from "lucide-react";
 import { 
   useListCuttingBatches, useCreateCuttingBatch, getListCuttingBatchesQueryKey,
-  useListProducts, useListSizes, useListColors, useListFabricRolls
+  useListProducts, useListSizes, useListColors, useListFabricRolls,
+  useUpdateCuttingBatch
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fmtCode } from "@/lib/utils";
+import { useAppAuth } from "@/lib/auth-context";
 
 function BatchStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
@@ -41,10 +43,14 @@ export default function CuttingPage() {
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAppAuth();
+  const isAdmin = user?.role === "admin";
+
   const [open, setOpen] = useState(false);
   const [batchNumber, setBatchNumber] = useState("");
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<any>(null);
 
-  // Client-side duplicate detection
   const existingNumbers = new Set(
     (data ?? []).map((b) => b.batchNumber?.trim().toLowerCase())
   );
@@ -67,14 +73,26 @@ export default function CuttingPage() {
     },
   });
 
+  const { mutate: updateBatch, isPending: isUpdating } = useUpdateCuttingBatch({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListCuttingBatchesQueryKey() });
+        setEditOpen(false);
+        setEditTarget(null);
+        toast({ title: "Cutting batch updated" });
+      },
+      onError: (e: any) => {
+        toast({ title: "Error", description: e?.response?.data?.error || "Update failed", variant: "destructive" });
+      }
+    }
+  });
+
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isDuplicate) return;
     const fd = new FormData(e.currentTarget);
-
     const fabricRollId = Number(fd.get("fabricRollId"));
     const quantityUsed = Number(fd.get("quantityUsed"));
-
     mutate({
       data: {
         batchNumber: batchNumber.trim(),
@@ -87,6 +105,20 @@ export default function CuttingPage() {
         remarks: fd.get("remarks") as string,
         fabricUsages: fabricRollId ? [{ fabricRollId, quantityUsed }] : [],
       },
+    });
+  };
+
+  const onEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editTarget) return;
+    const fd = new FormData(e.currentTarget);
+    updateBatch({
+      id: editTarget.id,
+      data: {
+        cutter: fd.get("cutter") as string || undefined,
+        cuttingDate: fd.get("cuttingDate") as string,
+        remarks: fd.get("remarks") as string || undefined,
+      }
     });
   };
 
@@ -114,8 +146,6 @@ export default function CuttingPage() {
                 <DialogTitle className="text-xl font-display">New Cutting Batch</DialogTitle>
               </DialogHeader>
               <form onSubmit={onSubmit} className="grid grid-cols-2 gap-5 pt-4">
-
-                {/* Batch Number — manually entered */}
                 <div className="col-span-2">
                   <label className="text-sm font-medium block mb-1.5">
                     Batch Number <span className="text-red-500">*</span>
@@ -137,7 +167,6 @@ export default function CuttingPage() {
                   )}
                 </div>
 
-                {/* Batch Setup */}
                 <div className="col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-4">
                   <h3 className="font-semibold text-slate-800 text-sm uppercase tracking-wider">Product Selection</h3>
                   <div className="grid grid-cols-2 gap-4">
@@ -165,7 +194,6 @@ export default function CuttingPage() {
                   </div>
                 </div>
 
-                {/* Fabric Usage */}
                 <div className="col-span-2 bg-blue-50/50 p-4 rounded-xl border border-blue-100 space-y-4">
                   <h3 className="font-semibold text-slate-800 text-sm uppercase tracking-wider">Fabric Consumption</h3>
                   <div className="grid grid-cols-3 gap-4">
@@ -185,7 +213,6 @@ export default function CuttingPage() {
                   </div>
                 </div>
 
-                {/* Production Info */}
                 <div className="col-span-2 sm:col-span-1">
                   <label className="text-sm font-medium block mb-1.5">Pieces Cut (Output)</label>
                   <input type="number" name="quantityCut" className="form-input-styled border-primary/30 bg-primary/5" required placeholder="0" />
@@ -227,10 +254,11 @@ export default function CuttingPage() {
                 <TableHead className="text-right">Available for Alloc.</TableHead>
                 <TableHead>Date & Cutter</TableHead>
                 <TableHead>Status</TableHead>
+                {isAdmin && <TableHead className="w-16"></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow> :
+              {isLoading ? <TableRow><TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow> :
                 data?.map(batch => (
                   <TableRow key={batch.id} className="group">
                     <TableCell className="font-mono text-primary font-bold">{batch.batchNumber}</TableCell>
@@ -254,16 +282,58 @@ export default function CuttingPage() {
                     <TableCell>
                       <BatchStatusBadge status={batch.status || "cutting"} />
                     </TableCell>
+                    {isAdmin && (
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => { setEditTarget(batch); setEditOpen(true); }}
+                        >
+                          <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               }
               {data?.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center py-12 text-slate-500">No cutting batches found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-12 text-slate-500">No cutting batches found.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={(v) => { setEditOpen(v); if (!v) setEditTarget(null); }}>
+        <DialogContent className="sm:max-w-[420px] rounded-2xl p-6 border-0 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-display">Edit Cutting Batch</DialogTitle>
+          </DialogHeader>
+          {editTarget && (
+            <form onSubmit={onEditSubmit} className="grid grid-cols-2 gap-4 pt-4">
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-sm font-medium block mb-1.5">Cutter Name</label>
+                <input name="cutter" className="form-input-styled" defaultValue={editTarget.cutter || ""} placeholder="Name..." />
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-sm font-medium block mb-1.5">Cutting Date</label>
+                <input type="date" name="cuttingDate" className="form-input-styled" required defaultValue={editTarget.cuttingDate?.split('T')[0] || ""} />
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-medium block mb-1.5">Remarks</label>
+                <input name="remarks" className="form-input-styled" defaultValue={editTarget.remarks || ""} placeholder="Notes..." />
+              </div>
+              <div className="col-span-2 mt-2">
+                <Button type="submit" disabled={isUpdating} className="w-full h-11 rounded-xl">
+                  {isUpdating ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

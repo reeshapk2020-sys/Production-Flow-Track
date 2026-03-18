@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import { db } from "@workspace/db";
 import {
   allocationsTable,
@@ -11,6 +11,14 @@ import {
 } from "@workspace/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { logAudit } from "../lib/audit.js";
+
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.isAuthenticated() || req.user?.role !== "admin") {
+    res.status(403).json({ error: "Admin access required." });
+    return;
+  }
+  next();
+}
 
 const router: IRouter = Router();
 
@@ -146,6 +154,22 @@ router.get("/allocation/:id", async (req, res) => {
 
   if (!row) return res.status(404).json({ error: "Not found" });
   res.json({ ...row, quantityPending: row.quantityIssued - row.quantityReceived - row.quantityRejected });
+});
+
+router.put("/allocation/:id", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { issueDate, remarks } = req.body;
+  const [row] = await db
+    .update(allocationsTable)
+    .set({
+      issueDate: issueDate ? new Date(issueDate) : undefined,
+      remarks: remarks !== undefined ? remarks : undefined,
+    })
+    .where(eq(allocationsTable.id, id))
+    .returning();
+  if (!row) return res.status(404).json({ error: "Allocation not found." });
+  await logAudit(req, "UPDATE", "allocations", String(id), `Updated allocation #${id}`);
+  res.json(row);
 });
 
 export default router;

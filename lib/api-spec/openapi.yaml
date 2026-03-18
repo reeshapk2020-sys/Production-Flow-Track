@@ -509,6 +509,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FabricRoll"
+    put:
+      operationId: updateFabricRoll
+      tags: [fabric-rolls]
+      summary: Update fabric roll (admin only — safe fields)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFabricRollBody"
+      responses:
+        "200":
+          description: Updated fabric roll
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FabricRoll"
 
   # CUTTING
   /cutting/batches:
@@ -561,6 +584,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CuttingBatchDetail"
+    put:
+      operationId: updateCuttingBatch
+      tags: [cutting]
+      summary: Update cutting batch (admin only — safe fields)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCuttingBatchBody"
+      responses:
+        "200":
+          description: Updated cutting batch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CuttingBatch"
 
   # ALLOCATION
   /allocation:
@@ -613,6 +659,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Allocation"
+    put:
+      operationId: updateAllocation
+      tags: [allocation]
+      summary: Update allocation (admin only — safe fields)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAllocationBody"
+      responses:
+        "200":
+          description: Updated allocation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Allocation"
 
   # RECEIVING
   /receiving:
@@ -647,6 +716,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/Receiving"
 
+  /receiving/{id}:
+    put:
+      operationId: updateReceiving
+      tags: [receiving]
+      summary: Update receiving record (admin only — safe fields)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateReceivingBody"
+      responses:
+        "200":
+          description: Updated receiving record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Receiving"
+
   # FINISHING
   /finishing:
     get:
@@ -675,6 +769,31 @@ paths:
       responses:
         "201":
           description: Created finishing record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinishingRecord"
+
+  /finishing/{id}:
+    put:
+      operationId: updateFinishingRecord
+      tags: [finishing]
+      summary: Update finishing record (admin only — safe fields)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFinishingRecordBody"
+      responses:
+        "200":
+          description: Updated finishing record
           content:
             application/json:
               schema:
@@ -727,6 +846,31 @@ paths:
       responses:
         "201":
           description: Created finished goods entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinishedGoodsEntry"
+
+  /finished-goods/{id}:
+    put:
+      operationId: updateFinishedGoodsEntry
+      tags: [finished-goods]
+      summary: Update finished goods entry (admin only — safe fields)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFinishedGoodsBody"
+      responses:
+        "200":
+          description: Updated finished goods entry
           content:
             application/json:
               schema:
@@ -1334,6 +1478,18 @@ components:
           type: string
       required: [rollNumber, fabricId, totalQuantity, unit, receivedDate]
 
+    UpdateFabricRollBody:
+      type: object
+      properties:
+        rollNumber:
+          type: string
+        supplier:
+          type: string
+        receivedDate:
+          type: string
+        remarks:
+          type: string
+
     # CUTTING
     CuttingBatch:
       type: object
@@ -1436,6 +1592,16 @@ components:
             required: [fabricRollId, quantityUsed]
       required: [batchNumber, productId, quantityCut, cuttingDate]
 
+    UpdateCuttingBatchBody:
+      type: object
+      properties:
+        cutter:
+          type: string
+        cuttingDate:
+          type: string
+        remarks:
+          type: string
+
     # ALLOCATION
     Allocation:
       type: object
@@ -1495,6 +1661,14 @@ components:
           type: string
       required: [cuttingBatchId, stitcherId, quantityIssued, issueDate]
 
+    UpdateAllocationBody:
+      type: object
+      properties:
+        issueDate:
+          type: string
+        remarks:
+          type: string
+
     # RECEIVING
     Receiving:
       type: object
@@ -1549,6 +1723,14 @@ components:
         remarks:
           type: string
       required: [allocationId, quantityReceived, receiveDate]
+
+    UpdateReceivingBody:
+      type: object
+      properties:
+        receiveDate:
+          type: string
+        remarks:
+          type: string
 
     # FINISHING
     FinishingRecord:
@@ -1607,6 +1789,16 @@ components:
         remarks:
           type: string
       required: [cuttingBatchId, inputQuantity, outputQuantity, processDate]
+
+    UpdateFinishingRecordBody:
+      type: object
+      properties:
+        operator:
+          type: string
+        processDate:
+          type: string
+        remarks:
+          type: string
 
     FinishingBatchInfo:
       type: object
@@ -1686,6 +1878,14 @@ components:
         remarks:
           type: string
       required: [cuttingBatchId, quantity, entryDate]
+
+    UpdateFinishedGoodsBody:
+      type: object
+      properties:
+        entryDate:
+          type: string
+        remarks:
+          type: string
 
     StockSummary:
       type: object

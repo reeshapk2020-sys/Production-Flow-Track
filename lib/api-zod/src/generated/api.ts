@@ -385,6 +385,37 @@ export const GetFabricRollResponse = zod.object({
 });
 
 /**
+ * @summary Update fabric roll (admin only — safe fields)
+ */
+export const UpdateFabricRollParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateFabricRollBody = zod.object({
+  rollNumber: zod.string().optional(),
+  supplier: zod.string().optional(),
+  receivedDate: zod.string().optional(),
+  remarks: zod.string().optional(),
+});
+
+export const UpdateFabricRollResponse = zod.object({
+  id: zod.number(),
+  rollNumber: zod.string(),
+  fabricId: zod.number().optional(),
+  fabricName: zod.string().optional(),
+  colorId: zod.number().optional(),
+  colorName: zod.string().optional(),
+  supplier: zod.string().optional(),
+  totalQuantity: zod.number(),
+  availableQuantity: zod.number(),
+  unit: zod.string().optional(),
+  costPerUnit: zod.number().optional(),
+  receivedDate: zod.string().optional(),
+  remarks: zod.string().optional(),
+  status: zod.string().optional(),
+});
+
+/**
  * @summary List all cutting batches
  */
 export const ListCuttingBatchesResponseItem = zod.object({
@@ -497,6 +528,40 @@ export const GetCuttingBatchResponse = zod.object({
 });
 
 /**
+ * @summary Update cutting batch (admin only — safe fields)
+ */
+export const UpdateCuttingBatchParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateCuttingBatchBody = zod.object({
+  cutter: zod.string().optional(),
+  cuttingDate: zod.string().optional(),
+  remarks: zod.string().optional(),
+});
+
+export const UpdateCuttingBatchResponse = zod.object({
+  id: zod.number(),
+  batchNumber: zod.string(),
+  productId: zod.number().optional(),
+  productCode: zod.string().optional(),
+  productName: zod.string().optional(),
+  sizeId: zod.number().optional(),
+  sizeName: zod.string().optional(),
+  colorId: zod.number().optional(),
+  colorCode: zod.string().optional(),
+  colorName: zod.string().optional(),
+  quantityCut: zod.number(),
+  availableForAllocation: zod.number().optional(),
+  totalAllocated: zod.number().optional(),
+  cutter: zod.string().optional(),
+  cuttingDate: zod.string().optional(),
+  remarks: zod.string().optional(),
+  status: zod.string().optional(),
+  createdAt: zod.string().optional(),
+});
+
+/**
  * @summary List all allocations
  */
 export const ListAllocationsResponseItem = zod.object({
@@ -563,6 +628,40 @@ export const GetAllocationResponse = zod.object({
 });
 
 /**
+ * @summary Update allocation (admin only — safe fields)
+ */
+export const UpdateAllocationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateAllocationBody = zod.object({
+  issueDate: zod.string().optional(),
+  remarks: zod.string().optional(),
+});
+
+export const UpdateAllocationResponse = zod.object({
+  id: zod.number(),
+  allocationNumber: zod.string().optional(),
+  cuttingBatchId: zod.number().optional(),
+  batchNumber: zod.string().optional(),
+  productCode: zod.string().optional(),
+  productName: zod.string().optional(),
+  sizeName: zod.string().optional(),
+  colorCode: zod.string().optional(),
+  colorName: zod.string().optional(),
+  stitcherId: zod.number().optional(),
+  stitcherName: zod.string().optional(),
+  teamName: zod.string().optional(),
+  quantityIssued: zod.number(),
+  quantityReceived: zod.number().optional(),
+  quantityPending: zod.number().optional(),
+  quantityRejected: zod.number().optional(),
+  issueDate: zod.string().optional(),
+  remarks: zod.string().optional(),
+  status: zod.string().optional(),
+});
+
+/**
  * @summary List all receivings from stitchers
  */
 export const ListReceivingsResponseItem = zod.object({
@@ -595,6 +694,37 @@ export const CreateReceivingBody = zod.object({
   quantityDamaged: zod.number().optional(),
   receiveDate: zod.string(),
   remarks: zod.string().optional(),
+});
+
+/**
+ * @summary Update receiving record (admin only — safe fields)
+ */
+export const UpdateReceivingParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateReceivingBody = zod.object({
+  receiveDate: zod.string().optional(),
+  remarks: zod.string().optional(),
+});
+
+export const UpdateReceivingResponse = zod.object({
+  id: zod.number(),
+  allocationId: zod.number(),
+  allocationNumber: zod.string().optional(),
+  stitcherName: zod.string().optional(),
+  batchNumber: zod.string().optional(),
+  productCode: zod.string().optional(),
+  productName: zod.string().optional(),
+  sizeName: zod.string().optional(),
+  colorCode: zod.string().optional(),
+  colorName: zod.string().optional(),
+  quantityReceived: zod.number(),
+  quantityRejected: zod.number().optional(),
+  quantityDamaged: zod.number().optional(),
+  receiveDate: zod.string(),
+  remarks: zod.string().optional(),
+  receivedBy: zod.string().optional(),
 });
 
 /**
@@ -632,6 +762,38 @@ export const CreateFinishingRecordBody = zod.object({
   defectiveQuantity: zod.number().optional(),
   operator: zod.string().optional(),
   processDate: zod.string(),
+  remarks: zod.string().optional(),
+});
+
+/**
+ * @summary Update finishing record (admin only — safe fields)
+ */
+export const UpdateFinishingRecordParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateFinishingRecordBody = zod.object({
+  operator: zod.string().optional(),
+  processDate: zod.string().optional(),
+  remarks: zod.string().optional(),
+});
+
+export const UpdateFinishingRecordResponse = zod.object({
+  id: zod.number(),
+  batchNumber: zod.string().optional(),
+  cuttingBatchId: zod.number().optional(),
+  stage: zod.enum(["pressing", "buttons", "hanger", "packing", "finishing"]),
+  productCode: zod.string().optional(),
+  productName: zod.string().optional(),
+  sizeName: zod.string().optional(),
+  colorCode: zod.string().optional(),
+  colorName: zod.string().optional(),
+  inputQuantity: zod.number(),
+  outputQuantity: zod.number(),
+  defectiveQuantity: zod.number().optional(),
+  pendingQuantity: zod.number().optional(),
+  operator: zod.string().optional(),
+  processDate: zod.string().optional(),
   remarks: zod.string().optional(),
 });
 
@@ -682,6 +844,36 @@ export const CreateFinishedGoodsEntryBody = zod.object({
   quantity: zod.number(),
   entryDate: zod.string(),
   remarks: zod.string().optional(),
+});
+
+/**
+ * @summary Update finished goods entry (admin only — safe fields)
+ */
+export const UpdateFinishedGoodsEntryParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateFinishedGoodsEntryBody = zod.object({
+  entryDate: zod.string().optional(),
+  remarks: zod.string().optional(),
+});
+
+export const UpdateFinishedGoodsEntryResponse = zod.object({
+  id: zod.number(),
+  cuttingBatchId: zod.number().optional(),
+  batchNumber: zod.string().optional(),
+  productId: zod.number().optional(),
+  productCode: zod.string().optional(),
+  productName: zod.string().optional(),
+  sizeId: zod.number().optional(),
+  sizeName: zod.string().optional(),
+  colorId: zod.number().optional(),
+  colorCode: zod.string().optional(),
+  colorName: zod.string().optional(),
+  quantity: zod.number(),
+  entryDate: zod.string(),
+  remarks: zod.string().optional(),
+  enteredBy: zod.string().optional(),
 });
 
 /**

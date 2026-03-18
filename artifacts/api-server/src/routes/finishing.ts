@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import { db } from "@workspace/db";
 import {
   finishingRecordsTable,
@@ -11,6 +11,14 @@ import {
 } from "@workspace/db/schema";
 import { eq, sql, inArray } from "drizzle-orm";
 import { logAudit } from "../lib/audit.js";
+
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.isAuthenticated() || req.user?.role !== "admin") {
+    res.status(403).json({ error: "Admin access required." });
+    return;
+  }
+  next();
+}
 
 const router: IRouter = Router();
 
@@ -179,6 +187,23 @@ router.post("/finishing", async (req, res) => {
     ...record,
     pendingQuantity: input - output - defective,
   });
+});
+
+router.put("/finishing/:id", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { operator, processDate, remarks } = req.body;
+  const [row] = await db
+    .update(finishingRecordsTable)
+    .set({
+      operator: operator !== undefined ? operator : undefined,
+      processDate: processDate ? new Date(processDate) : undefined,
+      remarks: remarks !== undefined ? remarks : undefined,
+    })
+    .where(eq(finishingRecordsTable.id, id))
+    .returning();
+  if (!row) return res.status(404).json({ error: "Finishing record not found." });
+  await logAudit(req, "UPDATE", "finishing_records", String(id), `Updated finishing record #${id}`);
+  res.json(row);
 });
 
 export default router;

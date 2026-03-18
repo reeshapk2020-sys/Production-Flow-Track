@@ -4,16 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Loader2, Send, Info } from "lucide-react";
+import { Plus, Loader2, Send, Info, Pencil } from "lucide-react";
 import {
   useListAllocations, useCreateAllocation, getListAllocationsQueryKey,
-  useListCuttingBatches, useListStitchers
+  useListCuttingBatches, useListStitchers, useUpdateAllocation
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { fmtCode } from "@/lib/utils";
+import { useAppAuth } from "@/lib/auth-context";
 
 type BatchStatus = string;
 
@@ -43,8 +44,13 @@ export default function AllocationPage() {
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAppAuth();
+  const isAdmin = user?.role === "admin";
+
   const [open, setOpen] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<any>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<any>(null);
 
   const { mutate, isPending } = useCreateAllocation({
     mutation: {
@@ -60,6 +66,20 @@ export default function AllocationPage() {
     }
   });
 
+  const { mutate: updateAllocation, isPending: isUpdating } = useUpdateAllocation({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListAllocationsQueryKey() });
+        setEditOpen(false);
+        setEditTarget(null);
+        toast({ title: "Allocation updated" });
+      },
+      onError: (e: any) => {
+        toast({ title: "Error", description: e?.response?.data?.error || "Update failed", variant: "destructive" });
+      }
+    }
+  });
+
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
@@ -70,6 +90,19 @@ export default function AllocationPage() {
         quantityIssued: Number(fd.get("quantityIssued")),
         issueDate: fd.get("issueDate") as string,
         remarks: fd.get("remarks") as string,
+      }
+    });
+  };
+
+  const onEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editTarget) return;
+    const fd = new FormData(e.currentTarget);
+    updateAllocation({
+      id: editTarget.id,
+      data: {
+        issueDate: fd.get("issueDate") as string,
+        remarks: fd.get("remarks") as string || undefined,
       }
     });
   };
@@ -192,11 +225,12 @@ export default function AllocationPage() {
                 <TableHead className="text-right">Pending</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Issue Date</TableHead>
+                {isAdmin && <TableHead className="w-16"></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={isAdmin ? 9 : 8} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
               ) : (
                 data?.map(alloc => {
                   const pending = alloc.quantityPending ?? (alloc.quantityIssued - (alloc.quantityReceived || 0) - (alloc.quantityRejected || 0));
@@ -233,17 +267,59 @@ export default function AllocationPage() {
                       <TableCell className="text-slate-600 text-sm">
                         {alloc.issueDate ? format(new Date(alloc.issueDate), 'MMM d, yyyy') : '-'}
                       </TableCell>
+                      {isAdmin && (
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => { setEditTarget(alloc); setEditOpen(true); }}
+                          >
+                            <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })
               )}
               {!isLoading && data?.length === 0 && (
-                <TableRow><TableCell colSpan={8} className="text-center py-12 text-slate-500">No allocations yet.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={isAdmin ? 9 : 8} className="text-center py-12 text-slate-500">No allocations yet.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={(v) => { setEditOpen(v); if (!v) setEditTarget(null); }}>
+        <DialogContent className="sm:max-w-[400px] rounded-2xl p-6 border-0 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-display">Edit Allocation</DialogTitle>
+          </DialogHeader>
+          {editTarget && (
+            <form onSubmit={onEditSubmit} className="grid grid-cols-1 gap-4 pt-4">
+              <div className="bg-slate-50 rounded-xl p-3 text-sm text-slate-600">
+                <div className="font-semibold text-slate-800">{editTarget.batchNumber}</div>
+                <div className="text-xs text-slate-500 mt-0.5">{editTarget.stitcherName} · {editTarget.quantityIssued} pcs issued</div>
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1.5">Issue Date</label>
+                <input type="date" name="issueDate" className="form-input-styled" required defaultValue={editTarget.issueDate?.split('T')[0] || ""} />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1.5">Remarks</label>
+                <input name="remarks" className="form-input-styled" defaultValue={editTarget.remarks || ""} placeholder="Instructions..." />
+              </div>
+              <div className="mt-2">
+                <Button type="submit" disabled={isUpdating} className="w-full h-11 rounded-xl">
+                  {isUpdating ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

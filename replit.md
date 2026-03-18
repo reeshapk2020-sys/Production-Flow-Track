@@ -109,8 +109,10 @@ lib/
 - Stitcher performance reports
 - Dashboard with today's production metrics
 - Audit log for all create/update operations
-- Role-based access control
+- Role-based access control with 7 levels
 - Secure login via Replit Auth
+- Admin-only edit access on all 6 operational modules (safe fields only — dates, operator names, remarks; quantities and foreign keys are never editable to protect inventory integrity)
+- Teams and Stitchers master data with code/isActive fields, admin-only edit dialogs
 
 ## Commands
 

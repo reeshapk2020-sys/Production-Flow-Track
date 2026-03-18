@@ -200,6 +200,13 @@ export interface CreateFabricRollBody {
   remarks?: string;
 }
 
+export interface UpdateFabricRollBody {
+  rollNumber?: string;
+  supplier?: string;
+  receivedDate?: string;
+  remarks?: string;
+}
+
 export interface CuttingBatch {
   id: number;
   batchNumber: string;
@@ -274,11 +281,22 @@ export interface CreateCuttingBatchBody {
   fabricUsages?: CreateCuttingBatchBodyFabricUsagesItem[];
 }
 
+export interface UpdateCuttingBatchBody {
+  cutter?: string;
+  cuttingDate?: string;
+  remarks?: string;
+}
+
 export interface CreateAllocationBody {
   cuttingBatchId: number;
   stitcherId: number;
   quantityIssued: number;
   issueDate: string;
+  remarks?: string;
+}
+
+export interface UpdateAllocationBody {
+  issueDate?: string;
   remarks?: string;
 }
 
@@ -307,6 +325,11 @@ export interface CreateReceivingBody {
   quantityRejected?: number;
   quantityDamaged?: number;
   receiveDate: string;
+  remarks?: string;
+}
+
+export interface UpdateReceivingBody {
+  receiveDate?: string;
   remarks?: string;
 }
 
@@ -350,6 +373,12 @@ export interface CreateFinishingRecordBody {
   remarks?: string;
 }
 
+export interface UpdateFinishingRecordBody {
+  operator?: string;
+  processDate?: string;
+  remarks?: string;
+}
+
 export interface FinishingBatchInfo {
   batchId: number;
   batchNumber?: string;
@@ -388,6 +417,11 @@ export interface CreateFinishedGoodsBody {
   cuttingBatchId: number;
   quantity: number;
   entryDate: string;
+  remarks?: string;
+}
+
+export interface UpdateFinishedGoodsBody {
+  entryDate?: string;
   remarks?: string;
 }
 
