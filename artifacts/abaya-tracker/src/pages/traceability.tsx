@@ -7,6 +7,7 @@ import { Search, Loader2, GitBranch, ArrowRight, CheckCircle2 } from "lucide-rea
 import { Badge } from "@/components/ui/badge";
 import { useSearchTraceability, useGetBatchTrace } from "@workspace/api-client-react";
 import { format } from "date-fns";
+import { fmtCode } from "@/lib/utils";
 
 export default function TraceabilityPage() {
   const [search, setSearch] = useState("");
@@ -91,7 +92,7 @@ function BatchTimeline({ batchNumber }: { batchNumber: string }) {
         <div className="relative z-10">
           <Badge className="bg-primary/20 text-blue-200 hover:bg-primary/20 border-primary/30 mb-4">{data.currentStage}</Badge>
           <h2 className="text-4xl font-mono font-bold tracking-tight mb-2">{data.batchNumber}</h2>
-          <p className="text-lg text-slate-300">{data.productName} • {data.sizeName || 'Any'} • {data.colorName || 'Any'}</p>
+          <p className="text-lg text-slate-300">{fmtCode(data.productCode, data.productName)} • {data.sizeName || 'Any'} • {fmtCode(data.colorCode, data.colorName) || 'Any'}</p>
         </div>
       </div>
       

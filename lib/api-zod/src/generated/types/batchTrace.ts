@@ -9,8 +9,10 @@ import type { TraceEvent } from "./traceEvent";
 
 export interface BatchTrace {
   batchNumber: string;
+  productCode?: string;
   productName?: string;
   sizeName?: string;
+  colorCode?: string;
   colorName?: string;
   currentStage: string;
   currentStatus?: string;

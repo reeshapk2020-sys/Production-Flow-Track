@@ -12,7 +12,11 @@ export interface Receiving {
   allocationNumber?: string;
   stitcherName?: string;
   batchNumber?: string;
+  productCode?: string;
   productName?: string;
+  sizeName?: string;
+  colorCode?: string;
+  colorName?: string;
   quantityReceived: number;
   quantityRejected?: number;
   quantityDamaged?: number;

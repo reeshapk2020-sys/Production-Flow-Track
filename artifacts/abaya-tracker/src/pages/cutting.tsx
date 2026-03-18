@@ -12,6 +12,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { fmtCode } from "@/lib/utils";
 
 function BatchStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
@@ -234,10 +235,10 @@ export default function CuttingPage() {
                   <TableRow key={batch.id} className="group">
                     <TableCell className="font-mono text-primary font-bold">{batch.batchNumber}</TableCell>
                     <TableCell>
-                      <div className="font-semibold text-slate-900">{batch.productName}</div>
+                      <div className="font-semibold text-slate-900">{fmtCode(batch.productCode, batch.productName)}</div>
                       <div className="text-xs text-slate-500 flex gap-2 mt-0.5">
                         {batch.sizeName && <span className="bg-slate-100 px-1.5 rounded">{batch.sizeName}</span>}
-                        {batch.colorName && <span className="bg-slate-100 px-1.5 rounded">{batch.colorName}</span>}
+                        {batch.colorName && <span className="bg-slate-100 px-1.5 rounded">{fmtCode(batch.colorCode, batch.colorName)}</span>}
                       </div>
                     </TableCell>
                     <TableCell className="text-right font-semibold text-lg">{batch.quantityCut}</TableCell>

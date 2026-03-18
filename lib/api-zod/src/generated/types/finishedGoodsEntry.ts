@@ -11,10 +11,12 @@ export interface FinishedGoodsEntry {
   cuttingBatchId?: number;
   batchNumber?: string;
   productId?: number;
+  productCode?: string;
   productName?: string;
   sizeId?: number;
   sizeName?: string;
   colorId?: number;
+  colorCode?: string;
   colorName?: string;
   quantity: number;
   entryDate: string;

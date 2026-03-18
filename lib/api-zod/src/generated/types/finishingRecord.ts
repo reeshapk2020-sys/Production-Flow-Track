@@ -12,8 +12,10 @@ export interface FinishingRecord {
   batchNumber?: string;
   cuttingBatchId?: number;
   stage: FinishingRecordStage;
+  productCode?: string;
   productName?: string;
   sizeName?: string;
+  colorCode?: string;
   colorName?: string;
   inputQuantity: number;
   outputQuantity: number;

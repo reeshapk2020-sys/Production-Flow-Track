@@ -1256,6 +1256,8 @@ components:
           type: string
         productId:
           type: integer
+        productCode:
+          type: string
         productName:
           type: string
         sizeId:
@@ -1264,6 +1266,8 @@ components:
           type: string
         colorId:
           type: integer
+        colorCode:
+          type: string
         colorName:
           type: string
         quantityCut:
@@ -1356,9 +1360,13 @@ components:
           type: integer
         batchNumber:
           type: string
+        productCode:
+          type: string
         productName:
           type: string
         sizeName:
+          type: string
+        colorCode:
           type: string
         colorName:
           type: string
@@ -1413,7 +1421,15 @@ components:
           type: string
         batchNumber:
           type: string
+        productCode:
+          type: string
         productName:
+          type: string
+        sizeName:
+          type: string
+        colorCode:
+          type: string
+        colorName:
           type: string
         quantityReceived:
           type: integer
@@ -1459,9 +1475,13 @@ components:
         stage:
           type: string
           enum: [pressing, buttons, hanger, packing, finishing]
+        productCode:
+          type: string
         productName:
           type: string
         sizeName:
+          type: string
+        colorCode:
           type: string
         colorName:
           type: string
@@ -1542,6 +1562,8 @@ components:
           type: string
         productId:
           type: integer
+        productCode:
+          type: string
         productName:
           type: string
         sizeId:
@@ -1550,6 +1572,8 @@ components:
           type: string
         colorId:
           type: integer
+        colorCode:
+          type: string
         colorName:
           type: string
         quantity:
@@ -1580,6 +1604,8 @@ components:
       properties:
         productId:
           type: integer
+        productCode:
+          type: string
         productName:
           type: string
         sizeId:
@@ -1588,6 +1614,8 @@ components:
           type: string
         colorId:
           type: integer
+        colorCode:
+          type: string
         colorName:
           type: string
         totalQuantity:
@@ -1758,6 +1786,8 @@ components:
       properties:
         batchNumber:
           type: string
+        productCode:
+          type: string
         productName:
           type: string
         stage:
@@ -1797,9 +1827,13 @@ components:
       properties:
         batchNumber:
           type: string
+        productCode:
+          type: string
         productName:
           type: string
         sizeName:
+          type: string
+        colorCode:
           type: string
         colorName:
           type: string

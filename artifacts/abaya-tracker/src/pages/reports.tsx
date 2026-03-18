@@ -7,6 +7,7 @@ import {
   useGetStitcherPerformanceReport, useGetStagePendingReport, useGetBatchStatusReport
 } from "@workspace/api-client-react";
 import { format } from "date-fns";
+import { fmtCode } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
 export default function ReportsPage() {
@@ -117,7 +118,7 @@ function BatchReport() {
             data?.map((row, i) => (
               <TableRow key={i}>
                 <TableCell className="font-mono text-primary font-medium">{row.batchNumber}</TableCell>
-                <TableCell>{row.productName}</TableCell>
+                <TableCell>{fmtCode(row.productCode, row.productName)}</TableCell>
                 <TableCell>{row.quantityCut}</TableCell>
                 <TableCell>{row.quantityAllocated}</TableCell>
                 <TableCell>{row.quantityReceived}</TableCell>

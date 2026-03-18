@@ -14,6 +14,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { fmtCode } from "@/lib/utils";
 
 export default function FinishedGoodsPage() {
   return (
@@ -58,9 +59,9 @@ function StockSummaryTab() {
             {isLoading ? <TableRow><TableCell colSpan={4} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-emerald-300" /></TableCell></TableRow> :
               data?.map((item, i) => (
                 <TableRow key={i} className="hover:bg-slate-50/50">
-                  <TableCell className="font-semibold text-slate-900">{item.productName}</TableCell>
+                  <TableCell className="font-semibold text-slate-900">{fmtCode(item.productCode, item.productName)}</TableCell>
                   <TableCell>{item.sizeName || 'Any'}</TableCell>
-                  <TableCell>{item.colorName || 'Any'}</TableCell>
+                  <TableCell>{fmtCode(item.colorCode, item.colorName) || 'Any'}</TableCell>
                   <TableCell className="text-right font-display text-2xl font-bold text-emerald-600">{item.totalQuantity}</TableCell>
                 </TableRow>
               ))
@@ -167,7 +168,7 @@ function EntryLogTab() {
                 >
                   <option value="">Select Batch...</option>
                   {batches?.map((b) => (
-                    <option key={b.id} value={b.id}>{b.batchNumber} — {b.productName}</option>
+                    <option key={b.id} value={b.id}>{b.batchNumber} — {fmtCode(b.productCode, b.productName)}</option>
                   ))}
                 </select>
               </div>
@@ -264,8 +265,8 @@ function EntryLogTab() {
                 <TableRow key={entry.id} className="hover:bg-slate-50/50">
                   <TableCell className="font-mono text-primary font-medium">{entry.batchNumber}</TableCell>
                   <TableCell>
-                    <div className="font-semibold text-slate-900">{entry.productName}</div>
-                    <div className="text-xs text-slate-500">{entry.sizeName} | {entry.colorName}</div>
+                    <div className="font-semibold text-slate-900">{fmtCode(entry.productCode, entry.productName)}</div>
+                    <div className="text-xs text-slate-500">{entry.sizeName} | {fmtCode(entry.colorCode, entry.colorName)}</div>
                   </TableCell>
                   <TableCell className="text-right font-bold text-emerald-600 text-lg">+{entry.quantity}</TableCell>
                   <TableCell className="text-slate-600 text-sm">{entry.entryDate ? format(new Date(entry.entryDate), 'MMM d, yyyy') : '-'}</TableCell>

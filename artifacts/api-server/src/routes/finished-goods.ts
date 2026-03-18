@@ -42,10 +42,12 @@ router.get("/finished-goods", async (_req, res) => {
       cuttingBatchId: finishedGoodsTable.cuttingBatchId,
       batchNumber: cuttingBatchesTable.batchNumber,
       productId: productsTable.id,
+      productCode: productsTable.code,
       productName: productsTable.name,
       sizeId: sizesTable.id,
       sizeName: sizesTable.name,
       colorId: colorsTable.id,
+      colorCode: colorsTable.code,
       colorName: colorsTable.name,
       quantity: finishedGoodsTable.quantity,
       entryDate: finishedGoodsTable.entryDate,
@@ -134,10 +136,12 @@ router.get("/finished-goods/stock", async (_req, res) => {
   const rows = await db
     .select({
       productId: productsTable.id,
+      productCode: productsTable.code,
       productName: productsTable.name,
       sizeId: sizesTable.id,
       sizeName: sizesTable.name,
       colorId: colorsTable.id,
+      colorCode: colorsTable.code,
       colorName: colorsTable.name,
       totalQuantity: sql<number>`SUM(${finishedGoodsTable.quantity})::int`,
     })
@@ -146,7 +150,7 @@ router.get("/finished-goods/stock", async (_req, res) => {
     .leftJoin(productsTable, eq(cuttingBatchesTable.productId, productsTable.id))
     .leftJoin(sizesTable, eq(cuttingBatchesTable.sizeId, sizesTable.id))
     .leftJoin(colorsTable, eq(cuttingBatchesTable.colorId, colorsTable.id))
-    .groupBy(productsTable.id, productsTable.name, sizesTable.id, sizesTable.name, colorsTable.id, colorsTable.name)
+    .groupBy(productsTable.id, productsTable.code, productsTable.name, sizesTable.id, sizesTable.name, colorsTable.id, colorsTable.code, colorsTable.name)
     .orderBy(productsTable.name);
   res.json(rows);
 });

@@ -12,6 +12,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { fmtCode } from "@/lib/utils";
 
 function BatchStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
@@ -275,7 +276,7 @@ export default function ReceivingPage() {
                     <TableCell>
                       <div className="font-semibold text-primary text-sm">{rec.batchNumber}</div>
                       <div className="text-xs text-slate-400 font-mono">{rec.allocationNumber}</div>
-                      <div className="text-xs text-slate-500">{rec.productName}</div>
+                      <div className="text-xs text-slate-500">{fmtCode(rec.productCode, rec.productName)}</div>
                     </TableCell>
                     <TableCell>
                       <div className="font-semibold text-slate-900 text-sm">{rec.stitcherName}</div>

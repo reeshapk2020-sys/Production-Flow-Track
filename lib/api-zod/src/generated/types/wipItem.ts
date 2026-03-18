@@ -8,6 +8,7 @@
 
 export interface WipItem {
   batchNumber: string;
+  productCode?: string;
   productName?: string;
   stage: string;
   quantity: number;

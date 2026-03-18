@@ -8,10 +8,12 @@
 
 export interface StockSummary {
   productId?: number;
+  productCode?: string;
   productName: string;
   sizeId?: number;
   sizeName?: string;
   colorId?: number;
+  colorCode?: string;
   colorName?: string;
   totalQuantity: number;
 }

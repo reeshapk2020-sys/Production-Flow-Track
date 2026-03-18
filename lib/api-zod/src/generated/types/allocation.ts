@@ -11,8 +11,10 @@ export interface Allocation {
   allocationNumber?: string;
   cuttingBatchId?: number;
   batchNumber?: string;
+  productCode?: string;
   productName?: string;
   sizeName?: string;
+  colorCode?: string;
   colorName?: string;
   stitcherId?: number;
   stitcherName?: string;

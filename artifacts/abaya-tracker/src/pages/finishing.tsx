@@ -15,6 +15,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { fmtCode } from "@/lib/utils";
 
 export default function FinishingPage() {
   return (
@@ -139,7 +140,7 @@ function FinishingView() {
                   <option value="">Select Batch...</option>
                   {batches?.map((b) => (
                     <option key={b.id} value={b.id}>
-                      {b.batchNumber} — {b.productName}
+                      {b.batchNumber} — {fmtCode(b.productCode, b.productName)}
                     </option>
                   ))}
                 </select>
@@ -284,7 +285,7 @@ function FinishingView() {
                 <TableRow key={rec.id} className="hover:bg-slate-50/50">
                   <TableCell>
                     <div className="font-semibold text-primary">{rec.batchNumber}</div>
-                    <div className="text-xs text-slate-500">{rec.productName}</div>
+                    <div className="text-xs text-slate-500">{fmtCode(rec.productCode, rec.productName)}</div>
                   </TableCell>
                   <TableCell className="text-right text-slate-500 font-medium">{rec.inputQuantity}</TableCell>
                   <TableCell className="text-right font-bold text-emerald-600 text-lg">{rec.outputQuantity}</TableCell>

@@ -93,8 +93,10 @@ router.get("/dashboard", async (_req, res) => {
     .select({
       id: cuttingBatchesTable.id,
       batchNumber: cuttingBatchesTable.batchNumber,
+      productCode: productsTable.code,
       productName: productsTable.name,
       sizeName: sizesTable.name,
+      colorCode: colorsTable.code,
       colorName: colorsTable.name,
       quantityCut: cuttingBatchesTable.quantityCut,
       availableForAllocation: cuttingBatchesTable.availableForAllocation,
@@ -263,6 +265,7 @@ router.get("/reports/wip", async (_req, res) => {
   const batches = await db
     .select({
       batchNumber: cuttingBatchesTable.batchNumber,
+      productCode: productsTable.code,
       productName: productsTable.name,
       status: cuttingBatchesTable.status,
       availableForAllocation: cuttingBatchesTable.availableForAllocation,
@@ -281,6 +284,7 @@ router.get("/reports/wip", async (_req, res) => {
         : 0;
       return {
         batchNumber: b.batchNumber,
+        productCode: b.productCode || null,
         productName: b.productName || "Unknown",
         stage: b.status || "cutting",
         quantity: b.availableForAllocation,

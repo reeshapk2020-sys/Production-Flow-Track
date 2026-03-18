@@ -184,10 +184,12 @@ export interface CuttingBatch {
   id: number;
   batchNumber: string;
   productId?: number;
+  productCode?: string;
   productName?: string;
   sizeId?: number;
   sizeName?: string;
   colorId?: number;
+  colorCode?: string;
   colorName?: string;
   quantityCut: number;
   availableForAllocation?: number;
@@ -211,8 +213,10 @@ export interface Allocation {
   allocationNumber?: string;
   cuttingBatchId?: number;
   batchNumber?: string;
+  productCode?: string;
   productName?: string;
   sizeName?: string;
+  colorCode?: string;
   colorName?: string;
   stitcherId?: number;
   stitcherName?: string;
@@ -264,7 +268,11 @@ export interface Receiving {
   allocationNumber?: string;
   stitcherName?: string;
   batchNumber?: string;
+  productCode?: string;
   productName?: string;
+  sizeName?: string;
+  colorCode?: string;
+  colorName?: string;
   quantityReceived: number;
   quantityRejected?: number;
   quantityDamaged?: number;
@@ -298,8 +306,10 @@ export interface FinishingRecord {
   batchNumber?: string;
   cuttingBatchId?: number;
   stage: FinishingRecordStage;
+  productCode?: string;
   productName?: string;
   sizeName?: string;
+  colorCode?: string;
   colorName?: string;
   inputQuantity: number;
   outputQuantity: number;
@@ -341,10 +351,12 @@ export interface FinishedGoodsEntry {
   cuttingBatchId?: number;
   batchNumber?: string;
   productId?: number;
+  productCode?: string;
   productName?: string;
   sizeId?: number;
   sizeName?: string;
   colorId?: number;
+  colorCode?: string;
   colorName?: string;
   quantity: number;
   entryDate: string;
@@ -361,10 +373,12 @@ export interface CreateFinishedGoodsBody {
 
 export interface StockSummary {
   productId?: number;
+  productCode?: string;
   productName: string;
   sizeId?: number;
   sizeName?: string;
   colorId?: number;
+  colorCode?: string;
   colorName?: string;
   totalQuantity: number;
 }
@@ -459,6 +473,7 @@ export interface BatchStatus {
 
 export interface WipItem {
   batchNumber: string;
+  productCode?: string;
   productName?: string;
   stage: string;
   quantity: number;
@@ -489,8 +504,10 @@ export interface TraceEvent {
 
 export interface BatchTrace {
   batchNumber: string;
+  productCode?: string;
   productName?: string;
   sizeName?: string;
+  colorCode?: string;
   colorName?: string;
   currentStage: string;
   currentStatus?: string;

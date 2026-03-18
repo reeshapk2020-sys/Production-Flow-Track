@@ -13,6 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { fmtCode } from "@/lib/utils";
 
 type BatchStatus = string;
 
@@ -112,7 +113,7 @@ export default function AllocationPage() {
                     <option value="">Select Batch...</option>
                     {availableBatches.map(b => (
                       <option key={b.id} value={b.id}>
-                        {b.batchNumber} — {b.productName} ({b.availableForAllocation} pcs available)
+                        {b.batchNumber} — {fmtCode(b.productCode, b.productName)} ({b.availableForAllocation} pcs available)
                       </option>
                     ))}
                   </select>
@@ -121,7 +122,7 @@ export default function AllocationPage() {
                       <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
                       <div className="text-xs text-blue-700 space-y-0.5">
                         <div><strong>Total Cut:</strong> {selectedBatch.totalCutQuantity} pcs &nbsp;|&nbsp; <strong>Available:</strong> {selectedBatch.availableForAllocation} pcs</div>
-                        {selectedBatch.sizeName && <div><strong>Size:</strong> {selectedBatch.sizeName} &nbsp;|&nbsp; <strong>Color:</strong> {selectedBatch.colorName}</div>}
+                        {selectedBatch.sizeName && <div><strong>Size:</strong> {selectedBatch.sizeName} &nbsp;|&nbsp; <strong>Color:</strong> {fmtCode(selectedBatch.colorCode, selectedBatch.colorName)}</div>}
                       </div>
                     </div>
                   )}
@@ -204,7 +205,7 @@ export default function AllocationPage() {
                       <TableCell className="font-mono text-xs text-slate-500 font-medium">{alloc.allocationNumber}</TableCell>
                       <TableCell>
                         <div className="font-semibold text-primary text-sm">{alloc.batchNumber}</div>
-                        <div className="text-xs text-slate-500">{alloc.productName}</div>
+                        <div className="text-xs text-slate-500">{fmtCode(alloc.productCode, alloc.productName)}</div>
                       </TableCell>
                       <TableCell>
                         <div className="font-semibold text-slate-900 text-sm">{alloc.stitcherName}</div>

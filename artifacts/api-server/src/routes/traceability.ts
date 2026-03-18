@@ -24,8 +24,10 @@ router.get("/traceability/batch/:batchNumber", async (req, res) => {
     .select({
       id: cuttingBatchesTable.id,
       batchNumber: cuttingBatchesTable.batchNumber,
+      productCode: productsTable.code,
       productName: productsTable.name,
       sizeName: sizesTable.name,
+      colorCode: colorsTable.code,
       colorName: colorsTable.name,
       quantityCut: cuttingBatchesTable.quantityCut,
       cutter: cuttingBatchesTable.cutter,
@@ -161,8 +163,10 @@ router.get("/traceability/batch/:batchNumber", async (req, res) => {
 
   res.json({
     batchNumber: batch.batchNumber,
+    productCode: batch.productCode || null,
     productName: batch.productName || "Unknown",
     sizeName: batch.sizeName || "-",
+    colorCode: batch.colorCode || null,
     colorName: batch.colorName || "-",
     currentStage: batch.status || "cutting",
     currentStatus: batch.status,
