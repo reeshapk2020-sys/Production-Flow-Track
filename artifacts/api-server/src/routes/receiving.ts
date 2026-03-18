@@ -111,7 +111,15 @@ async function updateBatchStatus(batchId: number) {
     .where(eq(cuttingBatchesTable.id, batchId));
 }
 
-router.get("/receiving", async (_req, res) => {
+function denyAllocationRole(req: any, res: any, next: any) {
+  const role = req.user?.role;
+  if (role === "allocation") {
+    return res.status(403).json({ error: "Allocation users cannot access receiving endpoints" });
+  }
+  next();
+}
+
+router.get("/receiving", denyAllocationRole, async (_req, res) => {
   const rows = await db
     .select({
       id: receivingsTable.id,
@@ -142,7 +150,7 @@ router.get("/receiving", async (_req, res) => {
   res.json(rows);
 });
 
-router.post("/receiving", async (req, res) => {
+router.post("/receiving", denyAllocationRole, async (req, res) => {
   const {
     allocationId,
     quantityReceived,

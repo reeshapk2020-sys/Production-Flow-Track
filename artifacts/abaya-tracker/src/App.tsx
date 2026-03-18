@@ -34,7 +34,7 @@ const queryClient = new QueryClient({
 const ROLE_ROUTES: Record<string, string[]> = {
   admin: ["*"],
   cutting: ["/", "/fabric-rolls", "/cutting", "/traceability"],
-  allocation: ["/", "/allocation", "/receiving", "/traceability"],
+  allocation: ["/", "/allocation", "/traceability"],
   stitching: ["/", "/receiving", "/traceability"],
   finishing: ["/", "/finishing", "/traceability"],
   store: ["/", "/finished-goods", "/inventory", "/traceability"],
