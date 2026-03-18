@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Loader2, Settings2 } from "lucide-react";
+import { AlertCircle, Plus, Loader2, Settings2 } from "lucide-react";
 import { 
   useListFinishingRecords, useCreateFinishingRecord, getListFinishingRecordsQueryKey,
   useListCuttingBatches
@@ -43,31 +43,55 @@ export default function FinishingPage() {
 function FinishingStageView({ stage }: { stage: "pressing" | "buttons" | "hanger" | "packing" }) {
   const { data, isLoading } = useListFinishingRecords({ stage });
   const { data: batches } = useListCuttingBatches();
-  
+
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
+  const [inputQty, setInputQty] = useState("");
+  const [outputQty, setOutputQty] = useState("");
+  const [defectiveQty, setDefectiveQty] = useState("0");
+
+  const input = Number(inputQty) || 0;
+  const output = Number(outputQty) || 0;
+  const defective = Number(defectiveQty) || 0;
+  const qtyError =
+    input > 0 && output > input
+      ? `Output (${output}) cannot exceed input (${input}).`
+      : input > 0 && output + defective > input
+      ? `Output (${output}) + Defective (${defective}) = ${output + defective} exceeds input (${input}).`
+      : null;
+
+  const resetForm = () => {
+    setInputQty("");
+    setOutputQty("");
+    setDefectiveQty("0");
+  };
 
   const { mutate, isPending } = useCreateFinishingRecord({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListFinishingRecordsQueryKey({ stage }) });
         setOpen(false);
+        resetForm();
         toast({ title: "Finishing record saved" });
+      },
+      onError: (err: any) => {
+        const msg = err?.response?.data?.error || "Failed to save finishing record.";
+        toast({ title: "Validation Error", description: msg, variant: "destructive" });
       }
     }
   });
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (qtyError) return;
     const fd = new FormData(e.currentTarget);
-    
-    mutate({ data: { 
+    mutate({ data: {
       cuttingBatchId: Number(fd.get("cuttingBatchId")),
       stage,
-      inputQuantity: Number(fd.get("inputQuantity")),
-      outputQuantity: Number(fd.get("outputQuantity")),
-      defectiveQuantity: Number(fd.get("defectiveQuantity")) || 0,
+      inputQuantity: input,
+      outputQuantity: output,
+      defectiveQuantity: defective,
       operator: fd.get("operator") as string,
       processDate: fd.get("processDate") as string,
       remarks: fd.get("remarks") as string
@@ -83,7 +107,7 @@ function FinishingStageView({ stage }: { stage: "pressing" | "buttons" | "hanger
             {stage} Stage
           </CardTitle>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
           <DialogTrigger asChild>
             <Button className="rounded-xl shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5">
               <Plus className="h-4 w-4 mr-2" /> Log {stage}
@@ -94,7 +118,7 @@ function FinishingStageView({ stage }: { stage: "pressing" | "buttons" | "hanger
               <DialogTitle className="text-xl font-display capitalize">Log {stage} Output</DialogTitle>
             </DialogHeader>
             <form onSubmit={onSubmit} className="grid grid-cols-1 gap-4 pt-4">
-              
+
               <div>
                 <label className="text-sm font-medium block mb-1.5">Batch</label>
                 <select name="cuttingBatchId" className="form-input-styled bg-white" required>
@@ -108,32 +132,58 @@ function FinishingStageView({ stage }: { stage: "pressing" | "buttons" | "hanger
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium block mb-1.5">Input Qty</label>
-                  <input type="number" name="inputQuantity" className="form-input-styled" required placeholder="0" />
+                  <input
+                    type="number" name="inputQuantity" min="1" required placeholder="0"
+                    className="form-input-styled"
+                    value={inputQty}
+                    onChange={e => setInputQty(e.target.value)}
+                  />
                 </div>
                 <div>
                   <label className="text-sm font-medium block mb-1.5">Output (Good) Qty</label>
-                  <input type="number" name="outputQuantity" className="form-input-styled border-primary/30 bg-primary/5" required placeholder="0" />
+                  <input
+                    type="number" name="outputQuantity" min="0" required placeholder="0"
+                    className={`form-input-styled ${qtyError ? "border-red-400 bg-red-50 focus:ring-red-300" : "border-primary/30 bg-primary/5"}`}
+                    value={outputQty}
+                    onChange={e => setOutputQty(e.target.value)}
+                  />
                 </div>
               </div>
+
+              {qtyError && (
+                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  {qtyError}
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium block mb-1.5 text-slate-500">Defective Qty</label>
-                  <input type="number" name="defectiveQuantity" className="form-input-styled" defaultValue="0" />
+                  <input
+                    type="number" name="defectiveQuantity" min="0"
+                    className="form-input-styled"
+                    value={defectiveQty}
+                    onChange={e => setDefectiveQty(e.target.value)}
+                  />
                 </div>
                 <div>
                   <label className="text-sm font-medium block mb-1.5">Process Date</label>
                   <input type="date" name="processDate" className="form-input-styled" required defaultValue={new Date().toISOString().split('T')[0]} />
                 </div>
               </div>
-              
+
               <div>
                 <label className="text-sm font-medium block mb-1.5">Operator / Team</label>
                 <input name="operator" className="form-input-styled" placeholder="Who did this?" required />
               </div>
-              
+
               <div className="mt-4">
-                <Button type="submit" disabled={isPending} className="w-full h-12 rounded-xl text-base shadow-lg shadow-primary/20">
+                <Button
+                  type="submit"
+                  disabled={isPending || !!qtyError}
+                  className="w-full h-12 rounded-xl text-base shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   {isPending ? "Saving..." : "Save Record"}
                 </Button>
               </div>

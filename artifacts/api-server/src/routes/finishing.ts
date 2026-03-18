@@ -62,6 +62,24 @@ router.post("/finishing", async (req, res) => {
     remarks,
   } = req.body;
 
+  const input = Number(inputQuantity);
+  const output = Number(outputQuantity);
+  const defective = Number(defectiveQuantity) || 0;
+
+  if (output > input) {
+    return res.status(400).json({
+      error: `Output quantity (${output}) cannot exceed input quantity (${input}).`,
+    });
+  }
+  if (output + defective > input) {
+    return res.status(400).json({
+      error: `Output (${output}) + Defective (${defective}) = ${output + defective} cannot exceed input quantity (${input}).`,
+    });
+  }
+  if (output < 0 || defective < 0 || input <= 0) {
+    return res.status(400).json({ error: "Quantities must be positive numbers." });
+  }
+
   const [record] = await db
     .insert(finishingRecordsTable)
     .values({
