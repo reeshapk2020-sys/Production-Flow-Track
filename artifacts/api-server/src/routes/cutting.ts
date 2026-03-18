@@ -9,19 +9,10 @@ import {
   colorsTable,
   allocationsTable,
 } from "@workspace/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, ilike } from "drizzle-orm";
 import { logAudit } from "../lib/audit.js";
 
 const router: IRouter = Router();
-
-function generateBatchNumber() {
-  const now = new Date();
-  const y = now.getFullYear().toString().slice(-2);
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  const rand = Math.floor(Math.random() * 9000) + 1000;
-  return `CB-${y}${m}${d}-${rand}`;
-}
 
 router.get("/cutting/batches", async (_req, res) => {
   const rows = await db
@@ -57,6 +48,7 @@ router.get("/cutting/batches", async (_req, res) => {
 
 router.post("/cutting/batches", async (req, res) => {
   const {
+    batchNumber,
     productId,
     sizeId,
     colorId,
@@ -67,12 +59,24 @@ router.post("/cutting/batches", async (req, res) => {
     fabricUsages,
   } = req.body;
 
-  const batchNumber = generateBatchNumber();
+  if (!batchNumber || !String(batchNumber).trim()) {
+    return res.status(400).json({ error: "Batch number is required." });
+  }
+
+  // Uniqueness check (case-insensitive)
+  const existing = await db
+    .select({ id: cuttingBatchesTable.id })
+    .from(cuttingBatchesTable)
+    .where(ilike(cuttingBatchesTable.batchNumber, String(batchNumber).trim()));
+
+  if (existing.length > 0) {
+    return res.status(409).json({ error: `Batch number "${batchNumber}" already exists. Please enter a unique batch number.` });
+  }
 
   const [batch] = await db
     .insert(cuttingBatchesTable)
     .values({
-      batchNumber,
+      batchNumber: String(batchNumber).trim(),
       productId,
       sizeId,
       colorId,

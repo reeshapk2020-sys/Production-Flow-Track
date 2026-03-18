@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Loader2, Scissors } from "lucide-react";
+import { AlertCircle, Plus, Loader2, Scissors } from "lucide-react";
 import { 
   useListCuttingBatches, useCreateCuttingBatch, getListCuttingBatchesQueryKey,
   useListProducts, useListSizes, useListColors, useListFabricRolls
@@ -37,42 +37,59 @@ export default function CuttingPage() {
   const { data: sizes } = useListSizes();
   const { data: colors } = useListColors();
   const { data: rolls } = useListFabricRolls();
-  
+
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
+  const [batchNumber, setBatchNumber] = useState("");
+
+  // Client-side duplicate detection
+  const existingNumbers = new Set(
+    (data ?? []).map((b) => b.batchNumber?.trim().toLowerCase())
+  );
+  const isDuplicate =
+    batchNumber.trim().length > 0 &&
+    existingNumbers.has(batchNumber.trim().toLowerCase());
 
   const { mutate, isPending } = useCreateCuttingBatch({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListCuttingBatchesQueryKey() });
         setOpen(false);
+        setBatchNumber("");
         toast({ title: "Cutting batch created successfully" });
-      }
-    }
+      },
+      onError: (err: any) => {
+        const msg = err?.response?.data?.error || "Failed to create batch.";
+        toast({ title: "Error", description: msg, variant: "destructive" });
+      },
+    },
   });
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isDuplicate) return;
     const fd = new FormData(e.currentTarget);
-    
-    // Simple 1-roll mapping for form simplicity
+
     const fabricRollId = Number(fd.get("fabricRollId"));
     const quantityUsed = Number(fd.get("quantityUsed"));
-    
-    mutate({ data: { 
-      productId: Number(fd.get("productId")),
-      sizeId: Number(fd.get("sizeId")) || undefined,
-      colorId: Number(fd.get("colorId")) || undefined,
-      quantityCut: Number(fd.get("quantityCut")),
-      cutter: fd.get("cutter") as string,
-      cuttingDate: fd.get("cuttingDate") as string,
-      remarks: fd.get("remarks") as string,
-      fabricUsages: fabricRollId ? [{ fabricRollId, quantityUsed }] : []
-    } });
+
+    mutate({
+      data: {
+        batchNumber: batchNumber.trim(),
+        productId: Number(fd.get("productId")),
+        sizeId: Number(fd.get("sizeId")) || undefined,
+        colorId: Number(fd.get("colorId")) || undefined,
+        quantityCut: Number(fd.get("quantityCut")),
+        cutter: fd.get("cutter") as string,
+        cuttingDate: fd.get("cuttingDate") as string,
+        remarks: fd.get("remarks") as string,
+        fabricUsages: fabricRollId ? [{ fabricRollId, quantityUsed }] : [],
+      },
+    });
   };
 
-  const availableRolls = rolls?.filter(r => r.availableQuantity > 0) || [];
+  const availableRolls = rolls?.filter((r) => r.availableQuantity > 0) || [];
 
   return (
     <AppLayout title="Cutting Department">
@@ -85,7 +102,7 @@ export default function CuttingPage() {
             </CardTitle>
             <p className="text-sm text-slate-500 mt-1">Manage fabric cutting and batch creation.</p>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setBatchNumber(""); }}>
             <DialogTrigger asChild>
               <Button className="rounded-xl shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5">
                 <Plus className="h-4 w-4 mr-2" /> Create Batch
@@ -96,7 +113,29 @@ export default function CuttingPage() {
                 <DialogTitle className="text-xl font-display">New Cutting Batch</DialogTitle>
               </DialogHeader>
               <form onSubmit={onSubmit} className="grid grid-cols-2 gap-5 pt-4">
-                
+
+                {/* Batch Number — manually entered */}
+                <div className="col-span-2">
+                  <label className="text-sm font-medium block mb-1.5">
+                    Batch Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    name="batchNumber"
+                    className={`form-input-styled font-mono ${isDuplicate ? "border-red-400 bg-red-50" : ""}`}
+                    placeholder="e.g. BT-001 or any unique identifier..."
+                    required
+                    value={batchNumber}
+                    onChange={(e) => setBatchNumber(e.target.value)}
+                    autoComplete="off"
+                  />
+                  {isDuplicate && (
+                    <div className="flex items-center gap-2 mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      Batch number <strong>"{batchNumber.trim()}"</strong> already exists. Please enter a unique batch number.
+                    </div>
+                  )}
+                </div>
+
                 {/* Batch Setup */}
                 <div className="col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-4">
                   <h3 className="font-semibold text-slate-800 text-sm uppercase tracking-wider">Product Selection</h3>
@@ -165,8 +204,12 @@ export default function CuttingPage() {
                 </div>
                 
                 <div className="col-span-2 mt-4">
-                  <Button type="submit" disabled={isPending} className="w-full h-12 rounded-xl text-base shadow-lg shadow-primary/20">
-                    {isPending ? "Generating Batch..." : "Create Cutting Batch"}
+                  <Button
+                    type="submit"
+                    disabled={isPending || isDuplicate}
+                    className="w-full h-12 rounded-xl text-base shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isPending ? "Creating Batch..." : "Create Cutting Batch"}
                   </Button>
                 </div>
               </form>

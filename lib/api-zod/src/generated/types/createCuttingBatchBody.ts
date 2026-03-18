@@ -8,6 +8,8 @@
 import type { CreateCuttingBatchBodyFabricUsagesItem } from "./createCuttingBatchBodyFabricUsagesItem";
 
 export interface CreateCuttingBatchBody {
+  /** Manually entered batch number, must be unique */
+  batchNumber: string;
   productId: number;
   sizeId?: number;
   colorId?: number;

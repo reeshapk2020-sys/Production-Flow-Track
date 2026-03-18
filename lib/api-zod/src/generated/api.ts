@@ -340,6 +340,9 @@ export const ListCuttingBatchesResponse = zod.array(
  * @summary Create a cutting batch
  */
 export const CreateCuttingBatchBody = zod.object({
+  batchNumber: zod
+    .string()
+    .describe("Manually entered batch number, must be unique"),
   productId: zod.number(),
   sizeId: zod.number().optional(),
   colorId: zod.number().optional(),

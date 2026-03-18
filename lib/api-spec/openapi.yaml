@@ -1279,6 +1279,9 @@ components:
     CreateCuttingBatchBody:
       type: object
       properties:
+        batchNumber:
+          type: string
+          description: Manually entered batch number, must be unique
         productId:
           type: integer
         sizeId:
@@ -1303,7 +1306,7 @@ components:
               quantityUsed:
                 type: number
             required: [fabricRollId, quantityUsed]
-      required: [productId, quantityCut, cuttingDate]
+      required: [batchNumber, productId, quantityCut, cuttingDate]
 
     # ALLOCATION
     Allocation:
