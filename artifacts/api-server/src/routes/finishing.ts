@@ -77,10 +77,10 @@ router.post("/finishing", async (req, res) => {
     })
     .returning();
 
-  // Update batch status to finishing
+  // Update batch status to in_finishing
   await db
     .update(cuttingBatchesTable)
-    .set({ status: "finishing" })
+    .set({ status: "in_finishing" })
     .where(eq(cuttingBatchesTable.id, cuttingBatchId));
 
   await logAudit(

@@ -1,0 +1,98 @@
+I need to improve the production workflow logic in my Abaya Production Tracker.
+
+Please make the following changes carefully without breaking existing data.
+
+1. Allocation module should only handle issuing
+- Remove the receiving input/field/box from the Allocation module UI.
+- Allocation should only allow:
+  - allocation number
+  - cutting batch
+  - stitcher
+  - quantity issued
+  - issue date
+  - remarks
+- Do not allow users to manually enter received quantity in Allocation.
+
+2. Receiving module should be the only place for receipt entry
+- Users should enter received quantity only in the Receiving module.
+- Receiving form should allow:
+  - select allocation or batch
+  - quantity received
+  - quantity rejected/damaged
+  - receive date
+  - remarks
+
+3. Auto-update Allocation when Receiving is entered
+When a receiving entry is created or updated in the Receiving module, automatically update the related allocation summary.
+
+Example:
+- allocation quantity issued = 6
+- quantity received entered in Receiving = 5
+Then Allocation should automatically show:
+- quantity issued = 6
+- quantity received = 5
+- pending quantity = 1
+
+Formula:
+pending quantity = quantity_issued - quantity_received - quantity_rejected
+
+4. Support partial receiving
+- If allocated = 6 and received = 2, pending should become 4
+- If later another receipt of 3 is entered, total received should become 5 and pending should become 1
+- Support multiple partial receipts correctly
+
+5. Validation rules
+- Do not allow total received to exceed issued quantity
+- Do not allow rejected quantity to exceed available remaining quantity
+- Do not allow invalid negative values
+- Prevent duplicate or broken updates
+
+6. Make Receiving the source of truth
+- Receipt-related reports, pending calculations, and allocation updates must come from the Receiving module data
+- Remove any old logic that depends on manual entry of receiving quantity in the Allocation module
+
+7. Read-only calculated values in Allocation
+On the Allocation page, show:
+- quantity issued
+- quantity received (read-only, auto-updated)
+- quantity rejected (read-only or summary)
+- pending quantity (read-only, auto-calculated)
+- current status
+
+8. Auto-update cutting batch status through full workflow
+Please make cutting batch status update automatically based on progress.
+
+Suggested status flow:
+- cutting
+- allocated
+- partially_received
+- fully_received
+- in_finishing
+- finished
+
+Logic:
+- After cutting entry: status = cutting
+- After first allocation: status = allocated
+- If some but not all allocated quantity is received: status = partially_received
+- If all allocated quantity is received: status = fully_received
+- When the batch enters finishing stages: status = in_finishing
+- When the full completed quantity reaches finished goods: status = finished
+
+9. Show batch status everywhere
+Display current batch status in:
+- Cutting Batch list
+- Allocation page
+- Receiving page
+- Traceability page
+- Dashboard where relevant
+
+10. Keep data consistent
+- Do not break existing records
+- Recalculate old allocation records if needed so allocation summaries match receiving data
+- Ensure dashboard and reports use the corrected logic
+
+Goal:
+Allocation should only issue work.
+Receiving should only receive work.
+When receiving is entered, allocation and pending values should update automatically.
+Cutting batch status should keep updating automatically until finished goods.

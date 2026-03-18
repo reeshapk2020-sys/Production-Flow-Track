@@ -90,12 +90,12 @@ router.post("/allocation", async (req, res) => {
     })
     .returning();
 
-  // Deduct from cutting batch available quantity
+  // Deduct from cutting batch available quantity and mark as allocated
   await db
     .update(cuttingBatchesTable)
     .set({
       availableForAllocation: sql`${cuttingBatchesTable.availableForAllocation} - ${quantityIssued}`,
-      status: "allocation",
+      status: "allocated",
     })
     .where(eq(cuttingBatchesTable.id, cuttingBatchId));
 

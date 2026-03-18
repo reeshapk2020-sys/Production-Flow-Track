@@ -24,10 +24,14 @@ export const userRoleEnum = pgEnum("user_role", [
 
 export const batchStatusEnum = pgEnum("batch_status", [
   "cutting",
+  "allocated",
+  "partially_received",
+  "fully_received",
+  "in_finishing",
+  "finished",
+  // legacy values kept for backward compatibility
   "allocation",
   "stitching",
-  "finishing",
-  "finished",
   "partial",
   "completed",
 ]);
