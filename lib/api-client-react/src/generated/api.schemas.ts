@@ -281,6 +281,7 @@ export const FinishingRecordStage = {
   buttons: "buttons",
   hanger: "hanger",
   packing: "packing",
+  finishing: "finishing",
 } as const;
 
 export interface FinishingRecord {
@@ -300,25 +301,30 @@ export interface FinishingRecord {
   remarks?: string;
 }
 
-export type CreateFinishingRecordBodyStage =
-  (typeof CreateFinishingRecordBodyStage)[keyof typeof CreateFinishingRecordBodyStage];
-
-export const CreateFinishingRecordBodyStage = {
-  pressing: "pressing",
-  buttons: "buttons",
-  hanger: "hanger",
-  packing: "packing",
-} as const;
-
 export interface CreateFinishingRecordBody {
   cuttingBatchId: number;
-  stage: CreateFinishingRecordBodyStage;
   inputQuantity: number;
   outputQuantity: number;
   defectiveQuantity?: number;
   operator?: string;
   processDate: string;
   remarks?: string;
+}
+
+export interface FinishingBatchInfo {
+  batchId: number;
+  batchNumber?: string;
+  totalReceived: number;
+  totalFinishingOutput: number;
+  availableForFinishing: number;
+}
+
+export interface FinishedGoodsBatchInfo {
+  batchId: number;
+  batchNumber?: string;
+  totalFinishingOutput: number;
+  totalStoredQty: number;
+  availableForStore: number;
 }
 
 export interface FinishedGoodsEntry {
@@ -424,9 +430,7 @@ export interface DailyProductionReport {
   cutting: number;
   allocated: number;
   received: number;
-  pressing?: number;
-  buttons?: number;
-  hanger?: number;
+  finishing?: number;
   finished: number;
 }
 
@@ -491,20 +495,6 @@ export interface TraceSearchResult {
   subLabel?: string;
   batchNumber?: string;
 }
-
-export type ListFinishingRecordsParams = {
-  stage?: ListFinishingRecordsStage;
-};
-
-export type ListFinishingRecordsStage =
-  (typeof ListFinishingRecordsStage)[keyof typeof ListFinishingRecordsStage];
-
-export const ListFinishingRecordsStage = {
-  pressing: "pressing",
-  buttons: "buttons",
-  hanger: "hanger",
-  packing: "packing",
-} as const;
 
 export type GetStitcherPerformanceReportParams = {
   startDate?: string;

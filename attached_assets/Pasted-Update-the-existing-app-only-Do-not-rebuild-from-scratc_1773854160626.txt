@@ -1,0 +1,71 @@
+Update the existing app only. Do not rebuild from scratch.
+
+Make these workflow improvements in the production stages after Receiving.
+
+1. Extend quantity validation to all downstream modules
+The quantity validation must not only work in one module. It must work across all later stages based on available input from the current or previous stage.
+
+Requirements:
+- in every downstream stage, output quantity must never exceed the available input quantity for that batch
+- validation must consider the actual available quantity coming from the previous module/stage
+- no module should allow more quantity than what was received from the previous stage
+- apply this validation in both frontend and backend
+- block invalid save attempts
+- show a clear error message when output exceeds available quantity
+
+Examples:
+- if Receiving has 6 pieces for a batch, Finishing cannot process/output more than 6
+- if a later stage receives only 5 available pieces, it cannot output 6 or more
+- all stage quantities must remain controlled by actual upstream balance
+
+2. Keep stage balance logic consistent
+For each batch, track and enforce:
+- input quantity
+- output quantity
+- rejected/defective quantity if applicable
+- remaining balance
+
+Formula guidance:
+remaining balance = input quantity - output quantity - rejected quantity
+
+No stage should create extra quantity.
+
+3. Merge Press, Buttons, and Hanger into one single stage
+I do not want Press, Buttons, and Hanger as separate stages anymore.
+
+Please:
+- merge Press + Buttons + Hanger into one single stage called Finishing
+- update workflow logic, forms, dropdowns, reports, and traceability accordingly
+- this single Finishing stage should take input from Receiving and send output directly to Finished Goods
+
+4. Remove Packing step completely
+Please remove Packing from:
+- workflow
+- forms
+- dropdowns
+- reports
+- status logic
+- traceability
+
+Final workflow should be:
+Cutting -> Allocation -> Receiving -> Finishing -> Finished Goods
+
+5. Keep existing data safe
+- do not rebuild the app
+- do not change unrelated modules
+- do not change database unless absolutely necessary
+- preserve existing records
+- if old stage records exist for Press, Buttons, Hanger, or Packing, map them safely so existing data is not broken
+
+6. Apply consistently everywhere
+Update only the affected parts in:
+- Finishing
+- Finished Goods flow
+- Reports
+- Dashboard where relevant
+- Traceability
+- Status flow
+
+Goal:
+All downstream quantity movement must be controlled by actual available input from the previous stage, and the workflow after Receiving should now be:
+Receiving -> Finishing -> Finished Goods

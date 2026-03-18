@@ -577,13 +577,7 @@ paths:
     get:
       operationId: listFinishingRecords
       tags: [finishing]
-      summary: List finishing stage records
-      parameters:
-        - name: stage
-          in: query
-          schema:
-            type: string
-            enum: [pressing, buttons, hanger, packing]
+      summary: List finishing stage records (all stages merged)
       responses:
         "200":
           description: List of finishing records
@@ -610,6 +604,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FinishingRecord"
+
+  /finishing/batch-info/{batchId}:
+    get:
+      operationId: getFinishingBatchInfo
+      tags: [finishing]
+      summary: Get available quantity info for finishing a batch
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Batch finishing availability info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinishingBatchInfo"
 
   # FINISHED GOODS
   /finished-goods:
@@ -643,6 +656,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FinishedGoodsEntry"
+
+  /finished-goods/batch-info/{batchId}:
+    get:
+      operationId: getFinishedGoodsBatchInfo
+      tags: [finished-goods]
+      summary: Get available quantity for moving a batch to finished goods store
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Batch finished-goods availability info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinishedGoodsBatchInfo"
 
   /finished-goods/stock:
     get:
@@ -1387,7 +1419,7 @@ components:
           type: integer
         stage:
           type: string
-          enum: [pressing, buttons, hanger, packing]
+          enum: [pressing, buttons, hanger, packing, finishing]
         productName:
           type: string
         sizeName:
@@ -1415,9 +1447,6 @@ components:
       properties:
         cuttingBatchId:
           type: integer
-        stage:
-          type: string
-          enum: [pressing, buttons, hanger, packing]
         inputQuantity:
           type: integer
         outputQuantity:
@@ -1430,7 +1459,37 @@ components:
           type: string
         remarks:
           type: string
-      required: [cuttingBatchId, stage, inputQuantity, outputQuantity, processDate]
+      required: [cuttingBatchId, inputQuantity, outputQuantity, processDate]
+
+    FinishingBatchInfo:
+      type: object
+      properties:
+        batchId:
+          type: integer
+        batchNumber:
+          type: string
+        totalReceived:
+          type: integer
+        totalFinishingOutput:
+          type: integer
+        availableForFinishing:
+          type: integer
+      required: [batchId, totalReceived, totalFinishingOutput, availableForFinishing]
+
+    FinishedGoodsBatchInfo:
+      type: object
+      properties:
+        batchId:
+          type: integer
+        batchNumber:
+          type: string
+        totalFinishingOutput:
+          type: integer
+        totalStoredQty:
+          type: integer
+        availableForStore:
+          type: integer
+      required: [batchId, totalFinishingOutput, totalStoredQty, availableForStore]
 
     # FINISHED GOODS
     FinishedGoodsEntry:
@@ -1611,11 +1670,7 @@ components:
           type: integer
         received:
           type: integer
-        pressing:
-          type: integer
-        buttons:
-          type: integer
-        hanger:
+        finishing:
           type: integer
         finished:
           type: integer

@@ -5,10 +5,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Loader2, Package } from "lucide-react";
+import { AlertCircle, Info, Plus, Loader2, Package } from "lucide-react";
 import { 
   useListFinishedGoods, useCreateFinishedGoodsEntry, getListFinishedGoodsQueryKey,
-  useGetFinishedGoodsStock, useListCuttingBatches
+  useGetFinishedGoodsStock, useListCuttingBatches,
+  useGetFinishedGoodsBatchInfo,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -77,30 +78,61 @@ function StockSummaryTab() {
 function EntryLogTab() {
   const { data, isLoading } = useListFinishedGoods();
   const { data: batches } = useListCuttingBatches();
-  
+
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
+  const [selectedBatchId, setSelectedBatchId] = useState<number | null>(null);
+  const [qty, setQty] = useState("");
+
+  const { data: batchInfo, isLoading: loadingInfo } = useGetFinishedGoodsBatchInfo(
+    selectedBatchId!,
+    { query: { enabled: !!selectedBatchId } }
+  );
+
+  const enteredQty = Number(qty) || 0;
+  const available = batchInfo?.availableForStore ?? 0;
+  const qtyError: string | null =
+    !selectedBatchId
+      ? null
+      : enteredQty > 0 && available === 0
+      ? `No pieces available for this batch from Finishing (${batchInfo?.totalFinishingOutput ?? 0} finished, ${batchInfo?.totalStoredQty ?? 0} already stored).`
+      : enteredQty > 0 && enteredQty > available
+      ? `Quantity (${enteredQty}) exceeds available pieces from Finishing (${available} available).`
+      : null;
+
+  const resetForm = () => {
+    setSelectedBatchId(null);
+    setQty("");
+  };
 
   const { mutate, isPending } = useCreateFinishedGoodsEntry({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListFinishedGoodsQueryKey() });
         setOpen(false);
+        resetForm();
         toast({ title: "Stock entry saved" });
-      }
-    }
+      },
+      onError: (err: any) => {
+        const msg = err?.response?.data?.error || "Failed to save entry.";
+        toast({ title: "Validation Error", description: msg, variant: "destructive" });
+      },
+    },
   });
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (qtyError || !selectedBatchId) return;
     const fd = new FormData(e.currentTarget);
-    mutate({ data: { 
-      cuttingBatchId: Number(fd.get("cuttingBatchId")),
-      quantity: Number(fd.get("quantity")),
-      entryDate: fd.get("entryDate") as string,
-      remarks: fd.get("remarks") as string
-    } });
+    mutate({
+      data: {
+        cuttingBatchId: selectedBatchId,
+        quantity: enteredQty,
+        entryDate: fd.get("entryDate") as string,
+        remarks: fd.get("remarks") as string,
+      },
+    });
   };
 
   return (
@@ -109,7 +141,7 @@ function EntryLogTab() {
         <div>
           <CardTitle className="text-xl font-display text-slate-800">Store Entry Log</CardTitle>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
           <DialogTrigger asChild>
             <Button className="rounded-xl shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5">
               <Plus className="h-4 w-4 mr-2" /> Receive into Store
@@ -120,31 +152,94 @@ function EntryLogTab() {
               <DialogTitle className="text-xl font-display">Add Finished Goods</DialogTitle>
             </DialogHeader>
             <form onSubmit={onSubmit} className="grid grid-cols-1 gap-4 pt-4">
+
               <div>
                 <label className="text-sm font-medium block mb-1.5">Source Batch</label>
-                <select name="cuttingBatchId" className="form-input-styled bg-white" required>
-                  <option value="">Select Completed Batch...</option>
-                  {batches?.map(b => (
-                    <option key={b.id} value={b.id}>{b.batchNumber} - {b.productName}</option>
+                <select
+                  name="cuttingBatchId"
+                  className="form-input-styled bg-white"
+                  required
+                  value={selectedBatchId ?? ""}
+                  onChange={(e) => {
+                    setSelectedBatchId(e.target.value ? Number(e.target.value) : null);
+                    setQty("");
+                  }}
+                >
+                  <option value="">Select Batch...</option>
+                  {batches?.map((b) => (
+                    <option key={b.id} value={b.id}>{b.batchNumber} — {b.productName}</option>
                   ))}
                 </select>
               </div>
+
+              {/* Availability Panel */}
+              {selectedBatchId && (
+                <div className={`rounded-lg border px-4 py-3 text-sm ${
+                  loadingInfo
+                    ? "border-slate-200 bg-slate-50"
+                    : available === 0
+                    ? "border-red-200 bg-red-50"
+                    : "border-emerald-200 bg-emerald-50"
+                }`}>
+                  {loadingInfo ? (
+                    <div className="flex items-center gap-2 text-slate-500">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Loading batch info...
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2">
+                      <Info className={`h-4 w-4 mt-0.5 shrink-0 ${available === 0 ? "text-red-500" : "text-emerald-600"}`} />
+                      <div className="space-y-0.5">
+                        <div className="font-medium text-slate-700">Availability from Finishing</div>
+                        <div className="text-slate-600">
+                          Finishing Output: <strong>{batchInfo?.totalFinishingOutput ?? 0}</strong> pcs &nbsp;|&nbsp;
+                          Already Stored: <strong>{batchInfo?.totalStoredQty ?? 0}</strong> pcs &nbsp;|&nbsp;
+                          <span className={available === 0 ? "text-red-600 font-bold" : "text-emerald-700 font-bold"}>
+                            Available: {available} pcs
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium block mb-1.5">Quantity to Store</label>
-                  <input type="number" name="quantity" className="form-input-styled border-emerald-300 bg-emerald-50" required placeholder="0" />
+                  <label className="text-sm font-medium block mb-1.5">
+                    Quantity to Store
+                    {available > 0 && <span className="text-xs text-slate-400 ml-1">(max {available})</span>}
+                  </label>
+                  <input
+                    type="number" name="quantity" min="1" max={available || undefined}
+                    required placeholder="0"
+                    className={`form-input-styled ${qtyError ? "border-red-400 bg-red-50" : "border-emerald-300 bg-emerald-50"}`}
+                    value={qty}
+                    onChange={(e) => setQty(e.target.value)}
+                  />
                 </div>
                 <div>
                   <label className="text-sm font-medium block mb-1.5">Entry Date</label>
-                  <input type="date" name="entryDate" className="form-input-styled" required defaultValue={new Date().toISOString().split('T')[0]} />
+                  <input type="date" name="entryDate" className="form-input-styled" required defaultValue={new Date().toISOString().split("T")[0]} />
                 </div>
               </div>
+
+              {qtyError && (
+                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  {qtyError}
+                </div>
+              )}
+
               <div>
                 <label className="text-sm font-medium block mb-1.5">Remarks / Location</label>
                 <input name="remarks" className="form-input-styled" placeholder="Shelf A1..." />
               </div>
-              <div className="mt-4">
-                <Button type="submit" disabled={isPending} className="w-full h-12 rounded-xl text-base shadow-lg shadow-primary/20">
+              <div className="mt-2">
+                <Button
+                  type="submit"
+                  disabled={isPending || !!qtyError || !selectedBatchId}
+                  className="w-full h-12 rounded-xl text-base shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   {isPending ? "Adding..." : "Add to Inventory"}
                 </Button>
               </div>

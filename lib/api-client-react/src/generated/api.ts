@@ -44,7 +44,9 @@ import type {
   DashboardData,
   Fabric,
   FabricRoll,
+  FinishedGoodsBatchInfo,
   FinishedGoodsEntry,
+  FinishingBatchInfo,
   FinishingRecord,
   GetAuditLogParams,
   GetBatchStatusReportParams,
@@ -53,7 +55,6 @@ import type {
   GetStitcherPerformanceReportParams,
   HealthStatus,
   InventorySummary,
-  ListFinishingRecordsParams,
   Product,
   Receiving,
   SearchTraceabilityParams,
@@ -2646,65 +2647,43 @@ export const useCreateReceiving = <
 };
 
 /**
- * @summary List finishing stage records
+ * @summary List finishing stage records (all stages merged)
  */
-export const getListFinishingRecordsUrl = (
-  params?: ListFinishingRecordsParams,
-) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? "null" : value.toString());
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/finishing?${stringifiedParams}`
-    : `/api/finishing`;
+export const getListFinishingRecordsUrl = () => {
+  return `/api/finishing`;
 };
 
 export const listFinishingRecords = async (
-  params?: ListFinishingRecordsParams,
   options?: RequestInit,
 ): Promise<FinishingRecord[]> => {
-  return customFetch<FinishingRecord[]>(getListFinishingRecordsUrl(params), {
+  return customFetch<FinishingRecord[]>(getListFinishingRecordsUrl(), {
     ...options,
     method: "GET",
   });
 };
 
-export const getListFinishingRecordsQueryKey = (
-  params?: ListFinishingRecordsParams,
-) => {
-  return [`/api/finishing`, ...(params ? [params] : [])] as const;
+export const getListFinishingRecordsQueryKey = () => {
+  return [`/api/finishing`] as const;
 };
 
 export const getListFinishingRecordsQueryOptions = <
   TData = Awaited<ReturnType<typeof listFinishingRecords>>,
   TError = ErrorType<unknown>,
->(
-  params?: ListFinishingRecordsParams,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof listFinishingRecords>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-) => {
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listFinishingRecords>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey =
-    queryOptions?.queryKey ?? getListFinishingRecordsQueryKey(params);
+  const queryKey = queryOptions?.queryKey ?? getListFinishingRecordsQueryKey();
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof listFinishingRecords>>
-  > = ({ signal }) =>
-    listFinishingRecords(params, { signal, ...requestOptions });
+  > = ({ signal }) => listFinishingRecords({ signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listFinishingRecords>>,
@@ -2719,24 +2698,21 @@ export type ListFinishingRecordsQueryResult = NonNullable<
 export type ListFinishingRecordsQueryError = ErrorType<unknown>;
 
 /**
- * @summary List finishing stage records
+ * @summary List finishing stage records (all stages merged)
  */
 
 export function useListFinishingRecords<
   TData = Awaited<ReturnType<typeof listFinishingRecords>>,
   TError = ErrorType<unknown>,
->(
-  params?: ListFinishingRecordsParams,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof listFinishingRecords>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListFinishingRecordsQueryOptions(params, options);
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listFinishingRecords>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListFinishingRecordsQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
@@ -2831,6 +2807,95 @@ export const useCreateFinishingRecord = <
 > => {
   return useMutation(getCreateFinishingRecordMutationOptions(options));
 };
+
+/**
+ * @summary Get available quantity info for finishing a batch
+ */
+export const getGetFinishingBatchInfoUrl = (batchId: number) => {
+  return `/api/finishing/batch-info/${batchId}`;
+};
+
+export const getFinishingBatchInfo = async (
+  batchId: number,
+  options?: RequestInit,
+): Promise<FinishingBatchInfo> => {
+  return customFetch<FinishingBatchInfo>(getGetFinishingBatchInfoUrl(batchId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetFinishingBatchInfoQueryKey = (batchId: number) => {
+  return [`/api/finishing/batch-info/${batchId}`] as const;
+};
+
+export const getGetFinishingBatchInfoQueryOptions = <
+  TData = Awaited<ReturnType<typeof getFinishingBatchInfo>>,
+  TError = ErrorType<unknown>,
+>(
+  batchId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getFinishingBatchInfo>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetFinishingBatchInfoQueryKey(batchId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getFinishingBatchInfo>>
+  > = ({ signal }) =>
+    getFinishingBatchInfo(batchId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!batchId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getFinishingBatchInfo>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetFinishingBatchInfoQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getFinishingBatchInfo>>
+>;
+export type GetFinishingBatchInfoQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get available quantity info for finishing a batch
+ */
+
+export function useGetFinishingBatchInfo<
+  TData = Awaited<ReturnType<typeof getFinishingBatchInfo>>,
+  TError = ErrorType<unknown>,
+>(
+  batchId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getFinishingBatchInfo>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetFinishingBatchInfoQueryOptions(batchId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary List finished goods inventory
@@ -2993,6 +3058,101 @@ export const useCreateFinishedGoodsEntry = <
 > => {
   return useMutation(getCreateFinishedGoodsEntryMutationOptions(options));
 };
+
+/**
+ * @summary Get available quantity for moving a batch to finished goods store
+ */
+export const getGetFinishedGoodsBatchInfoUrl = (batchId: number) => {
+  return `/api/finished-goods/batch-info/${batchId}`;
+};
+
+export const getFinishedGoodsBatchInfo = async (
+  batchId: number,
+  options?: RequestInit,
+): Promise<FinishedGoodsBatchInfo> => {
+  return customFetch<FinishedGoodsBatchInfo>(
+    getGetFinishedGoodsBatchInfoUrl(batchId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetFinishedGoodsBatchInfoQueryKey = (batchId: number) => {
+  return [`/api/finished-goods/batch-info/${batchId}`] as const;
+};
+
+export const getGetFinishedGoodsBatchInfoQueryOptions = <
+  TData = Awaited<ReturnType<typeof getFinishedGoodsBatchInfo>>,
+  TError = ErrorType<unknown>,
+>(
+  batchId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getFinishedGoodsBatchInfo>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetFinishedGoodsBatchInfoQueryKey(batchId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getFinishedGoodsBatchInfo>>
+  > = ({ signal }) =>
+    getFinishedGoodsBatchInfo(batchId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!batchId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getFinishedGoodsBatchInfo>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetFinishedGoodsBatchInfoQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getFinishedGoodsBatchInfo>>
+>;
+export type GetFinishedGoodsBatchInfoQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get available quantity for moving a batch to finished goods store
+ */
+
+export function useGetFinishedGoodsBatchInfo<
+  TData = Awaited<ReturnType<typeof getFinishedGoodsBatchInfo>>,
+  TError = ErrorType<unknown>,
+>(
+  batchId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getFinishedGoodsBatchInfo>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetFinishedGoodsBatchInfoQueryOptions(
+    batchId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Get current finished goods stock summary

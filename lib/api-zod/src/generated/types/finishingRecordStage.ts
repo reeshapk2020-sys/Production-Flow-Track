@@ -14,4 +14,5 @@ export const FinishingRecordStage = {
   buttons: "buttons",
   hanger: "hanger",
   packing: "packing",
+  finishing: "finishing",
 } as const;

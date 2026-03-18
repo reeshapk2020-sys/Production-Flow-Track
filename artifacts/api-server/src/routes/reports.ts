@@ -181,19 +181,15 @@ router.get("/reports/daily-production", async (req, res) => {
     .from(receivingsTable)
     .where(and(gte(receivingsTable.receiveDate, date), lte(receivingsTable.receiveDate, nextDate)));
 
-  const getFinishingQty = async (stage: string) => {
-    const [r] = await db
-      .select({ qty: sql<number>`COALESCE(SUM(${finishingRecordsTable.outputQuantity}), 0)::int` })
-      .from(finishingRecordsTable)
-      .where(
-        and(
-          eq(finishingRecordsTable.stage, stage as any),
-          gte(finishingRecordsTable.processDate, date),
-          lte(finishingRecordsTable.processDate, nextDate)
-        )
-      );
-    return r.qty || 0;
-  };
+  const [finishing] = await db
+    .select({ qty: sql<number>`COALESCE(SUM(${finishingRecordsTable.outputQuantity}), 0)::int` })
+    .from(finishingRecordsTable)
+    .where(
+      and(
+        gte(finishingRecordsTable.processDate, date),
+        lte(finishingRecordsTable.processDate, nextDate)
+      )
+    );
 
   const [finished] = await db
     .select({ qty: sql<number>`COALESCE(SUM(${finishedGoodsTable.quantity}), 0)::int` })
@@ -205,9 +201,7 @@ router.get("/reports/daily-production", async (req, res) => {
     cutting: cutting.qty || 0,
     allocated: allocated.qty || 0,
     received: received.qty || 0,
-    pressing: await getFinishingQty("pressing"),
-    buttons: await getFinishingQty("buttons"),
-    hanger: await getFinishingQty("hanger"),
+    finishing: finishing.qty || 0,
     finished: finished.qty || 0,
   });
 });
@@ -223,23 +217,17 @@ router.get("/reports/stage-pending", async (_req, res) => {
       sql`${allocationsTable.quantityIssued} - ${allocationsTable.quantityReceived} - ${allocationsTable.quantityRejected} > 0`
     );
 
-  const finishingStages = ["pressing", "buttons", "hanger", "packing"];
-  const stageResults = await Promise.all(
-    finishingStages.map(async (stage) => {
-      const [r] = await db
-        .select({
-          qty: sql<number>`COALESCE(SUM(${finishingRecordsTable.inputQuantity} - ${finishingRecordsTable.outputQuantity} - ${finishingRecordsTable.defectiveQuantity}), 0)::int`,
-          cnt: sql<number>`COUNT(*)::int`,
-        })
-        .from(finishingRecordsTable)
-        .where(eq(finishingRecordsTable.stage, stage as any));
-      return { stage, pendingQuantity: Math.max(0, r.qty || 0), batchCount: r.cnt || 0 };
+  // Aggregate all finishing records (all historical stages + new "finishing") into a single row
+  const [finishingPending] = await db
+    .select({
+      qty: sql<number>`COALESCE(SUM(${finishingRecordsTable.inputQuantity} - ${finishingRecordsTable.outputQuantity} - ${finishingRecordsTable.defectiveQuantity}), 0)::int`,
+      cnt: sql<number>`COUNT(DISTINCT ${finishingRecordsTable.cuttingBatchId})::int`,
     })
-  );
+    .from(finishingRecordsTable);
 
   res.json([
     { stage: "With Stitchers", pendingQuantity: pendingStitchers.qty || 0, batchCount: pendingStitchers.cnt || 0 },
-    ...stageResults,
+    { stage: "Finishing", pendingQuantity: Math.max(0, finishingPending.qty || 0), batchCount: finishingPending.cnt || 0 },
   ]);
 });
 

@@ -508,17 +508,13 @@ export const CreateReceivingBody = zod.object({
 });
 
 /**
- * @summary List finishing stage records
+ * @summary List finishing stage records (all stages merged)
  */
-export const ListFinishingRecordsQueryParams = zod.object({
-  stage: zod.enum(["pressing", "buttons", "hanger", "packing"]).optional(),
-});
-
 export const ListFinishingRecordsResponseItem = zod.object({
   id: zod.number(),
   batchNumber: zod.string().optional(),
   cuttingBatchId: zod.number().optional(),
-  stage: zod.enum(["pressing", "buttons", "hanger", "packing"]),
+  stage: zod.enum(["pressing", "buttons", "hanger", "packing", "finishing"]),
   productName: zod.string().optional(),
   sizeName: zod.string().optional(),
   colorName: zod.string().optional(),
@@ -539,13 +535,27 @@ export const ListFinishingRecordsResponse = zod.array(
  */
 export const CreateFinishingRecordBody = zod.object({
   cuttingBatchId: zod.number(),
-  stage: zod.enum(["pressing", "buttons", "hanger", "packing"]),
   inputQuantity: zod.number(),
   outputQuantity: zod.number(),
   defectiveQuantity: zod.number().optional(),
   operator: zod.string().optional(),
   processDate: zod.string(),
   remarks: zod.string().optional(),
+});
+
+/**
+ * @summary Get available quantity info for finishing a batch
+ */
+export const GetFinishingBatchInfoParams = zod.object({
+  batchId: zod.coerce.number(),
+});
+
+export const GetFinishingBatchInfoResponse = zod.object({
+  batchId: zod.number(),
+  batchNumber: zod.string().optional(),
+  totalReceived: zod.number(),
+  totalFinishingOutput: zod.number(),
+  availableForFinishing: zod.number(),
 });
 
 /**
@@ -578,6 +588,21 @@ export const CreateFinishedGoodsEntryBody = zod.object({
   quantity: zod.number(),
   entryDate: zod.string(),
   remarks: zod.string().optional(),
+});
+
+/**
+ * @summary Get available quantity for moving a batch to finished goods store
+ */
+export const GetFinishedGoodsBatchInfoParams = zod.object({
+  batchId: zod.coerce.number(),
+});
+
+export const GetFinishedGoodsBatchInfoResponse = zod.object({
+  batchId: zod.number(),
+  batchNumber: zod.string().optional(),
+  totalFinishingOutput: zod.number(),
+  totalStoredQty: zod.number(),
+  availableForStore: zod.number(),
 });
 
 /**
@@ -717,9 +742,7 @@ export const GetDailyProductionReportResponse = zod.object({
   cutting: zod.number(),
   allocated: zod.number(),
   received: zod.number(),
-  pressing: zod.number().optional(),
-  buttons: zod.number().optional(),
-  hanger: zod.number().optional(),
+  finishing: zod.number().optional(),
   finished: zod.number(),
 });
 

@@ -5,11 +5,9 @@
  * Abaya Production Tracking and Inventory Management API
  * OpenAPI spec version: 0.1.0
  */
-import type { CreateFinishingRecordBodyStage } from "./createFinishingRecordBodyStage";
 
 export interface CreateFinishingRecordBody {
   cuttingBatchId: number;
-  stage: CreateFinishingRecordBodyStage;
   inputQuantity: number;
   outputQuantity: number;
   defectiveQuantity?: number;

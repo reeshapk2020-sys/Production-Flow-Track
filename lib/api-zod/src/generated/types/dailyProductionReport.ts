@@ -11,8 +11,6 @@ export interface DailyProductionReport {
   cutting: number;
   allocated: number;
   received: number;
-  pressing?: number;
-  buttons?: number;
-  hanger?: number;
+  finishing?: number;
   finished: number;
 }

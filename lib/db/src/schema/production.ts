@@ -41,6 +41,7 @@ export const finishingStageEnum = pgEnum("finishing_stage", [
   "buttons",
   "hanger",
   "packing",
+  "finishing",
 ]);
 
 export const rollStatusEnum = pgEnum("roll_status", [
