@@ -288,6 +288,7 @@ export default function ReceivingPage() {
             <TableHeader className="bg-slate-50 border-b border-slate-100">
               <TableRow>
                 <TableHead className="py-4">Batch / Allocation</TableHead>
+                <TableHead>Item Code</TableHead>
                 <TableHead>Stitcher</TableHead>
                 <TableHead className="text-right">Issued</TableHead>
                 <TableHead className="text-right">Good Rcvd</TableHead>
@@ -298,7 +299,7 @@ export default function ReceivingPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
               ) : (
                 data?.map(rec => (
                   <TableRow key={rec.id} className="group hover:bg-slate-50/50">
@@ -306,6 +307,11 @@ export default function ReceivingPage() {
                       <div className="font-semibold text-primary text-sm">{rec.batchNumber}</div>
                       <div className="text-xs text-slate-400 font-mono">{rec.allocationNumber}</div>
                       <div className="text-xs text-slate-500">{fmtCode(rec.productCode, rec.productName)}</div>
+                    </TableCell>
+                    <TableCell>
+                      {(rec as any).itemCode
+                        ? <span className="font-mono text-xs font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded">{(rec as any).itemCode}</span>
+                        : <span className="text-xs text-slate-400">—</span>}
                     </TableCell>
                     <TableCell>
                       <div className="font-semibold text-slate-900 text-sm">{rec.stitcherName}</div>
@@ -343,7 +349,7 @@ export default function ReceivingPage() {
                 ))
               )}
               {!isLoading && data?.length === 0 && (
-                <TableRow><TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-12 text-slate-500">No receivings logged yet.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-12 text-slate-500">No receivings logged yet.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

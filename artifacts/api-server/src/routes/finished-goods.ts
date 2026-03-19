@@ -5,11 +5,15 @@ import {
   finishingRecordsTable,
   cuttingBatchesTable,
   productsTable,
+  fabricsTable,
+  materialsTable,
   sizesTable,
   colorsTable,
 } from "@workspace/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit.js";
+import { computeItemCode } from "../lib/itemCode.js";
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated() || req.user?.role !== "admin") {
@@ -20,6 +24,8 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
 }
 
 const router: IRouter = Router();
+const mat1 = alias(materialsTable, "mat1");
+const mat2 = alias(materialsTable, "mat2");
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -52,6 +58,12 @@ router.get("/finished-goods", async (_req, res) => {
       productId: productsTable.id,
       productCode: productsTable.code,
       productName: productsTable.name,
+      fabricCode: fabricsTable.code,
+      fabricName: fabricsTable.name,
+      materialCode: mat1.code,
+      materialName: mat1.name,
+      material2Code: mat2.code,
+      material2Name: mat2.name,
       sizeId: sizesTable.id,
       sizeName: sizesTable.name,
       colorId: colorsTable.id,
@@ -65,10 +77,16 @@ router.get("/finished-goods", async (_req, res) => {
     .from(finishedGoodsTable)
     .leftJoin(cuttingBatchesTable, eq(finishedGoodsTable.cuttingBatchId, cuttingBatchesTable.id))
     .leftJoin(productsTable, eq(cuttingBatchesTable.productId, productsTable.id))
+    .leftJoin(fabricsTable, eq(cuttingBatchesTable.fabricId, fabricsTable.id))
+    .leftJoin(mat1, eq(cuttingBatchesTable.materialId, mat1.id))
+    .leftJoin(mat2, eq(cuttingBatchesTable.material2Id, mat2.id))
     .leftJoin(sizesTable, eq(cuttingBatchesTable.sizeId, sizesTable.id))
     .leftJoin(colorsTable, eq(cuttingBatchesTable.colorId, colorsTable.id))
     .orderBy(sql`${finishedGoodsTable.createdAt} desc`);
-  res.json(rows);
+  res.json(rows.map(r => ({
+    ...r,
+    itemCode: computeItemCode(r.productCode, r.fabricCode, r.materialCode, r.material2Code),
+  })));
 });
 
 /** GET /finished-goods/batch-info/:batchId – availability from finishing */

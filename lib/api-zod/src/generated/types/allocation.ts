@@ -13,6 +13,13 @@ export interface Allocation {
   batchNumber?: string;
   productCode?: string;
   productName?: string;
+  fabricCode?: string;
+  fabricName?: string;
+  materialCode?: string;
+  materialName?: string;
+  material2Code?: string;
+  material2Name?: string;
+  itemCode?: string;
   sizeName?: string;
   colorCode?: string;
   colorName?: string;

@@ -6,10 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface Fabric {
-  id: number;
+export interface UpdateFabricBody {
   code?: string | null;
-  name: string;
+  name?: string;
   description?: string;
   unit?: string;
   isActive?: boolean;

@@ -71,6 +71,7 @@ import type {
   UpdateAllocationBody,
   UpdateColorBody,
   UpdateCuttingBatchBody,
+  UpdateFabricBody,
   UpdateFabricRollBody,
   UpdateFinishedGoodsBody,
   UpdateFinishingRecordBody,
@@ -1375,6 +1376,93 @@ export const useCreateFabric = <
   TContext
 > => {
   return useMutation(getCreateFabricMutationOptions(options));
+};
+
+/**
+ * @summary Update a fabric type (admin only)
+ */
+export const getUpdateFabricUrl = (id: number) => {
+  return `/api/master/fabrics/${id}`;
+};
+
+export const updateFabric = async (
+  id: number,
+  updateFabricBody: UpdateFabricBody,
+  options?: RequestInit,
+): Promise<Fabric> => {
+  return customFetch<Fabric>(getUpdateFabricUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateFabricBody),
+  });
+};
+
+export const getUpdateFabricMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateFabric>>,
+    TError,
+    { id: number; data: BodyType<UpdateFabricBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateFabric>>,
+  TError,
+  { id: number; data: BodyType<UpdateFabricBody> },
+  TContext
+> => {
+  const mutationKey = ["updateFabric"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateFabric>>,
+    { id: number; data: BodyType<UpdateFabricBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateFabric(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateFabricMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateFabric>>
+>;
+export type UpdateFabricMutationBody = BodyType<UpdateFabricBody>;
+export type UpdateFabricMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a fabric type (admin only)
+ */
+export const useUpdateFabric = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateFabric>>,
+    TError,
+    { id: number; data: BodyType<UpdateFabricBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateFabric>>,
+  TError,
+  { id: number; data: BodyType<UpdateFabricBody> },
+  TContext
+> => {
+  return useMutation(getUpdateFabricMutationOptions(options));
 };
 
 /**

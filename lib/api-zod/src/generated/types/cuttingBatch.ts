@@ -12,11 +12,22 @@ export interface CuttingBatch {
   productId?: number;
   productCode?: string;
   productName?: string;
+  fabricId?: number;
+  fabricCode?: string;
+  fabricName?: string;
+  materialId?: number;
+  materialCode?: string;
+  materialName?: string;
+  material2Id?: number;
+  material2Code?: string;
+  material2Name?: string;
   sizeId?: number;
   sizeName?: string;
   colorId?: number;
   colorCode?: string;
   colorName?: string;
+  /** Computed from product+fabric+material1+material2 codes joined with "-" */
+  itemCode?: string;
   quantityCut: number;
   availableForAllocation?: number;
   totalAllocated?: number;

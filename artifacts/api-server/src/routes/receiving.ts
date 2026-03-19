@@ -6,13 +6,17 @@ import {
   cuttingBatchesTable,
   stitchersTable,
   productsTable,
+  fabricsTable,
+  materialsTable,
   sizesTable,
   colorsTable,
   finishingRecordsTable,
   finishedGoodsTable,
 } from "@workspace/db/schema";
 import { eq, sql, and } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit.js";
+import { computeItemCode } from "../lib/itemCode.js";
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated() || req.user?.role !== "admin") {
@@ -23,6 +27,8 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
 }
 
 const router: IRouter = Router();
+const mat1 = alias(materialsTable, "mat1");
+const mat2 = alias(materialsTable, "mat2");
 
 /**
  * Recalculate allocation totals from the receivings table (source of truth).
@@ -137,6 +143,12 @@ router.get("/receiving", denyAllocationRole, async (_req, res) => {
       batchNumber: cuttingBatchesTable.batchNumber,
       productCode: productsTable.code,
       productName: productsTable.name,
+      fabricCode: fabricsTable.code,
+      fabricName: fabricsTable.name,
+      materialCode: mat1.code,
+      materialName: mat1.name,
+      material2Code: mat2.code,
+      material2Name: mat2.name,
       sizeName: sizesTable.name,
       colorCode: colorsTable.code,
       colorName: colorsTable.name,
@@ -153,11 +165,17 @@ router.get("/receiving", denyAllocationRole, async (_req, res) => {
     .leftJoin(allocationsTable, eq(receivingsTable.allocationId, allocationsTable.id))
     .leftJoin(cuttingBatchesTable, eq(allocationsTable.cuttingBatchId, cuttingBatchesTable.id))
     .leftJoin(productsTable, eq(cuttingBatchesTable.productId, productsTable.id))
+    .leftJoin(fabricsTable, eq(cuttingBatchesTable.fabricId, fabricsTable.id))
+    .leftJoin(mat1, eq(cuttingBatchesTable.materialId, mat1.id))
+    .leftJoin(mat2, eq(cuttingBatchesTable.material2Id, mat2.id))
     .leftJoin(sizesTable, eq(cuttingBatchesTable.sizeId, sizesTable.id))
     .leftJoin(colorsTable, eq(cuttingBatchesTable.colorId, colorsTable.id))
     .leftJoin(stitchersTable, eq(allocationsTable.stitcherId, stitchersTable.id))
     .orderBy(sql`${receivingsTable.createdAt} desc`);
-  res.json(rows);
+  res.json(rows.map(r => ({
+    ...r,
+    itemCode: computeItemCode(r.productCode, r.fabricCode, r.materialCode, r.material2Code),
+  })));
 });
 
 router.post("/receiving", denyAllocationRole, async (req, res) => {

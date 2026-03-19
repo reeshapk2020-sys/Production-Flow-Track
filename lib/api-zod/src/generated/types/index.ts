@@ -71,6 +71,7 @@ export * from "./traceSearchResult";
 export * from "./updateAllocationBody";
 export * from "./updateColorBody";
 export * from "./updateCuttingBatchBody";
+export * from "./updateFabricBody";
 export * from "./updateFabricRollBody";
 export * from "./updateFinishedGoodsBody";
 export * from "./updateFinishingRecordBody";

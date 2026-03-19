@@ -125,10 +125,26 @@ router.get("/master/fabrics", async (_req, res) => {
 });
 
 router.post("/master/fabrics", async (req, res) => {
-  const { name, description, unit } = req.body;
-  const [row] = await db.insert(fabricsTable).values({ name, description, unit }).returning();
+  const { code, name, description, unit } = req.body;
+  const trimmedCode = code ? String(code).trim().toUpperCase() : null;
+  const [row] = await db.insert(fabricsTable).values({ code: trimmedCode, name, description, unit }).returning();
   await logAudit(req, "CREATE", "fabrics", String(row.id), `Created fabric: ${name}`);
   res.status(201).json(row);
+});
+
+router.put("/master/fabrics/:id", async (req, res) => {
+  if (requireAdmin(req, res)) return;
+  const id = Number(req.params.id);
+  const { code, name, description, unit, isActive } = req.body;
+  const trimmedCode = code ? String(code).trim().toUpperCase() : null;
+  const [row] = await db
+    .update(fabricsTable)
+    .set({ code: trimmedCode, name, description, unit, ...(isActive !== undefined ? { isActive } : {}) })
+    .where(eq(fabricsTable.id, id))
+    .returning();
+  if (!row) return res.status(404).json({ error: "Not found" });
+  await logAudit(req, "UPDATE", "fabrics", String(id), `Updated fabric: ${name}`);
+  res.json(row);
 });
 
 // PRODUCTS

@@ -8,6 +8,7 @@ import { AlertCircle, Plus, Loader2, Scissors, Pencil } from "lucide-react";
 import { 
   useListCuttingBatches, useCreateCuttingBatch, getListCuttingBatchesQueryKey,
   useListProducts, useListSizes, useListColors, useListFabricRolls,
+  useListFabrics, useListMaterials,
   useUpdateCuttingBatch
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -40,6 +41,8 @@ export default function CuttingPage() {
   const { data: sizes } = useListSizes();
   const { data: colors } = useListColors();
   const { data: rolls } = useListFabricRolls();
+  const { data: fabrics } = useListFabrics();
+  const { data: materials } = useListMaterials();
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -97,6 +100,9 @@ export default function CuttingPage() {
       data: {
         batchNumber: batchNumber.trim(),
         productId: Number(fd.get("productId")),
+        fabricId: Number(fd.get("fabricId")) || undefined,
+        materialId: Number(fd.get("materialId")) || undefined,
+        material2Id: Number(fd.get("material2Id")) || undefined,
         sizeId: Number(fd.get("sizeId")) || undefined,
         colorId: Number(fd.get("colorId")) || undefined,
         quantityCut: Number(fd.get("quantityCut")),
@@ -194,6 +200,39 @@ export default function CuttingPage() {
                   </div>
                 </div>
 
+                <div className="col-span-2 bg-teal-50/50 p-4 rounded-xl border border-teal-100 space-y-4">
+                  <h3 className="font-semibold text-slate-800 text-sm uppercase tracking-wider">Item Identity (for Item Code)</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-sm font-medium block mb-1.5">Fabric Type</label>
+                      <select name="fabricId" className="form-input-styled bg-white">
+                        <option value="">— None —</option>
+                        {fabrics?.filter((f: any) => f.isActive !== false).map((f: any) => (
+                          <option key={f.id} value={f.id}>{f.code ? `${f.code} — ${f.name}` : f.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium block mb-1.5">Material 1</label>
+                      <select name="materialId" className="form-input-styled bg-white">
+                        <option value="">— None —</option>
+                        {materials?.filter((m: any) => m.isActive).map((m: any) => (
+                          <option key={m.id} value={m.id}>{fmtCode(m.code, m.name)}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium block mb-1.5">Material 2</label>
+                      <select name="material2Id" className="form-input-styled bg-white">
+                        <option value="">— None —</option>
+                        {materials?.filter((m: any) => m.isActive).map((m: any) => (
+                          <option key={m.id} value={m.id}>{fmtCode(m.code, m.name)}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="col-span-2 bg-blue-50/50 p-4 rounded-xl border border-blue-100 space-y-4">
                   <h3 className="font-semibold text-slate-800 text-sm uppercase tracking-wider">Fabric Consumption</h3>
                   <div className="grid grid-cols-3 gap-4">
@@ -250,6 +289,7 @@ export default function CuttingPage() {
               <TableRow>
                 <TableHead className="py-4">Batch Number</TableHead>
                 <TableHead>Product / Specs</TableHead>
+                <TableHead>Item Code</TableHead>
                 <TableHead className="text-right">Qty Cut</TableHead>
                 <TableHead className="text-right">Available for Alloc.</TableHead>
                 <TableHead>Date & Cutter</TableHead>
@@ -258,7 +298,7 @@ export default function CuttingPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? <TableRow><TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow> :
+              {isLoading ? <TableRow><TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow> :
                 data?.map(batch => (
                   <TableRow key={batch.id} className="group">
                     <TableCell className="font-mono text-primary font-bold">{batch.batchNumber}</TableCell>
@@ -268,6 +308,11 @@ export default function CuttingPage() {
                         {batch.sizeName && <span className="bg-slate-100 px-1.5 rounded">{batch.sizeName}</span>}
                         {batch.colorName && <span className="bg-slate-100 px-1.5 rounded">{fmtCode(batch.colorCode, batch.colorName)}</span>}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {batch.itemCode
+                        ? <span className="font-mono text-xs font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded">{batch.itemCode}</span>
+                        : <span className="text-xs text-slate-400">—</span>}
                     </TableCell>
                     <TableCell className="text-right font-semibold text-lg">{batch.quantityCut}</TableCell>
                     <TableCell className="text-right">
@@ -298,7 +343,7 @@ export default function CuttingPage() {
                 ))
               }
               {data?.length === 0 && (
-                <TableRow><TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-12 text-slate-500">No cutting batches found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-12 text-slate-500">No cutting batches found.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

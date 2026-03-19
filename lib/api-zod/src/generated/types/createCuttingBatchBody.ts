@@ -11,6 +11,9 @@ export interface CreateCuttingBatchBody {
   /** Manually entered batch number, must be unique */
   batchNumber: string;
   productId: number;
+  fabricId?: number;
+  materialId?: number;
+  material2Id?: number;
   sizeId?: number;
   colorId?: number;
   quantityCut: number;

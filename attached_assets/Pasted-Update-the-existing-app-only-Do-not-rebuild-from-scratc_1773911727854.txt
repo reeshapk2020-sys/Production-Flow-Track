@@ -1,0 +1,106 @@
+Update the existing app only. Do not rebuild from scratch.
+
+Connect all relevant master data to the production flow, especially Cutting and Allocation, so the final item identity is available and visible correctly.
+
+Current situation:
+The app already has master data for:
+- Product / Design (with code)
+- Fabric (with code)
+- Material / Accessory 1 (with code)
+- Material / Accessory 2 (with code, optional)
+
+But these are not fully connected to Cutting and Allocation yet.
+
+Requirements:
+
+1. Connect master data to Cutting
+In the Cutting module, make sure the user can select and save:
+- Product / Design
+- Fabric
+- Material / Accessory 1
+- Material / Accessory 2 (optional)
+- Size
+- Color
+
+These should be linked using the proper master tables and foreign keys, not free text.
+
+2. Save these links on the cutting batch
+Each cutting batch should store references to the selected:
+- product/design
+- fabric
+- material 1
+- material 2
+- size
+- color
+
+Keep existing IDs and relationships safe.
+Do not break old records.
+
+3. Make Allocation inherit from Cutting
+In the Allocation module, when a cutting batch is selected, automatically bring forward and display the linked master data from that cutting batch:
+- product/design
+- fabric
+- material 1
+- material 2
+- size
+- color
+
+Allocation should not require re-entry of these fields.
+It should use the values already saved on the cutting batch.
+
+4. Show final business identity in Allocation
+In Allocation tables/forms/details, clearly display the item identity using the connected master data.
+
+At minimum show:
+- product code + product name
+- fabric code + fabric name if available
+- material 1 code + name if available
+- material 2 code + name if available
+- size
+- color
+
+5. Build and display final item code
+Create a computed display code from the linked master data:
+- design code
+- fabric code
+- material code 1
+- material code 2 (optional)
+
+Format:
+- join non-empty parts with "-"
+Examples:
+- 501 + 52 + g1 => 501-52-g1
+- 501 + 52 + g1 + p2 => 501-52-g1-p2
+
+Show this final code in:
+- Cutting
+- Allocation
+- Receiving
+- Finishing
+- Finished Goods
+- Traceability
+- relevant reports where item identity is shown
+
+6. Dropdown display format
+Use clear dropdown labels for all linked master data:
+- Product: code - name
+- Fabric: code - name
+- Material: code - name
+- Color: code - name if color code exists
+This should help users choose correctly during Cutting.
+
+7. Keep data flow clean
+- Cutting is the source of item identity
+- Allocation, Receiving, Finishing, and Finished Goods should inherit identity from the cutting batch / batch flow
+- users should not manually re-enter identity details in downstream modules
+
+8. Data safety
+- preserve existing records
+- do not break current production data
+- if old cutting batches are missing some linked fields, handle them safely
+- do not rebuild the app
+- do not change unrelated modules
+- do not change database unless absolutely necessary
+
+Goal:
+I want all master data (product, fabric, material 1, material 2, size, color) connected properly to Cutting, and then inherited automatically by Allocation and all downstream modules, so the final item code and item identity display correctly everywhere.

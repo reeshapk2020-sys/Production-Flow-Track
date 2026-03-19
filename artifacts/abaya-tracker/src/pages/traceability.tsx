@@ -92,6 +92,13 @@ function BatchTimeline({ batchNumber }: { batchNumber: string }) {
         <div className="relative z-10">
           <Badge className="bg-primary/20 text-blue-200 hover:bg-primary/20 border-primary/30 mb-4">{data.currentStage}</Badge>
           <h2 className="text-4xl font-mono font-bold tracking-tight mb-2">{data.batchNumber}</h2>
+          {(data as any).itemCode && (
+            <div className="mb-2">
+              <span className="font-mono text-sm font-semibold bg-teal-600/30 text-teal-200 border border-teal-500/40 px-2.5 py-1 rounded">
+                {(data as any).itemCode}
+              </span>
+            </div>
+          )}
           <p className="text-lg text-slate-300">{fmtCode(data.productCode, data.productName)} • {data.sizeName || 'Any'} • {fmtCode(data.colorCode, data.colorName) || 'Any'}</p>
         </div>
       </div>

@@ -186,9 +186,11 @@ export const UpdateMaterialResponse = zod.object({
  */
 export const ListFabricsResponseItem = zod.object({
   id: zod.number(),
+  code: zod.string().nullish(),
   name: zod.string(),
   description: zod.string().optional(),
   unit: zod.string().optional(),
+  isActive: zod.boolean().optional(),
 });
 export const ListFabricsResponse = zod.array(ListFabricsResponseItem);
 
@@ -196,9 +198,34 @@ export const ListFabricsResponse = zod.array(ListFabricsResponseItem);
  * @summary Create a fabric type
  */
 export const CreateFabricBody = zod.object({
+  code: zod.string().optional(),
   name: zod.string(),
   description: zod.string().optional(),
   unit: zod.string().optional(),
+});
+
+/**
+ * @summary Update a fabric type (admin only)
+ */
+export const UpdateFabricParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateFabricBody = zod.object({
+  code: zod.string().nullish(),
+  name: zod.string().optional(),
+  description: zod.string().optional(),
+  unit: zod.string().optional(),
+  isActive: zod.boolean().optional(),
+});
+
+export const UpdateFabricResponse = zod.object({
+  id: zod.number(),
+  code: zod.string().nullish(),
+  name: zod.string(),
+  description: zod.string().optional(),
+  unit: zod.string().optional(),
+  isActive: zod.boolean().optional(),
 });
 
 /**
@@ -469,11 +496,26 @@ export const ListCuttingBatchesResponseItem = zod.object({
   productId: zod.number().optional(),
   productCode: zod.string().optional(),
   productName: zod.string().optional(),
+  fabricId: zod.number().optional(),
+  fabricCode: zod.string().optional(),
+  fabricName: zod.string().optional(),
+  materialId: zod.number().optional(),
+  materialCode: zod.string().optional(),
+  materialName: zod.string().optional(),
+  material2Id: zod.number().optional(),
+  material2Code: zod.string().optional(),
+  material2Name: zod.string().optional(),
   sizeId: zod.number().optional(),
   sizeName: zod.string().optional(),
   colorId: zod.number().optional(),
   colorCode: zod.string().optional(),
   colorName: zod.string().optional(),
+  itemCode: zod
+    .string()
+    .optional()
+    .describe(
+      'Computed from product+fabric+material1+material2 codes joined with \"-\"',
+    ),
   quantityCut: zod.number(),
   availableForAllocation: zod.number().optional(),
   totalAllocated: zod.number().optional(),
@@ -495,6 +537,9 @@ export const CreateCuttingBatchBody = zod.object({
     .string()
     .describe("Manually entered batch number, must be unique"),
   productId: zod.number(),
+  fabricId: zod.number().optional(),
+  materialId: zod.number().optional(),
+  material2Id: zod.number().optional(),
   sizeId: zod.number().optional(),
   colorId: zod.number().optional(),
   quantityCut: zod.number(),
@@ -525,11 +570,26 @@ export const GetCuttingBatchResponse = zod.object({
     productId: zod.number().optional(),
     productCode: zod.string().optional(),
     productName: zod.string().optional(),
+    fabricId: zod.number().optional(),
+    fabricCode: zod.string().optional(),
+    fabricName: zod.string().optional(),
+    materialId: zod.number().optional(),
+    materialCode: zod.string().optional(),
+    materialName: zod.string().optional(),
+    material2Id: zod.number().optional(),
+    material2Code: zod.string().optional(),
+    material2Name: zod.string().optional(),
     sizeId: zod.number().optional(),
     sizeName: zod.string().optional(),
     colorId: zod.number().optional(),
     colorCode: zod.string().optional(),
     colorName: zod.string().optional(),
+    itemCode: zod
+      .string()
+      .optional()
+      .describe(
+        'Computed from product+fabric+material1+material2 codes joined with \"-\"',
+      ),
     quantityCut: zod.number(),
     availableForAllocation: zod.number().optional(),
     totalAllocated: zod.number().optional(),
@@ -555,6 +615,13 @@ export const GetCuttingBatchResponse = zod.object({
       batchNumber: zod.string().optional(),
       productCode: zod.string().optional(),
       productName: zod.string().optional(),
+      fabricCode: zod.string().optional(),
+      fabricName: zod.string().optional(),
+      materialCode: zod.string().optional(),
+      materialName: zod.string().optional(),
+      material2Code: zod.string().optional(),
+      material2Name: zod.string().optional(),
+      itemCode: zod.string().optional(),
       sizeName: zod.string().optional(),
       colorCode: zod.string().optional(),
       colorName: zod.string().optional(),
@@ -591,11 +658,26 @@ export const UpdateCuttingBatchResponse = zod.object({
   productId: zod.number().optional(),
   productCode: zod.string().optional(),
   productName: zod.string().optional(),
+  fabricId: zod.number().optional(),
+  fabricCode: zod.string().optional(),
+  fabricName: zod.string().optional(),
+  materialId: zod.number().optional(),
+  materialCode: zod.string().optional(),
+  materialName: zod.string().optional(),
+  material2Id: zod.number().optional(),
+  material2Code: zod.string().optional(),
+  material2Name: zod.string().optional(),
   sizeId: zod.number().optional(),
   sizeName: zod.string().optional(),
   colorId: zod.number().optional(),
   colorCode: zod.string().optional(),
   colorName: zod.string().optional(),
+  itemCode: zod
+    .string()
+    .optional()
+    .describe(
+      'Computed from product+fabric+material1+material2 codes joined with \"-\"',
+    ),
   quantityCut: zod.number(),
   availableForAllocation: zod.number().optional(),
   totalAllocated: zod.number().optional(),
@@ -616,6 +698,13 @@ export const ListAllocationsResponseItem = zod.object({
   batchNumber: zod.string().optional(),
   productCode: zod.string().optional(),
   productName: zod.string().optional(),
+  fabricCode: zod.string().optional(),
+  fabricName: zod.string().optional(),
+  materialCode: zod.string().optional(),
+  materialName: zod.string().optional(),
+  material2Code: zod.string().optional(),
+  material2Name: zod.string().optional(),
+  itemCode: zod.string().optional(),
   sizeName: zod.string().optional(),
   colorCode: zod.string().optional(),
   colorName: zod.string().optional(),
@@ -657,6 +746,13 @@ export const GetAllocationResponse = zod.object({
   batchNumber: zod.string().optional(),
   productCode: zod.string().optional(),
   productName: zod.string().optional(),
+  fabricCode: zod.string().optional(),
+  fabricName: zod.string().optional(),
+  materialCode: zod.string().optional(),
+  materialName: zod.string().optional(),
+  material2Code: zod.string().optional(),
+  material2Name: zod.string().optional(),
+  itemCode: zod.string().optional(),
   sizeName: zod.string().optional(),
   colorCode: zod.string().optional(),
   colorName: zod.string().optional(),
@@ -691,6 +787,13 @@ export const UpdateAllocationResponse = zod.object({
   batchNumber: zod.string().optional(),
   productCode: zod.string().optional(),
   productName: zod.string().optional(),
+  fabricCode: zod.string().optional(),
+  fabricName: zod.string().optional(),
+  materialCode: zod.string().optional(),
+  materialName: zod.string().optional(),
+  material2Code: zod.string().optional(),
+  material2Name: zod.string().optional(),
+  itemCode: zod.string().optional(),
   sizeName: zod.string().optional(),
   colorCode: zod.string().optional(),
   colorName: zod.string().optional(),
@@ -1015,11 +1118,26 @@ export const GetDashboardResponse = zod.object({
         productId: zod.number().optional(),
         productCode: zod.string().optional(),
         productName: zod.string().optional(),
+        fabricId: zod.number().optional(),
+        fabricCode: zod.string().optional(),
+        fabricName: zod.string().optional(),
+        materialId: zod.number().optional(),
+        materialCode: zod.string().optional(),
+        materialName: zod.string().optional(),
+        material2Id: zod.number().optional(),
+        material2Code: zod.string().optional(),
+        material2Name: zod.string().optional(),
         sizeId: zod.number().optional(),
         sizeName: zod.string().optional(),
         colorId: zod.number().optional(),
         colorCode: zod.string().optional(),
         colorName: zod.string().optional(),
+        itemCode: zod
+          .string()
+          .optional()
+          .describe(
+            'Computed from product+fabric+material1+material2 codes joined with \"-\"',
+          ),
         quantityCut: zod.number(),
         availableForAllocation: zod.number().optional(),
         totalAllocated: zod.number().optional(),

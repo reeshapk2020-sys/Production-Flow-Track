@@ -96,6 +96,7 @@ export const materialsTable = pgTable("materials", {
 
 export const fabricsTable = pgTable("fabrics", {
   id: serial("id").primaryKey(),
+  code: text("code"),
   name: text("name").notNull().unique(),
   description: text("description"),
   unit: text("unit").notNull().default("meters"),
@@ -159,6 +160,9 @@ export const cuttingBatchesTable = pgTable("cutting_batches", {
   productId: integer("product_id")
     .notNull()
     .references(() => productsTable.id),
+  fabricId: integer("fabric_id").references(() => fabricsTable.id),
+  materialId: integer("material_id").references(() => materialsTable.id),
+  material2Id: integer("material2_id").references(() => materialsTable.id),
   sizeId: integer("size_id").references(() => sizesTable.id),
   colorId: integer("color_id").references(() => colorsTable.id),
   quantityCut: integer("quantity_cut").notNull(),

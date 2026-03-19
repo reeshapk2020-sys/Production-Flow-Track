@@ -6,11 +6,15 @@ import {
   allocationsTable,
   receivingsTable,
   productsTable,
+  fabricsTable,
+  materialsTable,
   sizesTable,
   colorsTable,
 } from "@workspace/db/schema";
 import { eq, sql, inArray } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit.js";
+import { computeItemCode } from "../lib/itemCode.js";
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated() || req.user?.role !== "admin") {
@@ -21,6 +25,8 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
 }
 
 const router: IRouter = Router();
+const mat1 = alias(materialsTable, "mat1");
+const mat2 = alias(materialsTable, "mat2");
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -64,6 +70,12 @@ router.get("/finishing", async (_req, res) => {
       stage: finishingRecordsTable.stage,
       productCode: productsTable.code,
       productName: productsTable.name,
+      fabricCode: fabricsTable.code,
+      fabricName: fabricsTable.name,
+      materialCode: mat1.code,
+      materialName: mat1.name,
+      material2Code: mat2.code,
+      material2Name: mat2.name,
       sizeName: sizesTable.name,
       colorCode: colorsTable.code,
       colorName: colorsTable.name,
@@ -77,6 +89,9 @@ router.get("/finishing", async (_req, res) => {
     .from(finishingRecordsTable)
     .leftJoin(cuttingBatchesTable, eq(finishingRecordsTable.cuttingBatchId, cuttingBatchesTable.id))
     .leftJoin(productsTable, eq(cuttingBatchesTable.productId, productsTable.id))
+    .leftJoin(fabricsTable, eq(cuttingBatchesTable.fabricId, fabricsTable.id))
+    .leftJoin(mat1, eq(cuttingBatchesTable.materialId, mat1.id))
+    .leftJoin(mat2, eq(cuttingBatchesTable.material2Id, mat2.id))
     .leftJoin(sizesTable, eq(cuttingBatchesTable.sizeId, sizesTable.id))
     .leftJoin(colorsTable, eq(cuttingBatchesTable.colorId, colorsTable.id))
     .orderBy(sql`${finishingRecordsTable.createdAt} desc`);
@@ -85,6 +100,7 @@ router.get("/finishing", async (_req, res) => {
     rows.map((r) => ({
       ...r,
       pendingQuantity: r.inputQuantity - r.outputQuantity - r.defectiveQuantity,
+      itemCode: computeItemCode(r.productCode, r.fabricCode, r.materialCode, r.material2Code),
     }))
   );
 });

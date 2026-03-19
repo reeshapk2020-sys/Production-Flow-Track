@@ -71,16 +71,17 @@ lib/
 ### Master Tables
 - `categories` - Product categories
 - `sizes` - Size master
-- `colors` - Color master
-- `fabrics` - Fabric type master
-- `products` - Product/design master
+- `colors` - Color master (with color code)
+- `fabrics` - Fabric type master (with fabric code for item identity)
+- `materials` - Material master (with code, admin-only CRUD)
+- `products` - Product/design master (with design code)
 - `teams` - Stitching teams
 - `stitchers` - Stitcher master
 - `app_users` - Application users with roles
 
 ### Production Tables
 - `fabric_rolls` - Raw material / fabric roll inventory
-- `cutting_batches` - Cutting batch records (with auto-generated batch numbers)
+- `cutting_batches` - Cutting batch records; stores fabricId, materialId, material2Id FKs for item identity
 - `cutting_fabric_usage` - Links fabric rolls to cutting batches
 - `allocations` - Allocation of cut pieces to stitchers
 - `receivings` - Receiving records from stitchers
@@ -105,6 +106,7 @@ lib/
 ## Key Features
 
 - Full batch traceability (Fabric Roll → Cutting → Allocation → Receiving → Finishing → Finished Goods)
+- **Item Code system**: Composite code computed as `productCode-fabricCode-material1Code-material2Code`; set at cutting time and displayed in all downstream modules (cutting, allocation, receiving, finishing, finished goods, traceability)
 - Real-time inventory tracking at all stages
 - Stitcher performance reports
 - Dashboard with today's production metrics
@@ -113,6 +115,8 @@ lib/
 - Secure login via Replit Auth
 - Admin-only edit access on all 6 operational modules (safe fields only — dates, operator names, remarks; quantities and foreign keys are never editable to protect inventory integrity)
 - Teams and Stitchers master data with code/isActive fields, admin-only edit dialogs
+- Material master module (admin-only create/edit, isActive toggle, duplicate code prevention)
+- Fabric master now supports fabric code (used in item code), with admin-only edit dialog
 
 ## Commands
 

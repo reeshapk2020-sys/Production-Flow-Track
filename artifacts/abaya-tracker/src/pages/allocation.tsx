@@ -156,6 +156,9 @@ export default function AllocationPage() {
                       <div className="text-xs text-blue-700 space-y-0.5">
                         <div><strong>Total Cut:</strong> {selectedBatch.totalCutQuantity} pcs &nbsp;|&nbsp; <strong>Available:</strong> {selectedBatch.availableForAllocation} pcs</div>
                         {selectedBatch.sizeName && <div><strong>Size:</strong> {selectedBatch.sizeName} &nbsp;|&nbsp; <strong>Color:</strong> {fmtCode(selectedBatch.colorCode, selectedBatch.colorName)}</div>}
+                        {selectedBatch.itemCode && (
+                          <div><strong>Item Code:</strong> <span className="font-mono bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded">{selectedBatch.itemCode}</span></div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -219,6 +222,7 @@ export default function AllocationPage() {
               <TableRow>
                 <TableHead className="py-4">Alloc. #</TableHead>
                 <TableHead>Batch / Product</TableHead>
+                <TableHead>Item Code</TableHead>
                 <TableHead>Stitcher</TableHead>
                 <TableHead className="text-right">Issued</TableHead>
                 <TableHead className="text-right">Received</TableHead>
@@ -230,7 +234,7 @@ export default function AllocationPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={isAdmin ? 9 : 8} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={isAdmin ? 10 : 9} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
               ) : (
                 data?.map(alloc => {
                   const pending = alloc.quantityPending ?? (alloc.quantityIssued - (alloc.quantityReceived || 0) - (alloc.quantityRejected || 0));
@@ -240,6 +244,11 @@ export default function AllocationPage() {
                       <TableCell>
                         <div className="font-semibold text-primary text-sm">{alloc.batchNumber}</div>
                         <div className="text-xs text-slate-500">{fmtCode(alloc.productCode, alloc.productName)}</div>
+                      </TableCell>
+                      <TableCell>
+                        {(alloc as any).itemCode
+                          ? <span className="font-mono text-xs font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded">{(alloc as any).itemCode}</span>
+                          : <span className="text-xs text-slate-400">—</span>}
                       </TableCell>
                       <TableCell>
                         <div className="font-semibold text-slate-900 text-sm">{alloc.stitcherName}</div>
@@ -284,7 +293,7 @@ export default function AllocationPage() {
                 })
               )}
               {!isLoading && data?.length === 0 && (
-                <TableRow><TableCell colSpan={isAdmin ? 9 : 8} className="text-center py-12 text-slate-500">No allocations yet.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={isAdmin ? 10 : 9} className="text-center py-12 text-slate-500">No allocations yet.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

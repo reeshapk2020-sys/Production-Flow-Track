@@ -4,6 +4,8 @@ import {
   cuttingBatchesTable,
   cuttingFabricUsageTable,
   fabricRollsTable,
+  fabricsTable,
+  materialsTable,
   allocationsTable,
   receivingsTable,
   finishingRecordsTable,
@@ -14,11 +16,15 @@ import {
   stitchersTable,
 } from "@workspace/db/schema";
 import { eq, like, or } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
+import { computeItemCode } from "../lib/itemCode";
 
 const router: IRouter = Router();
 
 router.get("/traceability/batch/:batchNumber", async (req, res) => {
   const { batchNumber } = req.params;
+  const mat1 = alias(materialsTable, "mat1");
+  const mat2 = alias(materialsTable, "mat2");
 
   const [batch] = await db
     .select({
@@ -33,11 +39,20 @@ router.get("/traceability/batch/:batchNumber", async (req, res) => {
       cutter: cuttingBatchesTable.cutter,
       cuttingDate: cuttingBatchesTable.cuttingDate,
       status: cuttingBatchesTable.status,
+      fabricCode: fabricsTable.code,
+      fabricName: fabricsTable.name,
+      materialCode: mat1.code,
+      materialName: mat1.name,
+      material2Code: mat2.code,
+      material2Name: mat2.name,
     })
     .from(cuttingBatchesTable)
     .leftJoin(productsTable, eq(cuttingBatchesTable.productId, productsTable.id))
     .leftJoin(sizesTable, eq(cuttingBatchesTable.sizeId, sizesTable.id))
     .leftJoin(colorsTable, eq(cuttingBatchesTable.colorId, colorsTable.id))
+    .leftJoin(fabricsTable, eq(cuttingBatchesTable.fabricId, fabricsTable.id))
+    .leftJoin(mat1, eq(cuttingBatchesTable.materialId, mat1.id))
+    .leftJoin(mat2, eq(cuttingBatchesTable.material2Id, mat2.id))
     .where(eq(cuttingBatchesTable.batchNumber, batchNumber));
 
   if (!batch) return res.status(404).json({ error: "Batch not found" });
@@ -161,6 +176,8 @@ router.get("/traceability/batch/:batchNumber", async (req, res) => {
   // Sort by date
   timeline.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
+  const itemCode = computeItemCode(batch.productCode, batch.fabricCode, batch.materialCode, batch.material2Code);
+
   res.json({
     batchNumber: batch.batchNumber,
     productCode: batch.productCode || null,
@@ -168,6 +185,13 @@ router.get("/traceability/batch/:batchNumber", async (req, res) => {
     sizeName: batch.sizeName || "-",
     colorCode: batch.colorCode || null,
     colorName: batch.colorName || "-",
+    itemCode: itemCode || null,
+    fabricCode: batch.fabricCode || null,
+    fabricName: batch.fabricName || null,
+    materialCode: batch.materialCode || null,
+    materialName: batch.materialName || null,
+    material2Code: batch.material2Code || null,
+    material2Name: batch.material2Name || null,
     currentStage: batch.status || "cutting",
     currentStatus: batch.status,
     timeline,

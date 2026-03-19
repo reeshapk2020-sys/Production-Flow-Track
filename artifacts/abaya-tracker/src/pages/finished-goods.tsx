@@ -286,6 +286,7 @@ function EntryLogTab() {
             <TableRow>
               <TableHead className="py-4">Batch Number</TableHead>
               <TableHead>Product / Specs</TableHead>
+              <TableHead>Item Code</TableHead>
               <TableHead className="text-right">Quantity Entered</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Added By</TableHead>
@@ -293,13 +294,18 @@ function EntryLogTab() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={isAdmin ? 6 : 5} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow> :
               data?.map(entry => (
                 <TableRow key={entry.id} className="group hover:bg-slate-50/50">
                   <TableCell className="font-mono text-primary font-medium">{entry.batchNumber}</TableCell>
                   <TableCell>
                     <div className="font-semibold text-slate-900">{fmtCode(entry.productCode, entry.productName)}</div>
                     <div className="text-xs text-slate-500">{entry.sizeName} | {fmtCode(entry.colorCode, entry.colorName)}</div>
+                  </TableCell>
+                  <TableCell>
+                    {(entry as any).itemCode
+                      ? <span className="font-mono text-xs font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded">{(entry as any).itemCode}</span>
+                      : <span className="text-xs text-slate-400">—</span>}
                   </TableCell>
                   <TableCell className="text-right font-bold text-emerald-600 text-lg">+{entry.quantity}</TableCell>
                   <TableCell className="text-slate-600 text-sm">{entry.entryDate ? format(new Date(entry.entryDate), 'MMM d, yyyy') : '-'}</TableCell>

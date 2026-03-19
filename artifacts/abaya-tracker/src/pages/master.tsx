@@ -10,7 +10,7 @@ import {
   useListCategories, useCreateCategory, getListCategoriesQueryKey,
   useListColors, useCreateColor, useUpdateColor, getListColorsQueryKey,
   useListSizes, useCreateSize, getListSizesQueryKey,
-  useListFabrics, useCreateFabric, getListFabricsQueryKey,
+  useListFabrics, useCreateFabric, useUpdateFabric, getListFabricsQueryKey,
   useListProducts, useCreateProduct, getListProductsQueryKey,
   useListTeams, useCreateTeam, useUpdateTeam, getListTeamsQueryKey,
   useListStitchers, useCreateStitcher, useUpdateStitcher, getListStitchersQueryKey,
@@ -389,37 +389,153 @@ function SizesTab({ isAdmin }: { isAdmin: boolean }) {
 function FabricsTab({ isAdmin }: { isAdmin: boolean }) {
   const { data, isLoading } = useListFabrics();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const { mutate, isPending } = useCreateFabric({
-    mutation: { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListFabricsQueryKey() }); setOpen(false); } }
+  const { toast } = useToast();
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newCode, setNewCode] = useState("");
+  const [newName, setNewName] = useState("");
+
+  type EditFabric = { id: number; code?: string | null; name: string; description?: string | null; unit?: string | null; isActive?: boolean };
+  const [editFabric, setEditFabric] = useState<EditFabric | null>(null);
+  const [editCode, setEditCode] = useState("");
+  const [editName, setEditName] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editUnit, setEditUnit] = useState("");
+  const [editActive, setEditActive] = useState(true);
+
+  const existingCodes = (data ?? []).filter(f => f.code).map(f => ({ id: f.id, code: f.code! }));
+  const createCodeDup = newCode.trim().length > 0 && existingCodes.some(f => f.code.toUpperCase() === newCode.trim().toUpperCase());
+  const editCodeDup = editFabric !== null && editCode.trim().length > 0 &&
+    existingCodes.some(f => f.id !== editFabric.id && f.code.toUpperCase() === editCode.trim().toUpperCase());
+
+  const onInvalidate = () => queryClient.invalidateQueries({ queryKey: getListFabricsQueryKey() });
+
+  const { mutate: createFabric, isPending: creating } = useCreateFabric({
+    mutation: {
+      onSuccess: () => { onInvalidate(); setCreateOpen(false); setNewCode(""); setNewName(""); toast({ title: "Fabric created" }); },
+      onError: (err: any) => { toast({ title: "Error", description: err?.response?.data?.error ?? "Failed to create fabric.", variant: "destructive" }); },
+    },
   });
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const { mutate: updateFabric, isPending: updating } = useUpdateFabric({
+    mutation: {
+      onSuccess: () => { onInvalidate(); setEditFabric(null); toast({ title: "Fabric updated" }); },
+      onError: (err: any) => { toast({ title: "Error", description: err?.response?.data?.error ?? "Failed to update fabric.", variant: "destructive" }); },
+    },
+  });
+
+  const onCreateSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (createCodeDup) return;
     const fd = new FormData(e.currentTarget);
-    mutate({ data: { name: fd.get("name") as string, description: fd.get("description") as string, unit: fd.get("unit") as string } });
+    createFabric({ data: { code: newCode.trim().toUpperCase() || undefined, name: newName.trim(), description: fd.get("description") as string, unit: fd.get("unit") as string } });
+  };
+
+  const onEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editFabric || editCodeDup) return;
+    updateFabric({ id: editFabric.id, data: { code: editCode.trim().toUpperCase() || undefined, name: editName.trim(), description: editDesc.trim() || undefined, unit: editUnit.trim() || undefined, isActive: editActive } });
+  };
+
+  const openEdit = (f: EditFabric) => {
+    setEditFabric(f);
+    setEditCode(f.code ?? "");
+    setEditName(f.name);
+    setEditDesc(f.description ?? "");
+    setEditUnit(f.unit ?? "Meters");
+    setEditActive(f.isActive !== false);
   };
 
   return (
-    <MasterCard title="Fabrics" onAdd={() => setOpen(true)} addLabel="Add Fabric" open={open} onOpenChange={setOpen}>
-      <form onSubmit={onSubmit} className="space-y-4 pt-4">
-        <div><label className="text-sm font-medium block mb-1.5">Fabric Name</label><input name="name" className="form-input-styled" required /></div>
+    <MasterCard title="Fabrics" onAdd={() => setCreateOpen(true)} addLabel="Add Fabric" open={createOpen} onOpenChange={setCreateOpen}>
+      <form onSubmit={onCreateSubmit} className="space-y-4 pt-4">
+        <div>
+          <label className="text-sm font-medium block mb-1.5">Fabric Code</label>
+          <input name="code" className={`form-input-styled font-mono uppercase ${createCodeDup ? "border-red-400 bg-red-50" : ""}`} placeholder="e.g. CTN, SILK" value={newCode} onChange={e => setNewCode(e.target.value)} />
+          {createCodeDup && <p className="text-xs text-red-500 mt-1">This code already exists.</p>}
+        </div>
+        <div>
+          <label className="text-sm font-medium block mb-1.5">Fabric Name</label>
+          <input name="name" className="form-input-styled" required value={newName} onChange={e => setNewName(e.target.value)} />
+        </div>
         <div><label className="text-sm font-medium block mb-1.5">Unit (e.g. Meters, Yards)</label><input name="unit" className="form-input-styled" defaultValue="Meters" /></div>
         <div><label className="text-sm font-medium block mb-1.5">Description</label><input name="description" className="form-input-styled" /></div>
-        <Button type="submit" disabled={isPending} className="w-full h-11 rounded-xl">Save</Button>
+        <Button type="submit" disabled={creating || createCodeDup} className="w-full h-11 rounded-xl">Save</Button>
       </form>
       <div className="mt-6 border rounded-xl overflow-hidden bg-white">
         <Table>
-          <TableHeader className="bg-slate-50"><TableRow><TableHead>ID</TableHead><TableHead>Fabric</TableHead><TableHead>Unit</TableHead><TableHead>Description</TableHead></TableRow></TableHeader>
+          <TableHeader className="bg-slate-50">
+            <TableRow>
+              <TableHead>Code</TableHead>
+              <TableHead>Fabric Name</TableHead>
+              <TableHead>Unit</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Status</TableHead>
+              {isAdmin && <TableHead className="w-12"></TableHead>}
+            </TableRow>
+          </TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={4} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={isAdmin ? 6 : 5} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
               data?.map(f => (
-                <TableRow key={f.id}><TableCell>#{f.id}</TableCell><TableCell className="font-semibold">{f.name}</TableCell><TableCell>{f.unit}</TableCell><TableCell>{f.description}</TableCell></TableRow>
+                <TableRow key={f.id} className="group">
+                  <TableCell className="font-mono text-slate-500 text-xs">{f.code ?? "—"}</TableCell>
+                  <TableCell className="font-semibold">{f.name}</TableCell>
+                  <TableCell>{f.unit}</TableCell>
+                  <TableCell className="text-slate-500 text-sm">{f.description}</TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${f.isActive !== false ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${f.isActive !== false ? "bg-emerald-500" : "bg-red-500"}`} />
+                      {f.isActive !== false ? "Active" : "Inactive"}
+                    </span>
+                  </TableCell>
+                  {isAdmin && (
+                    <TableCell>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => openEdit(f)}>
+                        <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                      </Button>
+                    </TableCell>
+                  )}
+                </TableRow>
               ))
             }
           </TableBody>
         </Table>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editFabric} onOpenChange={(v) => { if (!v) setEditFabric(null); }}>
+        <DialogContent className="sm:max-w-[400px] rounded-2xl p-6 border-0 shadow-2xl">
+          <DialogHeader><DialogTitle className="text-xl font-display">Edit Fabric</DialogTitle></DialogHeader>
+          {editFabric && (
+            <form onSubmit={onEditSubmit} className="space-y-4 pt-4">
+              <div>
+                <label className="text-sm font-medium block mb-1.5">Fabric Code</label>
+                <input className={`form-input-styled font-mono uppercase ${editCodeDup ? "border-red-400 bg-red-50" : ""}`} value={editCode} onChange={e => setEditCode(e.target.value)} placeholder="e.g. CTN" />
+                {editCodeDup && <p className="text-xs text-red-500 mt-1">This code already exists.</p>}
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1.5">Fabric Name</label>
+                <input className="form-input-styled" required value={editName} onChange={e => setEditName(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1.5">Unit</label>
+                <input className="form-input-styled" value={editUnit} onChange={e => setEditUnit(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1.5">Description</label>
+                <input className="form-input-styled" value={editDesc} onChange={e => setEditDesc(e.target.value)} />
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="fabric-active" checked={editActive} onChange={e => setEditActive(e.target.checked)} className="h-4 w-4 rounded" />
+                <label htmlFor="fabric-active" className="text-sm font-medium">Active</label>
+              </div>
+              <Button type="submit" disabled={updating || editCodeDup} className="w-full h-11 rounded-xl">
+                {updating ? "Saving..." : "Save Changes"}
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </MasterCard>
   );
 }

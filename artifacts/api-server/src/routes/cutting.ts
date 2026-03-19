@@ -4,13 +4,17 @@ import {
   cuttingBatchesTable,
   cuttingFabricUsageTable,
   fabricRollsTable,
+  fabricsTable,
+  materialsTable,
   productsTable,
   sizesTable,
   colorsTable,
   allocationsTable,
 } from "@workspace/db/schema";
 import { eq, sql, ilike } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit.js";
+import { computeItemCode } from "../lib/itemCode.js";
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated() || req.user?.role !== "admin") {
@@ -22,6 +26,9 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
 
 const router: IRouter = Router();
 
+const mat1 = alias(materialsTable, "mat1");
+const mat2 = alias(materialsTable, "mat2");
+
 router.get("/cutting/batches", async (_req, res) => {
   const rows = await db
     .select({
@@ -30,6 +37,15 @@ router.get("/cutting/batches", async (_req, res) => {
       productId: cuttingBatchesTable.productId,
       productCode: productsTable.code,
       productName: productsTable.name,
+      fabricId: cuttingBatchesTable.fabricId,
+      fabricCode: fabricsTable.code,
+      fabricName: fabricsTable.name,
+      materialId: cuttingBatchesTable.materialId,
+      materialCode: mat1.code,
+      materialName: mat1.name,
+      material2Id: cuttingBatchesTable.material2Id,
+      material2Code: mat2.code,
+      material2Name: mat2.name,
       sizeId: cuttingBatchesTable.sizeId,
       sizeName: sizesTable.name,
       colorId: cuttingBatchesTable.colorId,
@@ -45,6 +61,9 @@ router.get("/cutting/batches", async (_req, res) => {
     })
     .from(cuttingBatchesTable)
     .leftJoin(productsTable, eq(cuttingBatchesTable.productId, productsTable.id))
+    .leftJoin(fabricsTable, eq(cuttingBatchesTable.fabricId, fabricsTable.id))
+    .leftJoin(mat1, eq(cuttingBatchesTable.materialId, mat1.id))
+    .leftJoin(mat2, eq(cuttingBatchesTable.material2Id, mat2.id))
     .leftJoin(sizesTable, eq(cuttingBatchesTable.sizeId, sizesTable.id))
     .leftJoin(colorsTable, eq(cuttingBatchesTable.colorId, colorsTable.id))
     .orderBy(sql`${cuttingBatchesTable.createdAt} desc`);
@@ -52,6 +71,7 @@ router.get("/cutting/batches", async (_req, res) => {
   const result = rows.map((r) => ({
     ...r,
     totalAllocated: r.quantityCut - r.availableForAllocation,
+    itemCode: computeItemCode(r.productCode, r.fabricCode, r.materialCode, r.material2Code),
   }));
   res.json(result);
 });
@@ -60,6 +80,9 @@ router.post("/cutting/batches", async (req, res) => {
   const {
     batchNumber,
     productId,
+    fabricId,
+    materialId,
+    material2Id,
     sizeId,
     colorId,
     quantityCut,
@@ -73,7 +96,6 @@ router.post("/cutting/batches", async (req, res) => {
     return res.status(400).json({ error: "Batch number is required." });
   }
 
-  // Uniqueness check (case-insensitive)
   const existing = await db
     .select({ id: cuttingBatchesTable.id })
     .from(cuttingBatchesTable)
@@ -88,6 +110,9 @@ router.post("/cutting/batches", async (req, res) => {
     .values({
       batchNumber: String(batchNumber).trim(),
       productId,
+      fabricId: fabricId || null,
+      materialId: materialId || null,
+      material2Id: material2Id || null,
       sizeId,
       colorId,
       quantityCut,
@@ -99,7 +124,6 @@ router.post("/cutting/batches", async (req, res) => {
     })
     .returning();
 
-  // Record fabric usages and deduct from rolls
   if (fabricUsages && Array.isArray(fabricUsages)) {
     for (const usage of fabricUsages) {
       await db.insert(cuttingFabricUsageTable).values({
@@ -107,7 +131,6 @@ router.post("/cutting/batches", async (req, res) => {
         fabricRollId: usage.fabricRollId,
         quantityUsed: String(usage.quantityUsed),
       });
-      // Deduct from fabric roll
       await db
         .update(fabricRollsTable)
         .set({
@@ -142,6 +165,15 @@ router.get("/cutting/batches/:id", async (req, res) => {
       productId: cuttingBatchesTable.productId,
       productCode: productsTable.code,
       productName: productsTable.name,
+      fabricId: cuttingBatchesTable.fabricId,
+      fabricCode: fabricsTable.code,
+      fabricName: fabricsTable.name,
+      materialId: cuttingBatchesTable.materialId,
+      materialCode: mat1.code,
+      materialName: mat1.name,
+      material2Id: cuttingBatchesTable.material2Id,
+      material2Code: mat2.code,
+      material2Name: mat2.name,
       sizeId: cuttingBatchesTable.sizeId,
       sizeName: sizesTable.name,
       colorId: cuttingBatchesTable.colorId,
@@ -157,6 +189,9 @@ router.get("/cutting/batches/:id", async (req, res) => {
     })
     .from(cuttingBatchesTable)
     .leftJoin(productsTable, eq(cuttingBatchesTable.productId, productsTable.id))
+    .leftJoin(fabricsTable, eq(cuttingBatchesTable.fabricId, fabricsTable.id))
+    .leftJoin(mat1, eq(cuttingBatchesTable.materialId, mat1.id))
+    .leftJoin(mat2, eq(cuttingBatchesTable.material2Id, mat2.id))
     .leftJoin(sizesTable, eq(cuttingBatchesTable.sizeId, sizesTable.id))
     .leftJoin(colorsTable, eq(cuttingBatchesTable.colorId, colorsTable.id))
     .where(eq(cuttingBatchesTable.id, id));
@@ -178,7 +213,13 @@ router.get("/cutting/batches/:id", async (req, res) => {
     .from(allocationsTable)
     .where(eq(allocationsTable.cuttingBatchId, id));
 
-  res.json({ batch: { ...batch, totalAllocated: batch.quantityCut - batch.availableForAllocation }, fabricRolls, allocations });
+  const batchWithCode = {
+    ...batch,
+    totalAllocated: batch.quantityCut - batch.availableForAllocation,
+    itemCode: computeItemCode(batch.productCode, batch.fabricCode, batch.materialCode, batch.material2Code),
+  };
+
+  res.json({ batch: batchWithCode, fabricRolls, allocations });
 });
 
 router.put("/cutting/batches/:id", requireAdmin, async (req, res) => {

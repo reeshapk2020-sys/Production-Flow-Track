@@ -293,6 +293,7 @@ function FinishingView() {
           <TableHeader className="bg-slate-50 border-b border-slate-100">
             <TableRow>
               <TableHead className="py-4">Batch / Product</TableHead>
+              <TableHead>Item Code</TableHead>
               <TableHead className="text-right">Input</TableHead>
               <TableHead className="text-right text-emerald-600 font-semibold">Output</TableHead>
               <TableHead className="text-right text-red-500">Defective</TableHead>
@@ -305,7 +306,7 @@ function FinishingView() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-12">
+                <TableCell colSpan={isAdmin ? 9 : 8} className="text-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" />
                 </TableCell>
               </TableRow>
@@ -315,6 +316,11 @@ function FinishingView() {
                   <TableCell>
                     <div className="font-semibold text-primary">{rec.batchNumber}</div>
                     <div className="text-xs text-slate-500">{fmtCode(rec.productCode, rec.productName)}</div>
+                  </TableCell>
+                  <TableCell>
+                    {(rec as any).itemCode
+                      ? <span className="font-mono text-xs font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded">{(rec as any).itemCode}</span>
+                      : <span className="text-xs text-slate-400">—</span>}
                   </TableCell>
                   <TableCell className="text-right text-slate-500 font-medium">{rec.inputQuantity}</TableCell>
                   <TableCell className="text-right font-bold text-emerald-600 text-lg">{rec.outputQuantity}</TableCell>
@@ -343,7 +349,7 @@ function FinishingView() {
             )}
             {!isLoading && data?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-12 text-slate-500">
+                <TableCell colSpan={isAdmin ? 9 : 8} className="text-center py-12 text-slate-500">
                   No finishing records yet.
                 </TableCell>
               </TableRow>

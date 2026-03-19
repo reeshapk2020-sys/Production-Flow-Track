@@ -95,15 +95,26 @@ export interface UpdateMaterialBody {
 
 export interface Fabric {
   id: number;
+  code?: string | null;
+  name: string;
+  description?: string;
+  unit?: string;
+  isActive?: boolean;
+}
+
+export interface CreateFabricBody {
+  code?: string;
   name: string;
   description?: string;
   unit?: string;
 }
 
-export interface CreateFabricBody {
-  name: string;
+export interface UpdateFabricBody {
+  code?: string | null;
+  name?: string;
   description?: string;
   unit?: string;
+  isActive?: boolean;
 }
 
 export interface Product {
@@ -236,11 +247,22 @@ export interface CuttingBatch {
   productId?: number;
   productCode?: string;
   productName?: string;
+  fabricId?: number;
+  fabricCode?: string;
+  fabricName?: string;
+  materialId?: number;
+  materialCode?: string;
+  materialName?: string;
+  material2Id?: number;
+  material2Code?: string;
+  material2Name?: string;
   sizeId?: number;
   sizeName?: string;
   colorId?: number;
   colorCode?: string;
   colorName?: string;
+  /** Computed from product+fabric+material1+material2 codes joined with "-" */
+  itemCode?: string;
   quantityCut: number;
   availableForAllocation?: number;
   totalAllocated?: number;
@@ -265,6 +287,13 @@ export interface Allocation {
   batchNumber?: string;
   productCode?: string;
   productName?: string;
+  fabricCode?: string;
+  fabricName?: string;
+  materialCode?: string;
+  materialName?: string;
+  material2Code?: string;
+  material2Name?: string;
+  itemCode?: string;
   sizeName?: string;
   colorCode?: string;
   colorName?: string;
@@ -295,6 +324,9 @@ export interface CreateCuttingBatchBody {
   /** Manually entered batch number, must be unique */
   batchNumber: string;
   productId: number;
+  fabricId?: number;
+  materialId?: number;
+  material2Id?: number;
   sizeId?: number;
   colorId?: number;
   quantityCut: number;

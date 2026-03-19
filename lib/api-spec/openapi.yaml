@@ -312,6 +312,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/Fabric"
 
+  /master/fabrics/{id}:
+    put:
+      operationId: updateFabric
+      tags: [master]
+      summary: Update a fabric type (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFabricBody"
+      responses:
+        "200":
+          description: Updated fabric
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fabric"
+
   /master/products:
     get:
       operationId: listProducts
@@ -1336,17 +1361,24 @@ components:
       properties:
         id:
           type: integer
+        code:
+          type: string
+          nullable: true
         name:
           type: string
         description:
           type: string
         unit:
           type: string
+        isActive:
+          type: boolean
       required: [id, name]
 
     CreateFabricBody:
       type: object
       properties:
+        code:
+          type: string
         name:
           type: string
         description:
@@ -1354,6 +1386,21 @@ components:
         unit:
           type: string
       required: [name]
+
+    UpdateFabricBody:
+      type: object
+      properties:
+        code:
+          type: string
+          nullable: true
+        name:
+          type: string
+        description:
+          type: string
+        unit:
+          type: string
+        isActive:
+          type: boolean
 
     Product:
       type: object
@@ -1603,6 +1650,24 @@ components:
           type: string
         productName:
           type: string
+        fabricId:
+          type: integer
+        fabricCode:
+          type: string
+        fabricName:
+          type: string
+        materialId:
+          type: integer
+        materialCode:
+          type: string
+        materialName:
+          type: string
+        material2Id:
+          type: integer
+        material2Code:
+          type: string
+        material2Name:
+          type: string
         sizeId:
           type: integer
         sizeName:
@@ -1613,6 +1678,9 @@ components:
           type: string
         colorName:
           type: string
+        itemCode:
+          type: string
+          description: Computed from product+fabric+material1+material2 codes joined with "-"
         quantityCut:
           type: integer
         availableForAllocation:
@@ -1667,6 +1735,12 @@ components:
           description: Manually entered batch number, must be unique
         productId:
           type: integer
+        fabricId:
+          type: integer
+        materialId:
+          type: integer
+        material2Id:
+          type: integer
         sizeId:
           type: integer
         colorId:
@@ -1716,6 +1790,20 @@ components:
         productCode:
           type: string
         productName:
+          type: string
+        fabricCode:
+          type: string
+        fabricName:
+          type: string
+        materialCode:
+          type: string
+        materialName:
+          type: string
+        material2Code:
+          type: string
+        material2Name:
+          type: string
+        itemCode:
           type: string
         sizeName:
           type: string

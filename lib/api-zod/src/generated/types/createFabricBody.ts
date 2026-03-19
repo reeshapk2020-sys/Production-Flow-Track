@@ -7,6 +7,7 @@
  */
 
 export interface CreateFabricBody {
+  code?: string;
   name: string;
   description?: string;
   unit?: string;
