@@ -70,6 +70,29 @@ export interface UpdateColorBody {
   code: string;
 }
 
+export interface Material {
+  id: number;
+  code: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+export interface CreateMaterialBody {
+  /** Short unique material code, e.g. LC01, DR02 */
+  code: string;
+  name: string;
+  description?: string;
+}
+
+export interface UpdateMaterialBody {
+  code: string;
+  name: string;
+  description?: string;
+  isActive?: boolean;
+}
+
 export interface Fabric {
   id: number;
   name: string;

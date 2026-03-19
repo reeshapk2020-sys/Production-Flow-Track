@@ -9,6 +9,7 @@ import {
   teamsTable,
   stitchersTable,
   appUsersTable,
+  materialsTable,
 } from "@workspace/db/schema";
 import { eq, sql, ilike, ne, and } from "drizzle-orm";
 import { logAudit } from "../lib/audit.js";
@@ -265,6 +266,68 @@ router.put("/master/stitchers/:id", requireAdmin, async (req, res) => {
   if (!row) return res.status(404).json({ error: "Stitcher not found." });
   await logAudit(req, "UPDATE", "stitchers", String(id), `Updated stitcher: ${name}`);
   res.json({ ...row, totalIssued: 0, totalReceived: 0, pendingQuantity: 0 });
+});
+
+// MATERIALS
+router.get("/master/materials", async (_req, res) => {
+  const rows = await db.select().from(materialsTable).orderBy(materialsTable.code);
+  res.json(rows);
+});
+
+router.post("/master/materials", requireAdmin, async (req, res) => {
+  const { code, name, description } = req.body;
+  if (!code || !String(code).trim()) {
+    return res.status(400).json({ error: "Material code is required." });
+  }
+  if (!name || !String(name).trim()) {
+    return res.status(400).json({ error: "Material name is required." });
+  }
+  const trimmedCode = String(code).trim().toUpperCase();
+  const existing = await db
+    .select({ id: materialsTable.id })
+    .from(materialsTable)
+    .where(ilike(materialsTable.code, trimmedCode));
+  if (existing.length > 0) {
+    return res.status(409).json({ error: `Material code "${trimmedCode}" already exists.` });
+  }
+  const [row] = await db
+    .insert(materialsTable)
+    .values({ code: trimmedCode, name: String(name).trim(), description: description || null })
+    .returning();
+  await logAudit(req, "CREATE", "materials", String(row.id), `Created material: ${name} (${trimmedCode})`);
+  res.status(201).json(row);
+});
+
+router.put("/master/materials/:id", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { code, name, description, isActive } = req.body;
+  if (!code || !String(code).trim()) {
+    return res.status(400).json({ error: "Material code is required." });
+  }
+  if (!name || !String(name).trim()) {
+    return res.status(400).json({ error: "Material name is required." });
+  }
+  const trimmedCode = String(code).trim().toUpperCase();
+  const existing = await db
+    .select({ id: materialsTable.id })
+    .from(materialsTable)
+    .where(and(ilike(materialsTable.code, trimmedCode), ne(materialsTable.id, id)));
+  if (existing.length > 0) {
+    return res.status(409).json({ error: `Material code "${trimmedCode}" already exists.` });
+  }
+  const [row] = await db
+    .update(materialsTable)
+    .set({
+      code: trimmedCode,
+      name: String(name).trim(),
+      description: description || null,
+      isActive: typeof isActive === "boolean" ? isActive : undefined,
+    })
+    .where(eq(materialsTable.id, id))
+    .returning();
+  if (!row) return res.status(404).json({ error: "Material not found." });
+  await logAudit(req, "UPDATE", "materials", String(id), `Updated material: ${name} (${trimmedCode})`);
+  res.json(row);
 });
 
 // USERS

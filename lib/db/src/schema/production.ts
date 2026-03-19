@@ -85,6 +85,15 @@ export const colorsTable = pgTable("colors", {
   code: text("code"),
 });
 
+export const materialsTable = pgTable("materials", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  name: text("name").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const fabricsTable = pgTable("fabrics", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
@@ -279,6 +288,10 @@ export type Size = typeof sizesTable.$inferSelect;
 export const insertColorSchema = createInsertSchema(colorsTable).omit({ id: true });
 export type InsertColor = z.infer<typeof insertColorSchema>;
 export type Color = typeof colorsTable.$inferSelect;
+
+export const insertMaterialSchema = createInsertSchema(materialsTable).omit({ id: true, createdAt: true });
+export type InsertMaterial = z.infer<typeof insertMaterialSchema>;
+export type Material = typeof materialsTable.$inferSelect;
 
 export const insertFabricSchema = createInsertSchema(fabricsTable).omit({ id: true });
 export type InsertFabric = z.infer<typeof insertFabricSchema>;

@@ -137,6 +137,51 @@ export const UpdateColorResponse = zod.object({
 });
 
 /**
+ * @summary List all materials (accessories)
+ */
+export const ListMaterialsResponseItem = zod.object({
+  id: zod.number(),
+  code: zod.string(),
+  name: zod.string(),
+  description: zod.string().optional(),
+  isActive: zod.boolean(),
+  createdAt: zod.string().optional(),
+});
+export const ListMaterialsResponse = zod.array(ListMaterialsResponseItem);
+
+/**
+ * @summary Create a material (admin only)
+ */
+export const CreateMaterialBody = zod.object({
+  code: zod.string().describe("Short unique material code, e.g. LC01, DR02"),
+  name: zod.string(),
+  description: zod.string().optional(),
+});
+
+/**
+ * @summary Update a material (admin only)
+ */
+export const UpdateMaterialParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateMaterialBody = zod.object({
+  code: zod.string(),
+  name: zod.string(),
+  description: zod.string().optional(),
+  isActive: zod.boolean().optional(),
+});
+
+export const UpdateMaterialResponse = zod.object({
+  id: zod.number(),
+  code: zod.string(),
+  name: zod.string(),
+  description: zod.string().optional(),
+  isActive: zod.boolean(),
+  createdAt: zod.string().optional(),
+});
+
+/**
  * @summary List all fabrics
  */
 export const ListFabricsResponseItem = zod.object({

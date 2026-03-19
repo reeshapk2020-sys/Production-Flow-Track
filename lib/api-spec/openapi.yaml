@@ -223,6 +223,63 @@ paths:
               schema:
                 $ref: "#/components/schemas/Color"
 
+  /master/materials:
+    get:
+      operationId: listMaterials
+      tags: [master]
+      summary: List all materials (accessories)
+      responses:
+        "200":
+          description: List of materials
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Material"
+    post:
+      operationId: createMaterial
+      tags: [master]
+      summary: Create a material (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMaterialBody"
+      responses:
+        "201":
+          description: Created material
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Material"
+
+  /master/materials/{id}:
+    put:
+      operationId: updateMaterial
+      tags: [master]
+      summary: Update a material (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMaterialBody"
+      responses:
+        "200":
+          description: Updated material
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Material"
+
   /master/fabrics:
     get:
       operationId: listFabrics
@@ -1231,6 +1288,48 @@ components:
           type: string
           description: Short unique color code, e.g. BLK, NVY, BRN
       required: [name, code]
+
+    Material:
+      type: object
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+      required: [id, code, name, isActive]
+
+    CreateMaterialBody:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Short unique material code, e.g. LC01, DR02
+        name:
+          type: string
+        description:
+          type: string
+      required: [code, name]
+
+    UpdateMaterialBody:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        isActive:
+          type: boolean
+      required: [code, name]
 
     Fabric:
       type: object

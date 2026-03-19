@@ -14,6 +14,7 @@ import {
   useListProducts, useCreateProduct, getListProductsQueryKey,
   useListTeams, useCreateTeam, useUpdateTeam, getListTeamsQueryKey,
   useListStitchers, useCreateStitcher, useUpdateStitcher, getListStitchersQueryKey,
+  useListMaterials, useCreateMaterial, useUpdateMaterial, getListMaterialsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +37,7 @@ export default function MasterDataPage() {
             <TabsTrigger value="products" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-slate-100 data-[state=active]:text-primary data-[state=active]:shadow-none">Products</TabsTrigger>
             <TabsTrigger value="teams" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-slate-100 data-[state=active]:text-primary data-[state=active]:shadow-none">Teams</TabsTrigger>
             <TabsTrigger value="stitchers" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-slate-100 data-[state=active]:text-primary data-[state=active]:shadow-none">Stitchers</TabsTrigger>
+            <TabsTrigger value="materials" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-slate-100 data-[state=active]:text-primary data-[state=active]:shadow-none">Materials</TabsTrigger>
           </TabsList>
         </div>
 
@@ -46,6 +48,7 @@ export default function MasterDataPage() {
         <TabsContent value="products" className="mt-0 outline-none"><ProductsTab isAdmin={isAdmin} /></TabsContent>
         <TabsContent value="teams" className="mt-0 outline-none"><TeamsTab isAdmin={isAdmin} /></TabsContent>
         <TabsContent value="stitchers" className="mt-0 outline-none"><StitchersTab isAdmin={isAdmin} /></TabsContent>
+        <TabsContent value="materials" className="mt-0 outline-none"><MaterialsTab isAdmin={isAdmin} /></TabsContent>
       </Tabs>
     </AppLayout>
   );
@@ -806,6 +809,245 @@ function StitchersTab({ isAdmin }: { isAdmin: boolean }) {
               </div>
               <Button type="submit" disabled={updating} className="w-full h-11 rounded-xl">
                 {updating ? "Saving..." : "Update Stitcher"}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
+  );
+}
+
+function MaterialsTab({ isAdmin }: { isAdmin: boolean }) {
+  const { data, isLoading } = useListMaterials();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newCode, setNewCode] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newDesc, setNewDesc] = useState("");
+
+  type EditMat = { id: number; code: string; name: string; description: string | null; isActive: boolean };
+  const [editMat, setEditMat] = useState<EditMat | null>(null);
+  const [editCode, setEditCode] = useState("");
+  const [editName, setEditName] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editActive, setEditActive] = useState(true);
+
+  const existingCodes = (data ?? []).map((m) => ({ id: m.id, code: m.code }));
+
+  const createCodeDup =
+    newCode.trim().length > 0 &&
+    existingCodes.some((m) => m.code.trim().toUpperCase() === newCode.trim().toUpperCase());
+
+  const editCodeDup =
+    editMat !== null &&
+    editCode.trim().length > 0 &&
+    existingCodes.some(
+      (m) => m.id !== editMat.id && m.code.trim().toUpperCase() === editCode.trim().toUpperCase()
+    );
+
+  const onInvalidate = () => queryClient.invalidateQueries({ queryKey: getListMaterialsQueryKey() });
+
+  const { mutate: createMaterial, isPending: creating } = useCreateMaterial({
+    mutation: {
+      onSuccess: () => {
+        onInvalidate();
+        setCreateOpen(false);
+        setNewCode(""); setNewName(""); setNewDesc("");
+        toast({ title: "Material created" });
+      },
+      onError: (err: any) => {
+        toast({ title: "Error", description: err?.response?.data?.error ?? "Failed to create material.", variant: "destructive" });
+      },
+    },
+  });
+
+  const { mutate: updateMaterial, isPending: updating } = useUpdateMaterial({
+    mutation: {
+      onSuccess: () => {
+        onInvalidate();
+        setEditMat(null);
+        toast({ title: "Material updated" });
+      },
+      onError: (err: any) => {
+        toast({ title: "Error", description: err?.response?.data?.error ?? "Failed to update material.", variant: "destructive" });
+      },
+    },
+  });
+
+  const onCreateSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (createCodeDup) return;
+    createMaterial({ data: { code: newCode.trim().toUpperCase(), name: newName.trim(), description: newDesc.trim() || undefined } });
+  };
+
+  const onEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editMat || editCodeDup) return;
+    updateMaterial({ id: editMat.id, data: { code: editCode.trim().toUpperCase(), name: editName.trim(), description: editDesc.trim() || undefined, isActive: editActive } });
+  };
+
+  const openEdit = (m: EditMat) => {
+    setEditMat(m);
+    setEditCode(m.code);
+    setEditName(m.name);
+    setEditDesc(m.description ?? "");
+    setEditActive(m.isActive);
+  };
+
+  return (
+    <>
+      <MasterCard
+        title="Materials (Accessories)"
+        onAdd={() => setCreateOpen(true)}
+        addLabel="Add Material"
+        open={createOpen}
+        onOpenChange={(v: boolean) => { setCreateOpen(v); if (!v) { setNewCode(""); setNewName(""); setNewDesc(""); } }}
+      >
+        <form onSubmit={onCreateSubmit} className="space-y-4 pt-4">
+          <div>
+            <label className="text-sm font-medium block mb-1.5">Material Code <span className="text-red-500">*</span></label>
+            <input
+              className={`form-input-styled font-mono uppercase ${createCodeDup ? "border-red-400 bg-red-50" : ""}`}
+              required value={newCode} onChange={(e) => setNewCode(e.target.value.toUpperCase())}
+              placeholder="e.g. LC01, DR02, PP03"
+              maxLength={12}
+            />
+            {createCodeDup && <p className="text-xs text-red-500 mt-1">This code already exists.</p>}
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1.5">Material Name <span className="text-red-500">*</span></label>
+            <input
+              className="form-input-styled" required
+              value={newName} onChange={(e) => setNewName(e.target.value)}
+              placeholder="e.g. Lace, Dori, Piping"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1.5">Description</label>
+            <input
+              className="form-input-styled"
+              value={newDesc} onChange={(e) => setNewDesc(e.target.value)}
+              placeholder="Optional description"
+            />
+          </div>
+          <Button
+            type="submit"
+            disabled={creating || createCodeDup}
+            className="w-full h-11 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {creating ? "Saving..." : "Save Material"}
+          </Button>
+        </form>
+
+        <div className="mt-6 border rounded-xl overflow-hidden bg-white">
+          <Table>
+            <TableHeader className="bg-slate-50">
+              <TableRow>
+                <TableHead className="w-28">Code</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead className="hidden sm:table-cell">Description</TableHead>
+                <TableHead className="w-24">Status</TableHead>
+                {isAdmin && <TableHead className="w-16 text-right">Edit</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={isAdmin ? 5 : 4} className="text-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                data?.map((m) => (
+                  <TableRow key={m.id}>
+                    <TableCell>
+                      <span className="px-2 py-1 rounded text-xs font-mono font-bold border bg-primary/10 text-primary border-primary/20">
+                        {m.code}
+                      </span>
+                    </TableCell>
+                    <TableCell className="font-semibold text-slate-800">{m.name}</TableCell>
+                    <TableCell className="hidden sm:table-cell text-slate-500 text-sm">{m.description ?? "—"}</TableCell>
+                    <TableCell>
+                      {m.isActive
+                        ? <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+                        : <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">Inactive</span>
+                      }
+                    </TableCell>
+                    {isAdmin && (
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm" variant="ghost"
+                          className="h-7 w-7 p-0 text-slate-400 hover:text-primary"
+                          onClick={() => openEdit(m as EditMat)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))
+              )}
+              {!isLoading && data?.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={isAdmin ? 5 : 4} className="text-center py-8 text-slate-500">No materials yet.</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </MasterCard>
+
+      {isAdmin && (
+        <Dialog open={!!editMat} onOpenChange={(v) => { if (!v) setEditMat(null); }}>
+          <DialogContent className="sm:max-w-[400px] rounded-2xl p-6 border-0 shadow-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-display">Edit Material</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={onEditSubmit} className="space-y-4 pt-2">
+              <div>
+                <label className="text-sm font-medium block mb-1.5">Material Code <span className="text-red-500">*</span></label>
+                <input
+                  className={`form-input-styled font-mono uppercase ${editCodeDup ? "border-red-400 bg-red-50" : ""}`}
+                  required value={editCode} onChange={(e) => setEditCode(e.target.value.toUpperCase())}
+                  maxLength={12}
+                />
+                {editCodeDup && <p className="text-xs text-red-500 mt-1">This code already exists.</p>}
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1.5">Material Name <span className="text-red-500">*</span></label>
+                <input
+                  className="form-input-styled" required
+                  value={editName} onChange={(e) => setEditName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1.5">Description</label>
+                <input
+                  className="form-input-styled"
+                  value={editDesc} onChange={(e) => setEditDesc(e.target.value)}
+                  placeholder="Optional description"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1.5">Status</label>
+                <select
+                  className="form-input-styled bg-white"
+                  value={editActive ? "true" : "false"}
+                  onChange={(e) => setEditActive(e.target.value === "true")}
+                >
+                  <option value="true">Active</option>
+                  <option value="false">Inactive (Deactivated)</option>
+                </select>
+              </div>
+              <Button
+                type="submit"
+                disabled={updating || editCodeDup}
+                className="w-full h-11 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {updating ? "Saving..." : "Update Material"}
               </Button>
             </form>
           </DialogContent>
