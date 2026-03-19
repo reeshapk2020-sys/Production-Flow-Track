@@ -100,7 +100,7 @@ router.get("/finishing", async (_req, res) => {
     rows.map((r) => ({
       ...r,
       pendingQuantity: r.inputQuantity - r.outputQuantity - r.defectiveQuantity,
-      itemCode: computeItemCode(r.productCode, r.fabricCode, r.materialCode, r.material2Code),
+      itemCode: computeItemCode(r.productCode, r.colorCode, r.materialCode, r.material2Code),
     }))
   );
 });

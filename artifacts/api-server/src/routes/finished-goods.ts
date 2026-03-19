@@ -85,7 +85,7 @@ router.get("/finished-goods", async (_req, res) => {
     .orderBy(sql`${finishedGoodsTable.createdAt} desc`);
   res.json(rows.map(r => ({
     ...r,
-    itemCode: computeItemCode(r.productCode, r.fabricCode, r.materialCode, r.material2Code),
+    itemCode: computeItemCode(r.productCode, r.colorCode, r.materialCode, r.material2Code),
   })));
 });
 

@@ -8,7 +8,7 @@ import { AlertCircle, Plus, Loader2, Scissors, Pencil } from "lucide-react";
 import { 
   useListCuttingBatches, useCreateCuttingBatch, getListCuttingBatchesQueryKey,
   useListProducts, useListSizes, useListColors, useListFabricRolls,
-  useListFabrics, useListMaterials,
+  useListMaterials,
   useUpdateCuttingBatch
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -41,7 +41,6 @@ export default function CuttingPage() {
   const { data: sizes } = useListSizes();
   const { data: colors } = useListColors();
   const { data: rolls } = useListFabricRolls();
-  const { data: fabrics } = useListFabrics();
   const { data: materials } = useListMaterials();
 
   const queryClient = useQueryClient();
@@ -100,7 +99,6 @@ export default function CuttingPage() {
       data: {
         batchNumber: batchNumber.trim(),
         productId: Number(fd.get("productId")),
-        fabricId: Number(fd.get("fabricId")) || undefined,
         materialId: Number(fd.get("materialId")) || undefined,
         material2Id: Number(fd.get("material2Id")) || undefined,
         sizeId: Number(fd.get("sizeId")) || undefined,
@@ -201,17 +199,11 @@ export default function CuttingPage() {
                 </div>
 
                 <div className="col-span-2 bg-teal-50/50 p-4 rounded-xl border border-teal-100 space-y-4">
-                  <h3 className="font-semibold text-slate-800 text-sm uppercase tracking-wider">Item Identity (for Item Code)</h3>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className="text-sm font-medium block mb-1.5">Fabric Type</label>
-                      <select name="fabricId" className="form-input-styled bg-white">
-                        <option value="">— None —</option>
-                        {fabrics?.filter((f: any) => f.isActive !== false).map((f: any) => (
-                          <option key={f.id} value={f.id}>{f.code ? `${f.code} — ${f.name}` : f.name}</option>
-                        ))}
-                      </select>
-                    </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-800 text-sm uppercase tracking-wider">Materials (for Item Code)</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">Item Code = Product Code – Color Code – Material 1 – Material 2</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium block mb-1.5">Material 1</label>
                       <select name="materialId" className="form-input-styled bg-white">

@@ -174,7 +174,7 @@ router.get("/receiving", denyAllocationRole, async (_req, res) => {
     .orderBy(sql`${receivingsTable.createdAt} desc`);
   res.json(rows.map(r => ({
     ...r,
-    itemCode: computeItemCode(r.productCode, r.fabricCode, r.materialCode, r.material2Code),
+    itemCode: computeItemCode(r.productCode, r.colorCode, r.materialCode, r.material2Code),
   })));
 });
 

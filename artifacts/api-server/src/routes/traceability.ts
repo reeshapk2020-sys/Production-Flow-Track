@@ -176,7 +176,7 @@ router.get("/traceability/batch/:batchNumber", async (req, res) => {
   // Sort by date
   timeline.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  const itemCode = computeItemCode(batch.productCode, batch.fabricCode, batch.materialCode, batch.material2Code);
+  const itemCode = computeItemCode(batch.productCode, batch.colorCode, batch.materialCode, batch.material2Code);
 
   res.json({
     batchNumber: batch.batchNumber,

@@ -85,7 +85,7 @@ function withItemCode(r: any) {
   return {
     ...r,
     quantityPending: r.quantityIssued - r.quantityReceived - r.quantityRejected,
-    itemCode: computeItemCode(r.productCode, r.fabricCode, r.materialCode, r.material2Code),
+    itemCode: computeItemCode(r.productCode, r.colorCode, r.materialCode, r.material2Code),
   };
 }
 

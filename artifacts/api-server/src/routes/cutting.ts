@@ -71,7 +71,7 @@ router.get("/cutting/batches", async (_req, res) => {
   const result = rows.map((r) => ({
     ...r,
     totalAllocated: r.quantityCut - r.availableForAllocation,
-    itemCode: computeItemCode(r.productCode, r.fabricCode, r.materialCode, r.material2Code),
+    itemCode: computeItemCode(r.productCode, r.colorCode, r.materialCode, r.material2Code),
   }));
   res.json(result);
 });
