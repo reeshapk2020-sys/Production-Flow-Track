@@ -167,11 +167,21 @@ router.get("/master/products", async (_req, res) => {
 
 router.post("/master/products", async (req, res) => {
   const { code, name, categoryId, description } = req.body;
+  const trimmedCode = code ? String(code).trim() : "";
+  if (trimmedCode) {
+    const [dup] = await db
+      .select({ id: productsTable.id })
+      .from(productsTable)
+      .where(ilike(productsTable.code, trimmedCode));
+    if (dup) {
+      return res.status(409).json({ error: `Product code "${trimmedCode}" already exists.` });
+    }
+  }
   const [row] = await db
     .insert(productsTable)
-    .values({ code, name, categoryId, description })
+    .values({ code: trimmedCode || null, name, categoryId, description })
     .returning();
-  await logAudit(req, "CREATE", "products", String(row.id), `Created product: ${name}`);
+  await logAudit(req, "CREATE", "products", String(row.id), `Created product: ${name} (${trimmedCode})`);
   res.status(201).json(row);
 });
 

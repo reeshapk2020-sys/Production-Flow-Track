@@ -544,27 +544,56 @@ function ProductsTab({ isAdmin }: { isAdmin: boolean }) {
   const { data, isLoading } = useListProducts();
   const { data: categories } = useListCategories();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
+  const [newCode, setNewCode] = useState("");
+
+  const existingCodes = (data ?? []).map((p) => ({ id: p.id, code: p.code ?? null }));
+  const createCodeDup =
+    newCode.trim().length > 0 &&
+    existingCodes.some((p) => p.code?.trim().toUpperCase() === newCode.trim().toUpperCase());
+
   const { mutate, isPending } = useCreateProduct({
-    mutation: { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListProductsQueryKey() }); setOpen(false); } }
+    mutation: {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListProductsQueryKey() }); setOpen(false); setNewCode(""); toast({ title: "Product created" }); },
+      onError: (err: any) => { toast({ title: "Error", description: err?.response?.data?.error ?? "Failed to create product.", variant: "destructive" }); },
+    }
   });
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (createCodeDup) return;
     const fd = new FormData(e.currentTarget);
     mutate({ data: {
       name: fd.get("name") as string,
-      code: fd.get("code") as string,
+      code: newCode.trim().toUpperCase(),
       categoryId: Number(fd.get("categoryId")),
       description: fd.get("description") as string
     } });
   };
 
   return (
-    <MasterCard title="Products / Designs" onAdd={() => setOpen(true)} addLabel="Add Product" open={open} onOpenChange={setOpen}>
+    <MasterCard title="Products / Designs" onAdd={() => setOpen(true)} addLabel="Add Product" open={open} onOpenChange={(v: boolean) => { setOpen(v); if (!v) setNewCode(""); }}>
       <form onSubmit={onSubmit} className="space-y-4 pt-4">
         <div><label className="text-sm font-medium block mb-1.5">Product Name/Design</label><input name="name" className="form-input-styled" required /></div>
-        <div><label className="text-sm font-medium block mb-1.5">Design Code</label><input name="code" className="form-input-styled" required /></div>
+        <div>
+          <label className="text-sm font-medium block mb-1.5">Design Code <span className="text-red-500">*</span></label>
+          <input
+            name="code"
+            className={`form-input-styled font-mono uppercase ${createCodeDup ? "border-red-400 bg-red-50" : ""}`}
+            required
+            value={newCode}
+            onChange={(e) => setNewCode(e.target.value.toUpperCase())}
+            placeholder="e.g. 101, 262, 501"
+            autoComplete="off"
+          />
+          {createCodeDup && (
+            <div className="flex items-center gap-2 mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              Code <strong>"{newCode.trim().toUpperCase()}"</strong> is already in use.
+            </div>
+          )}
+        </div>
         <div>
           <label className="text-sm font-medium block mb-1.5">Category</label>
           <select name="categoryId" className="form-input-styled bg-white" required>
@@ -573,7 +602,7 @@ function ProductsTab({ isAdmin }: { isAdmin: boolean }) {
           </select>
         </div>
         <div><label className="text-sm font-medium block mb-1.5">Description</label><input name="description" className="form-input-styled" /></div>
-        <Button type="submit" disabled={isPending} className="w-full h-11 rounded-xl">Save</Button>
+        <Button type="submit" disabled={isPending || createCodeDup} className="w-full h-11 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed">Save</Button>
       </form>
       <div className="mt-6 border rounded-xl overflow-hidden bg-white">
         <Table>
