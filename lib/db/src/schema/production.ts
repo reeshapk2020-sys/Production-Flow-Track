@@ -20,6 +20,8 @@ export const userRoleEnum = pgEnum("user_role", [
   "finishing",
   "store",
   "reporting",
+  "data_entry",
+  "supervisor",
 ]);
 
 export const batchStatusEnum = pgEnum("batch_status", [
@@ -59,7 +61,7 @@ export const appUsersTable = pgTable("app_users", {
   fullName: text("full_name"),
   displayName: text("display_name"),
   passwordHash: text("password_hash"),
-  role: userRoleEnum("role").notNull().default("reporting"),
+  role: text("role").notNull().default("reporting"),
   isActive: boolean("is_active").notNull().default(true),
   lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -270,7 +272,7 @@ export const auditLogsTable = pgTable("audit_logs", {
 
 export const rolePermissionsTable = pgTable("role_permissions", {
   id: serial("id").primaryKey(),
-  role: userRoleEnum("role").notNull(),
+  role: text("role").notNull(),
   module: text("module").notNull(),
   canView: boolean("can_view").notNull().default(false),
   canCreate: boolean("can_create").notNull().default(false),

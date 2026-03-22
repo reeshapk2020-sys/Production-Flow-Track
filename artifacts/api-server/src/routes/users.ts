@@ -20,13 +20,13 @@ const CreateUserBody = z.object({
   username: z.string().min(2).max(50).regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers and underscores"),
   fullName: z.string().min(2).max(100),
   password: z.string().min(6),
-  role: z.enum(["admin", "cutting", "allocation", "stitching", "finishing", "store", "reporting"]),
+  role: z.string().min(2),
   isActive: z.boolean().optional().default(true),
 });
 
 const UpdateUserBody = z.object({
   fullName: z.string().min(2).max(100).optional(),
-  role: z.enum(["admin", "cutting", "allocation", "stitching", "finishing", "store", "reporting"]).optional(),
+  role: z.string().min(2).optional(),
   isActive: z.boolean().optional(),
 });
 

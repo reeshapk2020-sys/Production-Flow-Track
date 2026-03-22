@@ -2,6 +2,8 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import {
   fabricRollsTable,
+  fabricsTable,
+  colorsTable,
   cuttingBatchesTable,
   allocationsTable,
   finishingRecordsTable,
@@ -85,6 +87,77 @@ router.get("/inventory/summary", checkPermission("inventory", "view"), async (_r
       totalQuantity: finishedGoods.totalQuantity || 0,
     },
   });
+});
+
+router.get("/inventory/raw-materials", checkPermission("inventory", "view"), async (_req, res) => {
+  const rows = await db
+    .select({
+      fabricId: fabricRollsTable.fabricId,
+      fabricName: fabricsTable.name,
+      fabricCode: fabricsTable.code,
+      colorId: fabricRollsTable.colorId,
+      colorName: colorsTable.name,
+      colorCode: colorsTable.code,
+      totalRolls: sql<number>`COUNT(*)::int`,
+      totalQuantity: sql<number>`COALESCE(SUM(${fabricRollsTable.availableQuantity}), 0)::numeric`,
+      unit: fabricRollsTable.unit,
+    })
+    .from(fabricRollsTable)
+    .leftJoin(fabricsTable, eq(fabricRollsTable.fabricId, fabricsTable.id))
+    .leftJoin(colorsTable, eq(fabricRollsTable.colorId, colorsTable.id))
+    .where(sql`${fabricRollsTable.status} != 'exhausted'`)
+    .groupBy(
+      fabricRollsTable.fabricId,
+      fabricsTable.name,
+      fabricsTable.code,
+      fabricRollsTable.colorId,
+      colorsTable.name,
+      colorsTable.code,
+      fabricRollsTable.unit
+    )
+    .orderBy(fabricsTable.name, colorsTable.name);
+
+  const grouped: Record<string, {
+    fabricId: number;
+    fabricName: string;
+    fabricCode: string | null;
+    totalRolls: number;
+    totalQuantity: number;
+    unit: string;
+    colors: Array<{
+      colorId: number | null;
+      colorName: string | null;
+      colorCode: string | null;
+      totalRolls: number;
+      totalQuantity: number;
+    }>;
+  }> = {};
+
+  for (const row of rows) {
+    const key = String(row.fabricId);
+    if (!grouped[key]) {
+      grouped[key] = {
+        fabricId: row.fabricId,
+        fabricName: row.fabricName || "Unknown",
+        fabricCode: row.fabricCode,
+        totalRolls: 0,
+        totalQuantity: 0,
+        unit: row.unit,
+        colors: [],
+      };
+    }
+    grouped[key].totalRolls += row.totalRolls;
+    grouped[key].totalQuantity += Number(row.totalQuantity);
+    grouped[key].colors.push({
+      colorId: row.colorId,
+      colorName: row.colorName,
+      colorCode: row.colorCode,
+      totalRolls: row.totalRolls,
+      totalQuantity: Number(row.totalQuantity),
+    });
+  }
+
+  res.json(Object.values(grouped));
 });
 
 export default router;

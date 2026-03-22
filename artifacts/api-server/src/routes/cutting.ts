@@ -112,6 +112,31 @@ router.post("/cutting/batches", checkPermission("cutting", "create"), async (req
     return res.status(409).json({ error: `Batch number "${batchNumber}" already exists. Please enter a unique batch number.` });
   }
 
+  const TOLERANCE = 0.5;
+  if (fabricUsages && Array.isArray(fabricUsages)) {
+    for (const usage of fabricUsages) {
+      const [roll] = await db
+        .select({ availableQuantity: fabricRollsTable.availableQuantity, rollNumber: fabricRollsTable.rollNumber })
+        .from(fabricRollsTable)
+        .where(eq(fabricRollsTable.id, usage.fabricRollId));
+
+      if (!roll) {
+        return res.status(400).json({ error: `Fabric roll #${usage.fabricRollId} not found.` });
+      }
+
+      const available = Number(roll.availableQuantity);
+      const used = Number(usage.quantityUsed);
+      if (!used || used <= 0) {
+        return res.status(400).json({ error: `Quantity used must be a positive number for roll "${roll.rollNumber}".` });
+      }
+      if (used > available + TOLERANCE) {
+        return res.status(400).json({
+          error: `Quantity used (${used}) exceeds available quantity (${available}) for roll "${roll.rollNumber}" by more than the allowed tolerance of ${TOLERANCE}.`,
+        });
+      }
+    }
+  }
+
   const [batch] = await db
     .insert(cuttingBatchesTable)
     .values({

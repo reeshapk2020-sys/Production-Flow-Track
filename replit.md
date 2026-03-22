@@ -95,6 +95,7 @@ lib/
 
 ## User Roles
 
+System roles (cannot be deleted):
 - `admin` - Full access to everything (locked, cannot be restricted)
 - `cutting` - Fabric rolls + cutting module
 - `allocation` - Allocation module
@@ -102,17 +103,35 @@ lib/
 - `finishing` - Finishing stages
 - `store` - Finished goods store
 - `reporting` - Reports and dashboard (read-only)
+- `data_entry` - Master data entry (products, colors, sizes, materials, etc.)
+- `supervisor` - Full production access, view-only for reports/inventory
+
+Custom roles can be created dynamically from the admin Permissions page.
 
 ## Permission System
 
-- **DB table**: `role_permissions` — stores per-role, per-module permissions (canView, canCreate, canEdit, canImport)
+- **DB table**: `role_permissions` — stores per-role, per-module permissions (canView, canCreate, canEdit, canImport); role column is `text` (not enum) to support dynamic roles
+- **DB table**: `app_users` — role column is `text` (not enum) to support dynamic roles
 - **Backend**: `checkPermission(module, action)` middleware in `routes/permissions.ts` — enforces permissions on all production route endpoints (GET=view, POST=create, PUT=edit, import endpoints=import)
+- **Backend**: `POST/DELETE /permissions/roles` — create/delete custom roles dynamically
+- **Backend**: `GET /permissions/roles` — list all roles (system + custom)
 - **Frontend**: `can(module, action)` helper in auth context — controls sidebar visibility, route access, and button visibility
-- **Admin page**: `/permissions` — grid UI for admin to toggle permissions per role
+- **Frontend**: `getRoleLabel(role)` — returns human-readable role name (from map or auto-formatted)
+- **Admin page**: `/permissions` — grid UI for admin to toggle permissions per role + create/delete custom roles
 - **Modules**: products, colors, sizes, materials, teams, stitchers, fabric-rolls, cutting, allocation, receiving, finishing, finished-goods, reports, inventory
 - **Actions**: view, create, edit, import
 - Admin role always has all permissions (enforced in code, cannot be changed via UI)
 - Default permissions seeded for all roles matching original hardcoded access patterns
+
+## Cutting Fabric Validation
+
+- Backend validates `quantityUsed <= roll.availableQuantity + 0.5` (tolerance of 0.5)
+- Frontend shows available quantity per selected roll, warns when within tolerance, blocks when exceeding
+
+## Inventory
+
+- `GET /inventory/summary` — pipeline overview (raw materials, cutting WIP, stitchers, finishing stages, finished goods)
+- `GET /inventory/raw-materials` — raw material breakdown grouped by fabric type and color (expandable accordion in UI)
 
 ## Key Features
 

@@ -127,4 +127,10 @@ export const ROLE_LABELS: Record<string, string> = {
   finishing: "Finishing",
   store: "Finished Goods Store",
   reporting: "Reporting",
+  data_entry: "Data Entry",
+  supervisor: "Supervisor",
 };
+
+export function getRoleLabel(role: string): string {
+  return ROLE_LABELS[role] || role.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+}

@@ -1,0 +1,116 @@
+Update the existing app only. Do not rebuild anything.
+
+I need to improve roles, fabric validation, and raw material inventory reporting in a safe and controlled way.
+
+================================
+1. ROLE SYSTEM IMPROVEMENT
+================================
+
+1.1 Create two new roles:
+- Data Entry
+- Supervisor
+
+Data Entry permissions:
+- Full access (view, create, edit, import) for:
+  Products, Colors, Sizes, Materials, Teams, Stitchers, Fabric Rolls
+- No access to production modules:
+  Cutting, Allocation, Receiving, Finishing, Finished Goods
+- No access to Reports, Inventory, or User Management
+
+Supervisor permissions:
+- Full access (view, create, edit) for:
+  Cutting, Allocation, Receiving, Finishing, Finished Goods
+- View access for:
+  Inventory, Reports, Traceability
+- No access to User Management or system settings
+
+Admin:
+- Always has full access to everything
+
+--------------------------------
+
+1.2 Dynamic role creation (IMPORTANT)
+
+After this, Admin should be able to:
+- Create new roles from UI (no backend changes needed)
+- Assign permissions using checkboxes
+- Assign roles to users
+
+Permissions should include:
+- view
+- create
+- edit
+- import
+
+Apply permissions in BOTH:
+- frontend (UI visibility, buttons, page access)
+- backend (API validation)
+
+Do not break existing users or roles.
+
+================================
+2. CUTTING FABRIC VALIDATION
+================================
+
+Add validation when using fabric rolls in Cutting:
+
+Rules:
+- Used fabric quantity must NOT exceed available quantity of that roll
+- Example:
+  if available = 22 meters → do not allow 23
+
+Tolerance:
+- allow up to +0.5 units maximum
+- example: 22 → allow up to 22.5 only
+
+Apply in:
+- frontend (before submit)
+- backend (final validation)
+
+Show clear error if exceeded and block saving.
+
+Do not break existing stock calculations.
+
+================================
+3. RAW MATERIAL INVENTORY IMPROVEMENT
+================================
+
+Improve raw material inventory display and reports.
+
+Current issue:
+- only shows total rolls and total quantity
+
+New requirement:
+Group inventory by:
+- Fabric category/type (e.g. Zoom, Nida, etc.)
+- Color
+
+Display:
+- number of rolls
+- total available quantity
+
+Examples:
+- Zoom → X rolls, Y quantity
+- Nida → X rolls, Y quantity
+- Zoom Black → X rolls, Y quantity
+- Zoom Navy → X rolls, Y quantity
+
+Apply this grouping in:
+- Raw Material Inventory view
+- Inventory reports/dashboard where raw material is shown
+
+================================
+4. SAFETY RULES
+================================
+
+- Do not rebuild the app
+- Do not remove existing features
+- Do not break production flow
+- Preserve all existing data
+- Only extend current logic safely
+
+Goal:
+- Add Data Entry and Supervisor roles
+- Allow future role creation from UI with permission checkboxes
+- Prevent overuse of fabric in Cutting with tolerance control
+- Improve raw material inventory visibility by category and color

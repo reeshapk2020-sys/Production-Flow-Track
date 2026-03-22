@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { useAppAuth, displayName, ROLE_LABELS } from "@/lib/auth-context";
+import { useAppAuth, displayName, getRoleLabel } from "@/lib/auth-context";
 import {
   LayoutDashboard, Database, Layers, Scissors, Send,
   Inbox, Settings2, Package, Box, BarChart3,
@@ -107,7 +107,7 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
             <div className="overflow-hidden flex-1">
               <p className="text-sm font-medium text-white truncate">{userDisplay}</p>
               <p className="text-xs text-slate-400">
-                @{user?.username} · <span className="capitalize">{ROLE_LABELS[user?.role ?? ""] || user?.role}</span>
+                @{user?.username} · <span className="capitalize">{getRoleLabel(user?.role ?? "")}</span>
               </p>
             </div>
           </div>

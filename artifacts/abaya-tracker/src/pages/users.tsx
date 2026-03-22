@@ -14,7 +14,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAppAuth, ROLE_LABELS } from "@/lib/auth-context";
+import { useAppAuth, getRoleLabel } from "@/lib/auth-context";
 import { Loader2, Plus, Pencil, KeyRound, UserX, UserCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -32,8 +32,6 @@ interface User {
   createdAt: string;
 }
 
-const ROLES = ["admin", "cutting", "allocation", "stitching", "finishing", "store", "reporting"] as const;
-
 function roleBadgeColor(role: string) {
   const map: Record<string, string> = {
     admin: "bg-purple-100 text-purple-800",
@@ -43,8 +41,10 @@ function roleBadgeColor(role: string) {
     finishing: "bg-green-100 text-green-800",
     store: "bg-orange-100 text-orange-800",
     reporting: "bg-slate-100 text-slate-700",
+    data_entry: "bg-teal-100 text-teal-800",
+    supervisor: "bg-rose-100 text-rose-800",
   };
-  return map[role] || "bg-slate-100 text-slate-700";
+  return map[role] || "bg-cyan-100 text-cyan-800";
 }
 
 async function apiFetch(path: string, options?: RequestInit) {
@@ -71,6 +71,12 @@ export default function UsersPage() {
     queryKey: ["users"],
     queryFn: () => apiFetch("/users"),
   });
+
+  const { data: rolesData } = useQuery<{ roles: string[] }>({
+    queryKey: ["roles"],
+    queryFn: () => fetch(`${BASE}api/permissions/roles`, { credentials: "include" }).then(r => r.json()),
+  });
+  const availableRoles = rolesData?.roles || ["admin", "cutting", "allocation", "stitching", "finishing", "store", "reporting", "data_entry", "supervisor"];
 
   const createMutation = useMutation({
     mutationFn: (data: { username: string; fullName: string; password: string; role: string }) =>
@@ -149,7 +155,7 @@ export default function UsersPage() {
                   <TableCell className="text-slate-500 font-mono text-sm">{u.username}</TableCell>
                   <TableCell>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${roleBadgeColor(u.role)}`}>
-                      {ROLE_LABELS[u.role] || u.role}
+                      {getRoleLabel(u.role)}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -206,6 +212,7 @@ export default function UsersPage() {
         onClose={() => setShowCreate(false)}
         onSubmit={createMutation.mutate}
         loading={createMutation.isPending}
+        availableRoles={availableRoles}
       />
 
       <EditUserDialog
@@ -213,6 +220,7 @@ export default function UsersPage() {
         onClose={() => setEditUser(null)}
         onSubmit={(data) => editUser && updateMutation.mutate({ id: editUser.id, data })}
         loading={updateMutation.isPending}
+        availableRoles={availableRoles}
       />
 
       <ResetPasswordDialog
@@ -225,11 +233,12 @@ export default function UsersPage() {
   );
 }
 
-function CreateUserDialog({ open, onClose, onSubmit, loading }: {
+function CreateUserDialog({ open, onClose, onSubmit, loading, availableRoles }: {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: { username: string; fullName: string; password: string; role: string }) => void;
   loading: boolean;
+  availableRoles: string[];
 }) {
   const [form, setForm] = useState({ username: "", fullName: "", password: "", role: "cutting" });
 
@@ -265,8 +274,8 @@ function CreateUserDialog({ open, onClose, onSubmit, loading }: {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ROLES.map(r => (
-                  <SelectItem key={r} value={r}>{ROLE_LABELS[r] || r}</SelectItem>
+                {availableRoles.map(r => (
+                  <SelectItem key={r} value={r}>{getRoleLabel(r)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -283,11 +292,12 @@ function CreateUserDialog({ open, onClose, onSubmit, loading }: {
   );
 }
 
-function EditUserDialog({ user, onClose, onSubmit, loading }: {
+function EditUserDialog({ user, onClose, onSubmit, loading, availableRoles }: {
   user: User | null;
   onClose: () => void;
   onSubmit: (data: Partial<User>) => void;
   loading: boolean;
+  availableRoles: string[];
 }) {
   const [form, setForm] = useState({ fullName: "", role: "cutting" });
 
@@ -318,8 +328,8 @@ function EditUserDialog({ user, onClose, onSubmit, loading }: {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ROLES.map(r => (
-                  <SelectItem key={r} value={r}>{ROLE_LABELS[r] || r}</SelectItem>
+                {availableRoles.map(r => (
+                  <SelectItem key={r} value={r}>{getRoleLabel(r)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

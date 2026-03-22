@@ -53,6 +53,8 @@ export default function CuttingPage() {
   const [batchNumber, setBatchNumber] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<any>(null);
+  const [selectedRollId, setSelectedRollId] = useState<number | null>(null);
+  const [quantityUsed, setQuantityUsed] = useState("");
 
   const existingNumbers = new Set(
     (data ?? []).map((b) => b.batchNumber?.trim().toLowerCase())
@@ -142,6 +144,11 @@ export default function CuttingPage() {
   };
 
   const availableRolls = rolls?.filter((r) => r.availableQuantity > 0) || [];
+  const TOLERANCE = 0.5;
+  const selectedRoll = availableRolls.find(r => r.id === selectedRollId);
+  const qtyUsedNum = parseFloat(quantityUsed) || 0;
+  const exceedsTolerance = selectedRoll && qtyUsedNum > Number(selectedRoll.availableQuantity) + TOLERANCE;
+  const withinTolerance = selectedRoll && qtyUsedNum > Number(selectedRoll.availableQuantity) && qtyUsedNum <= Number(selectedRoll.availableQuantity) + TOLERANCE;
 
   return (
     <AppLayout title="Cutting Department">
@@ -154,7 +161,7 @@ export default function CuttingPage() {
             </CardTitle>
             <p className="text-sm text-slate-500 mt-1">Manage fabric cutting and batch creation.</p>
           </div>
-          {canCreate && <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setBatchNumber(""); }}>
+          {canCreate && <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setBatchNumber(""); setSelectedRollId(null); setQuantityUsed(""); } }}>
             <DialogTrigger asChild>
               <Button className="rounded-xl shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5">
                 <Plus className="h-4 w-4 mr-2" /> Create Batch
@@ -245,7 +252,13 @@ export default function CuttingPage() {
                   <div className="grid grid-cols-3 gap-4">
                     <div className="col-span-2">
                       <label className="text-sm font-medium block mb-1.5">Select Fabric Roll</label>
-                      <select name="fabricRollId" className="form-input-styled bg-white" required>
+                      <select
+                        name="fabricRollId"
+                        className="form-input-styled bg-white"
+                        required
+                        value={selectedRollId ?? ""}
+                        onChange={e => setSelectedRollId(e.target.value ? Number(e.target.value) : null)}
+                      >
                         <option value="">Select Roll...</option>
                         {availableRolls.map(r => (
                           <option key={r.id} value={r.id}>{r.rollNumber} ({r.fabricName}) - {r.availableQuantity} {r.unit} left</option>
@@ -254,9 +267,36 @@ export default function CuttingPage() {
                     </div>
                     <div className="col-span-1">
                       <label className="text-sm font-medium block mb-1.5">Qty Used</label>
-                      <input type="number" step="0.1" name="quantityUsed" className="form-input-styled" required placeholder="0.0" />
+                      <input
+                        type="number"
+                        step="0.1"
+                        name="quantityUsed"
+                        className={`form-input-styled ${exceedsTolerance ? "border-red-400 bg-red-50" : withinTolerance ? "border-amber-400 bg-amber-50" : ""}`}
+                        required
+                        placeholder="0.0"
+                        value={quantityUsed}
+                        onChange={e => setQuantityUsed(e.target.value)}
+                      />
                     </div>
                   </div>
+                  {selectedRoll && (
+                    <div className="text-sm text-slate-600 bg-white rounded-lg px-3 py-2 border border-slate-200">
+                      Available: <strong>{selectedRoll.availableQuantity} {selectedRoll.unit}</strong>
+                      <span className="text-slate-400 ml-2">(tolerance: +{TOLERANCE})</span>
+                    </div>
+                  )}
+                  {withinTolerance && (
+                    <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      Quantity exceeds available stock but is within the {TOLERANCE} tolerance. This will be allowed.
+                    </div>
+                  )}
+                  {exceedsTolerance && (
+                    <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      Quantity exceeds available stock by more than {TOLERANCE}. Cannot proceed.
+                    </div>
+                  )}
                 </div>
 
                 <div className="col-span-2 sm:col-span-1">
@@ -280,7 +320,7 @@ export default function CuttingPage() {
                 <div className="col-span-2 mt-4">
                   <Button
                     type="submit"
-                    disabled={isPending || isDuplicate}
+                    disabled={isPending || isDuplicate || !!exceedsTolerance}
                     className="w-full h-12 rounded-xl text-base shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isPending ? "Creating Batch..." : "Create Cutting Batch"}
