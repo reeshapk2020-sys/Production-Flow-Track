@@ -20,6 +20,7 @@ import ReportsPage from "./pages/reports";
 import TraceabilityPage from "./pages/traceability";
 import AuditPage from "./pages/audit";
 import UsersPage from "./pages/users";
+import PermissionsPage from "./pages/permissions";
 import NotFound from "./pages/not-found";
 
 const queryClient = new QueryClient({
@@ -31,26 +32,24 @@ const queryClient = new QueryClient({
   },
 });
 
-const ROLE_ROUTES: Record<string, string[]> = {
-  admin: ["*"],
-  cutting: ["/", "/fabric-rolls", "/cutting", "/traceability"],
-  allocation: ["/", "/allocation", "/traceability"],
-  stitching: ["/", "/receiving", "/traceability"],
-  finishing: ["/", "/finishing", "/traceability"],
-  store: ["/", "/finished-goods", "/inventory", "/traceability"],
-  reporting: ["/", "/inventory", "/reports", "/traceability"],
+const PATH_TO_MODULE: Record<string, string> = {
+  "/fabric-rolls": "fabric-rolls",
+  "/cutting": "cutting",
+  "/allocation": "allocation",
+  "/receiving": "receiving",
+  "/finishing": "finishing",
+  "/finished-goods": "finished-goods",
+  "/inventory": "inventory",
+  "/reports": "reports",
+  "/traceability": "reports",
+  "/master": "__admin__",
+  "/users": "__admin__",
+  "/permissions": "__admin__",
+  "/audit": "__admin__",
 };
 
-function canAccess(role: string, path: string): boolean {
-  if (role === "admin") return true;
-  const allowed = ROLE_ROUTES[role] || ["/"];
-  if (allowed.includes("*")) return true;
-  if (allowed.includes(path)) return true;
-  return allowed.some(r => r !== "/" && path.startsWith(r));
-}
-
 function ProtectedRoute({ component: Component, path }: { component: React.ComponentType; path: string }) {
-  const { user, isAuthenticated, isLoading } = useAppAuth();
+  const { user, isAuthenticated, isLoading, can } = useAppAuth();
 
   if (isLoading) {
     return (
@@ -61,7 +60,11 @@ function ProtectedRoute({ component: Component, path }: { component: React.Compo
   }
 
   if (!isAuthenticated) return <Redirect to="/login" />;
-  if (!canAccess(user?.role || "reporting", path)) return <Redirect to="/" />;
+
+  const module = PATH_TO_MODULE[path];
+  if (module === "__admin__" && user?.role !== "admin") return <Redirect to="/" />;
+  if (module && module !== "__admin__" && !can(module, "view")) return <Redirect to="/" />;
+
   return <Component />;
 }
 
@@ -93,6 +96,7 @@ function Router() {
       <Route path="/traceability" component={() => <ProtectedRoute component={TraceabilityPage} path="/traceability" />} />
       <Route path="/master" component={() => <ProtectedRoute component={MasterDataPage} path="/master" />} />
       <Route path="/users" component={() => <ProtectedRoute component={UsersPage} path="/users" />} />
+      <Route path="/permissions" component={() => <ProtectedRoute component={PermissionsPage} path="/permissions" />} />
       <Route path="/audit" component={() => <ProtectedRoute component={AuditPage} path="/audit" />} />
       <Route component={NotFound} />
     </Switch>

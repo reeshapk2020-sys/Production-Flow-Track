@@ -14,6 +14,7 @@ import inventoryRouter from "./inventory.js";
 import reportsRouter from "./reports.js";
 import traceabilityRouter from "./traceability.js";
 import importRouter from "./import.js";
+import permissionsRouter from "./permissions.js";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(inventoryRouter);
 router.use(reportsRouter);
 router.use(traceabilityRouter);
 router.use(importRouter);
+router.use(permissionsRouter);
 
 export default router;

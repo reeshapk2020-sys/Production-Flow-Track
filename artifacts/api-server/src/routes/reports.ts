@@ -14,10 +14,11 @@ import {
   auditLogsTable,
 } from "@workspace/db/schema";
 import { eq, sql, and, gte, lte } from "drizzle-orm";
+import { checkPermission } from "./permissions.js";
 
 const router: IRouter = Router();
 
-router.get("/dashboard", async (_req, res) => {
+router.get("/dashboard", checkPermission("reports", "view"), async (_req, res) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -136,7 +137,7 @@ router.get("/dashboard", async (_req, res) => {
   });
 });
 
-router.get("/reports/stitcher-performance", async (req, res) => {
+router.get("/reports/stitcher-performance", checkPermission("reports", "view"), async (req, res) => {
   const { startDate, endDate, stitcherId } = req.query;
 
   const rows = await db
@@ -162,7 +163,7 @@ router.get("/reports/stitcher-performance", async (req, res) => {
   res.json(result);
 });
 
-router.get("/reports/daily-production", async (req, res) => {
+router.get("/reports/daily-production", checkPermission("reports", "view"), async (req, res) => {
   const dateStr = (req.query.date as string) || new Date().toISOString().split("T")[0];
   const date = new Date(dateStr);
   const nextDate = new Date(date);
@@ -208,7 +209,7 @@ router.get("/reports/daily-production", async (req, res) => {
   });
 });
 
-router.get("/reports/stage-pending", async (_req, res) => {
+router.get("/reports/stage-pending", checkPermission("reports", "view"), async (_req, res) => {
   const [pendingStitchers] = await db
     .select({
       qty: sql<number>`COALESCE(SUM(${allocationsTable.quantityIssued} - ${allocationsTable.quantityReceived} - ${allocationsTable.quantityRejected}), 0)::int`,
@@ -233,7 +234,7 @@ router.get("/reports/stage-pending", async (_req, res) => {
   ]);
 });
 
-router.get("/reports/batch-status", async (req, res) => {
+router.get("/reports/batch-status", checkPermission("reports", "view"), async (req, res) => {
   const rows = await db
     .select({
       batchNumber: cuttingBatchesTable.batchNumber,
@@ -261,7 +262,7 @@ router.get("/reports/batch-status", async (req, res) => {
   );
 });
 
-router.get("/reports/wip", async (_req, res) => {
+router.get("/reports/wip", checkPermission("reports", "view"), async (_req, res) => {
   const batches = await db
     .select({
       batchNumber: cuttingBatchesTable.batchNumber,
@@ -295,7 +296,7 @@ router.get("/reports/wip", async (_req, res) => {
   );
 });
 
-router.get("/reports/audit-log", async (req, res) => {
+router.get("/reports/audit-log", checkPermission("reports", "view"), async (req, res) => {
   const rows = await db
     .select()
     .from(auditLogsTable)

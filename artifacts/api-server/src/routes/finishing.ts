@@ -14,6 +14,7 @@ import {
 import { eq, sql, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit.js";
+import { checkPermission } from "./permissions.js";
 import { computeItemCode } from "../lib/itemCode.js";
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
@@ -61,7 +62,7 @@ async function getTotalFinishingOutput(batchId: number): Promise<number> {
 // ─── Routes ─────────────────────────────────────────────────────────────────
 
 /** GET /finishing – all finishing records (all historical stages merged) */
-router.get("/finishing", async (_req, res) => {
+router.get("/finishing", checkPermission("finishing", "view"), async (_req, res) => {
   const rows = await db
     .select({
       id: finishingRecordsTable.id,
@@ -106,7 +107,7 @@ router.get("/finishing", async (_req, res) => {
 });
 
 /** GET /finishing/batch-info/:batchId – availability for a batch */
-router.get("/finishing/batch-info/:batchId", async (req, res) => {
+router.get("/finishing/batch-info/:batchId", checkPermission("finishing", "view"), async (req, res) => {
   const batchId = Number(req.params.batchId);
   if (!batchId) return res.status(400).json({ error: "Invalid batchId" });
 
@@ -130,7 +131,7 @@ router.get("/finishing/batch-info/:batchId", async (req, res) => {
 });
 
 /** POST /finishing – create a finishing record */
-router.post("/finishing", async (req, res) => {
+router.post("/finishing", checkPermission("finishing", "create"), async (req, res) => {
   const {
     cuttingBatchId,
     inputQuantity,
@@ -205,7 +206,7 @@ router.post("/finishing", async (req, res) => {
   });
 });
 
-router.put("/finishing/:id", requireAdmin, async (req, res) => {
+router.put("/finishing/:id", checkPermission("finishing", "edit"), async (req, res) => {
   const id = parseInt(req.params.id);
   const { operator, processDate, remarks } = req.body;
   const [row] = await db

@@ -45,8 +45,9 @@ export default function CuttingPage() {
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { user } = useAppAuth();
-  const isAdmin = user?.role === "admin";
+  const { user, can } = useAppAuth();
+  const canCreate = can("cutting", "create");
+  const canEdit = can("cutting", "edit");
 
   const [open, setOpen] = useState(false);
   const [batchNumber, setBatchNumber] = useState("");
@@ -153,7 +154,7 @@ export default function CuttingPage() {
             </CardTitle>
             <p className="text-sm text-slate-500 mt-1">Manage fabric cutting and batch creation.</p>
           </div>
-          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setBatchNumber(""); }}>
+          {canCreate && <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setBatchNumber(""); }}>
             <DialogTrigger asChild>
               <Button className="rounded-xl shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5">
                 <Plus className="h-4 w-4 mr-2" /> Create Batch
@@ -287,7 +288,7 @@ export default function CuttingPage() {
                 </div>
               </form>
             </DialogContent>
-          </Dialog>
+          </Dialog>}
         </CardHeader>
         <CardContent className="p-0 bg-white">
           <Table>
@@ -300,11 +301,11 @@ export default function CuttingPage() {
                 <TableHead className="text-right">Available for Alloc.</TableHead>
                 <TableHead>Date & Cutter</TableHead>
                 <TableHead>Status</TableHead>
-                {isAdmin && <TableHead className="w-16"></TableHead>}
+                {canEdit && <TableHead className="w-16"></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? <TableRow><TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow> :
+              {isLoading ? <TableRow><TableCell colSpan={canEdit ? 8 : 7} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow> :
                 data?.map(batch => (
                   <TableRow key={batch.id} className="group">
                     <TableCell className="font-mono text-primary font-bold">{batch.batchNumber}</TableCell>
@@ -333,7 +334,7 @@ export default function CuttingPage() {
                     <TableCell>
                       <BatchStatusBadge status={batch.status || "cutting"} />
                     </TableCell>
-                    {isAdmin && (
+                    {canEdit && (
                       <TableCell>
                         <Button
                           size="sm"
@@ -349,7 +350,7 @@ export default function CuttingPage() {
                 ))
               }
               {data?.length === 0 && (
-                <TableRow><TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-12 text-slate-500">No cutting batches found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 8 : 7} className="text-center py-12 text-slate-500">No cutting batches found.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

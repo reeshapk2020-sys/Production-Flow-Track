@@ -14,6 +14,7 @@ import {
 import { eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit.js";
+import { checkPermission } from "./permissions.js";
 import { computeItemCode } from "../lib/itemCode.js";
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
@@ -89,14 +90,14 @@ function withItemCode(r: any) {
   };
 }
 
-router.get("/allocation", async (_req, res) => {
+router.get("/allocation", checkPermission("allocation", "view"), async (_req, res) => {
   const rows = await allocJoins(
     db.select(allocSelect).from(allocationsTable)
   ).orderBy(sql`${allocationsTable.createdAt} desc`);
   res.json(rows.map(withItemCode));
 });
 
-router.post("/allocation", async (req, res) => {
+router.post("/allocation", checkPermission("allocation", "create"), async (req, res) => {
   const { cuttingBatchId, stitcherId, quantityIssued, issueDate, remarks,
     batchProductId, batchMaterialId } = req.body;
 
@@ -171,7 +172,7 @@ router.post("/allocation", async (req, res) => {
   res.status(201).json({ ...allocation, quantityPending: quantityIssued });
 });
 
-router.get("/allocation/:id", async (req, res) => {
+router.get("/allocation/:id", checkPermission("allocation", "view"), async (req, res) => {
   const id = parseInt(req.params.id);
   const [row] = await allocJoins(
     db.select(allocSelect).from(allocationsTable)
@@ -180,7 +181,7 @@ router.get("/allocation/:id", async (req, res) => {
   res.json(withItemCode(row));
 });
 
-router.put("/allocation/:id", requireAdmin, async (req, res) => {
+router.put("/allocation/:id", checkPermission("allocation", "edit"), async (req, res) => {
   const id = parseInt(req.params.id);
   const { issueDate, remarks } = req.body;
   const [row] = await db

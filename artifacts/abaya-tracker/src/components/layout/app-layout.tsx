@@ -4,7 +4,7 @@ import { useAppAuth, displayName, ROLE_LABELS } from "@/lib/auth-context";
 import {
   LayoutDashboard, Database, Layers, Scissors, Send,
   Inbox, Settings2, Package, Box, BarChart3,
-  GitBranch, Shield, Users, LogOut, Loader2, ChevronRight
+  GitBranch, Shield, Users, LogOut, Loader2, ChevronRight, KeyRound
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -21,12 +21,13 @@ const NAV_ITEMS = [
   { path: "/traceability", label: "Traceability", icon: GitBranch, roles: ["all"] },
   { path: "/master", label: "Master Data", icon: Database, roles: ["admin"] },
   { path: "/users", label: "User Management", icon: Users, roles: ["admin"] },
+  { path: "/permissions", label: "Role Permissions", icon: KeyRound, roles: ["admin"] },
   { path: "/audit", label: "Audit Log", icon: Shield, roles: ["admin"] },
 ];
 
 export function AppLayout({ children, title }: { children: ReactNode; title: string }) {
   const [location] = useLocation();
-  const { user, isLoading, logout } = useAppAuth();
+  const { user, isLoading, logout, can } = useAppAuth();
 
   if (isLoading) {
     return (
@@ -36,10 +37,24 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
     );
   }
 
+  const NAV_PATH_MODULE: Record<string, string> = {
+    "/fabric-rolls": "fabric-rolls",
+    "/cutting": "cutting",
+    "/allocation": "allocation",
+    "/receiving": "receiving",
+    "/finishing": "finishing",
+    "/finished-goods": "finished-goods",
+    "/inventory": "inventory",
+    "/reports": "reports",
+  };
+
   const userRole = user?.role || "reporting";
-  const visibleNavItems = NAV_ITEMS.filter(
-    (item) => item.roles.includes("all") || item.roles.includes(userRole),
-  );
+  const visibleNavItems = NAV_ITEMS.filter((item) => {
+    if (item.roles.includes("all")) return true;
+    const mod = NAV_PATH_MODULE[item.path];
+    if (mod) return can(mod, "view");
+    return item.roles.includes(userRole);
+  });
 
   const userDisplay = displayName(user);
   const initials = userDisplay.split(" ").map(w => w[0]).join("").substring(0, 2).toUpperCase();

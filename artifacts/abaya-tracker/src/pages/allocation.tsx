@@ -47,8 +47,9 @@ export default function AllocationPage() {
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { user } = useAppAuth();
-  const isAdmin = user?.role === "admin";
+  const { user, can } = useAppAuth();
+  const canCreate = can("allocation", "create");
+  const canEdit = can("allocation", "edit");
 
   const [open, setOpen] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<any>(null);
@@ -138,7 +139,7 @@ export default function AllocationPage() {
             </CardTitle>
             <p className="text-sm text-slate-500 mt-1">Issue cut pieces to stitchers. Receiving is done in the Receiving module.</p>
           </div>
-          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSelectedBatch(null); }}>
+          {canCreate && <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSelectedBatch(null); }}>
             <DialogTrigger asChild>
               <Button className="rounded-xl shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5">
                 <Plus className="h-4 w-4 mr-2" /> Issue Batch
@@ -265,7 +266,7 @@ export default function AllocationPage() {
                 </div>
               </form>
             </DialogContent>
-          </Dialog>
+          </Dialog>}
         </CardHeader>
 
         <CardContent className="p-0 bg-white">
@@ -281,12 +282,12 @@ export default function AllocationPage() {
                 <TableHead className="text-right">Pending</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Issue Date</TableHead>
-                {isAdmin && <TableHead className="w-16"></TableHead>}
+                {canEdit && <TableHead className="w-16"></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={isAdmin ? 10 : 9} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 10 : 9} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
               ) : (
                 data?.map(alloc => {
                   const pending = alloc.quantityPending ?? (alloc.quantityIssued - (alloc.quantityReceived || 0) - (alloc.quantityRejected || 0));
@@ -328,7 +329,7 @@ export default function AllocationPage() {
                       <TableCell className="text-slate-600 text-sm">
                         {alloc.issueDate ? format(new Date(alloc.issueDate), 'MMM d, yyyy') : '-'}
                       </TableCell>
-                      {isAdmin && (
+                      {canEdit && (
                         <TableCell>
                           <Button
                             size="sm"
@@ -345,7 +346,7 @@ export default function AllocationPage() {
                 })
               )}
               {!isLoading && data?.length === 0 && (
-                <TableRow><TableCell colSpan={isAdmin ? 10 : 9} className="text-center py-12 text-slate-500">No allocations yet.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 10 : 9} className="text-center py-12 text-slate-500">No allocations yet.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

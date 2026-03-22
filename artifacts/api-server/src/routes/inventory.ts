@@ -8,10 +8,11 @@ import {
   finishedGoodsTable,
 } from "@workspace/db/schema";
 import { sql, eq } from "drizzle-orm";
+import { checkPermission } from "./permissions.js";
 
 const router: IRouter = Router();
 
-router.get("/inventory/summary", async (_req, res) => {
+router.get("/inventory/summary", checkPermission("inventory", "view"), async (_req, res) => {
   const [rawMaterial] = await db
     .select({
       totalRolls: sql<number>`COUNT(*)::int`,

@@ -33,8 +33,9 @@ function FinishingView() {
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { user } = useAppAuth();
-  const isAdmin = user?.role === "admin";
+  const { user, can } = useAppAuth();
+  const canCreate = can("finishing", "create");
+  const canEdit = can("finishing", "edit");
 
   const [open, setOpen] = useState(false);
   const [selectedBatchId, setSelectedBatchId] = useState<number | null>(null);
@@ -144,7 +145,7 @@ function FinishingView() {
           </CardTitle>
           <p className="text-sm text-slate-500 mt-1">Receiving → Finishing → Finished Goods</p>
         </div>
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
+        {canCreate && <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
           <DialogTrigger asChild>
             <Button className="rounded-xl shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5">
               <Plus className="h-4 w-4 mr-2" /> Log Finishing
@@ -285,7 +286,7 @@ function FinishingView() {
               </div>
             </form>
           </DialogContent>
-        </Dialog>
+        </Dialog>}
       </CardHeader>
 
       <CardContent className="p-0 bg-white">
@@ -300,13 +301,13 @@ function FinishingView() {
               <TableHead className="text-right text-slate-400">Pending</TableHead>
               <TableHead>Operator</TableHead>
               <TableHead>Date</TableHead>
-              {isAdmin && <TableHead className="w-16"></TableHead>}
+              {canEdit && <TableHead className="w-16"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={isAdmin ? 9 : 8} className="text-center py-12">
+                <TableCell colSpan={canEdit ? 9 : 8} className="text-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" />
                 </TableCell>
               </TableRow>
@@ -332,7 +333,7 @@ function FinishingView() {
                   <TableCell className="text-slate-600 text-sm">
                     {rec.processDate ? format(new Date(rec.processDate), "MMM d, yyyy") : "—"}
                   </TableCell>
-                  {isAdmin && (
+                  {canEdit && (
                     <TableCell>
                       <Button
                         size="sm"
@@ -349,7 +350,7 @@ function FinishingView() {
             )}
             {!isLoading && data?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={isAdmin ? 9 : 8} className="text-center py-12 text-slate-500">
+                <TableCell colSpan={canEdit ? 9 : 8} className="text-center py-12 text-slate-500">
                   No finishing records yet.
                 </TableCell>
               </TableRow>

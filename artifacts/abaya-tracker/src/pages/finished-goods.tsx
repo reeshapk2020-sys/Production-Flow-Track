@@ -83,8 +83,9 @@ function EntryLogTab() {
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { user } = useAppAuth();
-  const isAdmin = user?.role === "admin";
+  const { user, can } = useAppAuth();
+  const canCreate = can("finished-goods", "create");
+  const canEdit = can("finished-goods", "edit");
 
   const [open, setOpen] = useState(false);
   const [selectedBatchId, setSelectedBatchId] = useState<number | null>(null);
@@ -175,7 +176,7 @@ function EntryLogTab() {
         <div>
           <CardTitle className="text-xl font-display text-slate-800">Store Entry Log</CardTitle>
         </div>
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
+        {canCreate && <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
           <DialogTrigger asChild>
             <Button className="rounded-xl shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5">
               <Plus className="h-4 w-4 mr-2" /> Receive into Store
@@ -278,7 +279,7 @@ function EntryLogTab() {
               </div>
             </form>
           </DialogContent>
-        </Dialog>
+        </Dialog>}
       </CardHeader>
       <CardContent className="p-0 bg-white">
         <Table>
@@ -290,11 +291,11 @@ function EntryLogTab() {
               <TableHead className="text-right">Quantity Entered</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Added By</TableHead>
-              {isAdmin && <TableHead className="w-16"></TableHead>}
+              {canEdit && <TableHead className="w-16"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={canEdit ? 7 : 6} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow> :
               data?.map(entry => (
                 <TableRow key={entry.id} className="group hover:bg-slate-50/50">
                   <TableCell className="font-mono text-primary font-medium">{entry.batchNumber}</TableCell>
@@ -310,7 +311,7 @@ function EntryLogTab() {
                   <TableCell className="text-right font-bold text-emerald-600 text-lg">+{entry.quantity}</TableCell>
                   <TableCell className="text-slate-600 text-sm">{entry.entryDate ? format(new Date(entry.entryDate), 'MMM d, yyyy') : '-'}</TableCell>
                   <TableCell className="text-slate-500 text-sm">{entry.enteredBy}</TableCell>
-                  {isAdmin && (
+                  {canEdit && (
                     <TableCell>
                       <Button
                         size="sm"

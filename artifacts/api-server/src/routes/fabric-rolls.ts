@@ -7,6 +7,7 @@ import {
 } from "@workspace/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { logAudit } from "../lib/audit.js";
+import { checkPermission } from "./permissions.js";
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated() || req.user?.role !== "admin") {
@@ -18,7 +19,7 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
 
 const router: IRouter = Router();
 
-router.get("/fabric-rolls", async (_req, res) => {
+router.get("/fabric-rolls", checkPermission("fabric-rolls", "view"), async (_req, res) => {
   const rows = await db
     .select({
       id: fabricRollsTable.id,
@@ -43,7 +44,7 @@ router.get("/fabric-rolls", async (_req, res) => {
   res.json(rows);
 });
 
-router.post("/fabric-rolls", async (req, res) => {
+router.post("/fabric-rolls", checkPermission("fabric-rolls", "create"), async (req, res) => {
   const {
     rollNumber,
     fabricId,
@@ -77,7 +78,7 @@ router.post("/fabric-rolls", async (req, res) => {
   res.status(201).json(row);
 });
 
-router.get("/fabric-rolls/:id", async (req, res) => {
+router.get("/fabric-rolls/:id", checkPermission("fabric-rolls", "view"), async (req, res) => {
   const id = parseInt(req.params.id);
   const [row] = await db
     .select({
@@ -105,7 +106,7 @@ router.get("/fabric-rolls/:id", async (req, res) => {
   res.json(row);
 });
 
-router.put("/fabric-rolls/:id", requireAdmin, async (req, res) => {
+router.put("/fabric-rolls/:id", checkPermission("fabric-rolls", "edit"), async (req, res) => {
   const id = parseInt(req.params.id);
   const { rollNumber, supplier, receivedDate, remarks } = req.body;
   const [row] = await db

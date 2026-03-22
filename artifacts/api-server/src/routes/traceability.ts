@@ -18,10 +18,11 @@ import {
 import { eq, like, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { computeItemCode } from "../lib/itemCode";
+import { checkPermission } from "./permissions.js";
 
 const router: IRouter = Router();
 
-router.get("/traceability/batch/:batchNumber", async (req, res) => {
+router.get("/traceability/batch/:batchNumber", checkPermission("reports", "view"), async (req, res) => {
   const { batchNumber } = req.params;
   const mat1 = alias(materialsTable, "mat1");
   const mat2 = alias(materialsTable, "mat2");
@@ -198,7 +199,7 @@ router.get("/traceability/batch/:batchNumber", async (req, res) => {
   });
 });
 
-router.get("/traceability/search", async (req, res) => {
+router.get("/traceability/search", checkPermission("reports", "view"), async (req, res) => {
   const { q = "", type } = req.query;
   const searchStr = `%${q}%`;
   const results: any[] = [];

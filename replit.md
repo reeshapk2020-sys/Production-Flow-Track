@@ -95,7 +95,7 @@ lib/
 
 ## User Roles
 
-- `admin` - Full access to everything
+- `admin` - Full access to everything (locked, cannot be restricted)
 - `cutting` - Fabric rolls + cutting module
 - `allocation` - Allocation module
 - `stitching` - Receiving from stitchers
@@ -103,20 +103,32 @@ lib/
 - `store` - Finished goods store
 - `reporting` - Reports and dashboard (read-only)
 
+## Permission System
+
+- **DB table**: `role_permissions` — stores per-role, per-module permissions (canView, canCreate, canEdit, canImport)
+- **Backend**: `checkPermission(module, action)` middleware in `routes/permissions.ts` — enforces permissions on all production route endpoints (GET=view, POST=create, PUT=edit, import endpoints=import)
+- **Frontend**: `can(module, action)` helper in auth context — controls sidebar visibility, route access, and button visibility
+- **Admin page**: `/permissions` — grid UI for admin to toggle permissions per role
+- **Modules**: products, colors, sizes, materials, teams, stitchers, fabric-rolls, cutting, allocation, receiving, finishing, finished-goods, reports, inventory
+- **Actions**: view, create, edit, import
+- Admin role always has all permissions (enforced in code, cannot be changed via UI)
+- Default permissions seeded for all roles matching original hardcoded access patterns
+
 ## Key Features
 
 - Full batch traceability (Fabric Roll → Cutting → Allocation → Receiving → Finishing → Finished Goods)
-- **Item Code system**: Composite code computed as `productCode-fabricCode-material1Code-material2Code`; set at cutting time and displayed in all downstream modules (cutting, allocation, receiving, finishing, finished goods, traceability)
+- **Item Code system**: Composite code computed as `productCode-colorCode-material1Code-material2Code`; set at cutting time and displayed in all downstream modules
 - Real-time inventory tracking at all stages
 - Stitcher performance reports
 - Dashboard with today's production metrics
 - Audit log for all create/update operations
-- Role-based access control with 7 levels
-- Secure login via Replit Auth
-- Admin-only edit access on all 6 operational modules (safe fields only — dates, operator names, remarks; quantities and foreign keys are never editable to protect inventory integrity)
-- Teams and Stitchers master data with code/isActive fields, admin-only edit dialogs
-- Material master module (admin-only create/edit, isActive toggle, duplicate code prevention)
-- Fabric master now supports fabric code (used in item code), with admin-only edit dialog
+- **Dynamic role-based permission system** with per-module granularity (view/create/edit/import)
+- Secure login via Replit Auth + staff login
+- Permission-controlled edit access on all 6 operational modules (safe fields only — dates, operator names, remarks; quantities and foreign keys are never editable to protect inventory integrity)
+- Teams and Stitchers master data with code/isActive fields, edit dialogs
+- Material master module (create/edit, isActive toggle, duplicate code prevention)
+- Fabric master now supports fabric code (used in item code), with edit dialog
+- Bulk CSV/Excel import for all master data modules and fabric rolls
 
 ## Commands
 

@@ -13,6 +13,7 @@ import {
 import { eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit.js";
+import { checkPermission } from "./permissions.js";
 import { computeItemCode } from "../lib/itemCode.js";
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
@@ -49,7 +50,7 @@ async function getTotalStoredQty(batchId: number): Promise<number> {
 
 // ─── Routes ─────────────────────────────────────────────────────────────────
 
-router.get("/finished-goods", async (_req, res) => {
+router.get("/finished-goods", checkPermission("finished-goods", "view"), async (_req, res) => {
   const rows = await db
     .select({
       id: finishedGoodsTable.id,
@@ -90,7 +91,7 @@ router.get("/finished-goods", async (_req, res) => {
 });
 
 /** GET /finished-goods/batch-info/:batchId – availability from finishing */
-router.get("/finished-goods/batch-info/:batchId", async (req, res) => {
+router.get("/finished-goods/batch-info/:batchId", checkPermission("finished-goods", "view"), async (req, res) => {
   const batchId = Number(req.params.batchId);
   if (!batchId) return res.status(400).json({ error: "Invalid batchId" });
 
@@ -113,7 +114,7 @@ router.get("/finished-goods/batch-info/:batchId", async (req, res) => {
   });
 });
 
-router.post("/finished-goods", async (req, res) => {
+router.post("/finished-goods", checkPermission("finished-goods", "create"), async (req, res) => {
   const { cuttingBatchId, quantity, entryDate, remarks } = req.body;
 
   const qty = Number(quantity);
@@ -158,7 +159,7 @@ router.post("/finished-goods", async (req, res) => {
   res.status(201).json(entry);
 });
 
-router.get("/finished-goods/stock", async (_req, res) => {
+router.get("/finished-goods/stock", checkPermission("finished-goods", "view"), async (_req, res) => {
   const rows = await db
     .select({
       productId: productsTable.id,
@@ -181,7 +182,7 @@ router.get("/finished-goods/stock", async (_req, res) => {
   res.json(rows);
 });
 
-router.put("/finished-goods/:id", requireAdmin, async (req, res) => {
+router.put("/finished-goods/:id", checkPermission("finished-goods", "edit"), async (req, res) => {
   const id = parseInt(req.params.id);
   const { entryDate, remarks } = req.body;
   const [row] = await db

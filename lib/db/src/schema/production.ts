@@ -268,6 +268,16 @@ export const auditLogsTable = pgTable("audit_logs", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const rolePermissionsTable = pgTable("role_permissions", {
+  id: serial("id").primaryKey(),
+  role: userRoleEnum("role").notNull(),
+  module: text("module").notNull(),
+  canView: boolean("can_view").notNull().default(false),
+  canCreate: boolean("can_create").notNull().default(false),
+  canEdit: boolean("can_edit").notNull().default(false),
+  canImport: boolean("can_import").notNull().default(false),
+});
+
 // ===== INSERT SCHEMAS =====
 
 export const insertAppUserSchema = createInsertSchema(appUsersTable).omit({

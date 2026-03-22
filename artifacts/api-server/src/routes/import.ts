@@ -13,6 +13,7 @@ import {
 } from "@workspace/db/schema";
 import { eq, ilike } from "drizzle-orm";
 import { logAudit } from "../lib/audit.js";
+import { checkPermission } from "./permissions.js";
 import multer from "multer";
 import * as XLSX from "xlsx";
 
@@ -53,7 +54,7 @@ interface ImportResult {
 }
 
 // ========== PRODUCTS ==========
-router.post("/import/products", requireAdmin, upload.single("file"), async (req: Request, res: Response) => {
+router.post("/import/products", checkPermission("products", "import"), upload.single("file"), async (req: Request, res: Response) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded." });
   const result: ImportResult = { total: 0, inserted: 0, failed: 0, errors: [] };
 
@@ -98,7 +99,7 @@ router.post("/import/products", requireAdmin, upload.single("file"), async (req:
 });
 
 // ========== COLORS ==========
-router.post("/import/colors", requireAdmin, upload.single("file"), async (req: Request, res: Response) => {
+router.post("/import/colors", checkPermission("colors", "import"), upload.single("file"), async (req: Request, res: Response) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded." });
   const result: ImportResult = { total: 0, inserted: 0, failed: 0, errors: [] };
 
@@ -136,7 +137,7 @@ router.post("/import/colors", requireAdmin, upload.single("file"), async (req: R
 });
 
 // ========== SIZES ==========
-router.post("/import/sizes", requireAdmin, upload.single("file"), async (req: Request, res: Response) => {
+router.post("/import/sizes", checkPermission("sizes", "import"), upload.single("file"), async (req: Request, res: Response) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded." });
   const result: ImportResult = { total: 0, inserted: 0, failed: 0, errors: [] };
 
@@ -173,7 +174,7 @@ router.post("/import/sizes", requireAdmin, upload.single("file"), async (req: Re
 });
 
 // ========== MATERIALS ==========
-router.post("/import/materials", requireAdmin, upload.single("file"), async (req: Request, res: Response) => {
+router.post("/import/materials", checkPermission("materials", "import"), upload.single("file"), async (req: Request, res: Response) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded." });
   const result: ImportResult = { total: 0, inserted: 0, failed: 0, errors: [] };
 
@@ -212,7 +213,7 @@ router.post("/import/materials", requireAdmin, upload.single("file"), async (req
 });
 
 // ========== STITCHERS ==========
-router.post("/import/stitchers", requireAdmin, upload.single("file"), async (req: Request, res: Response) => {
+router.post("/import/stitchers", checkPermission("stitchers", "import"), upload.single("file"), async (req: Request, res: Response) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded." });
   const result: ImportResult = { total: 0, inserted: 0, failed: 0, errors: [] };
 
@@ -254,7 +255,7 @@ router.post("/import/stitchers", requireAdmin, upload.single("file"), async (req
 });
 
 // ========== TEAMS ==========
-router.post("/import/teams", requireAdmin, upload.single("file"), async (req: Request, res: Response) => {
+router.post("/import/teams", checkPermission("teams", "import"), upload.single("file"), async (req: Request, res: Response) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded." });
   const result: ImportResult = { total: 0, inserted: 0, failed: 0, errors: [] };
 
@@ -294,7 +295,7 @@ router.post("/import/teams", requireAdmin, upload.single("file"), async (req: Re
 });
 
 // ========== FABRIC ROLLS ==========
-router.post("/import/fabric-rolls", requireAdmin, upload.single("file"), async (req: Request, res: Response) => {
+router.post("/import/fabric-rolls", checkPermission("fabric-rolls", "import"), upload.single("file"), async (req: Request, res: Response) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded." });
   const result: ImportResult = { total: 0, inserted: 0, failed: 0, errors: [] };
 

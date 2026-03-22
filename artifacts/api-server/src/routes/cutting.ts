@@ -14,6 +14,7 @@ import {
 import { eq, sql, ilike } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit.js";
+import { checkPermission } from "./permissions.js";
 import { computeItemCode } from "../lib/itemCode.js";
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
@@ -29,7 +30,7 @@ const router: IRouter = Router();
 const mat1 = alias(materialsTable, "mat1");
 const mat2 = alias(materialsTable, "mat2");
 
-router.get("/cutting/batches", async (_req, res) => {
+router.get("/cutting/batches", checkPermission("cutting", "view"), async (_req, res) => {
   const rows = await db
     .select({
       id: cuttingBatchesTable.id,
@@ -76,7 +77,7 @@ router.get("/cutting/batches", async (_req, res) => {
   res.json(result);
 });
 
-router.post("/cutting/batches", async (req, res) => {
+router.post("/cutting/batches", checkPermission("cutting", "create"), async (req, res) => {
   const {
     batchNumber,
     productId,
@@ -161,7 +162,7 @@ router.post("/cutting/batches", async (req, res) => {
   res.status(201).json({ ...batch, totalAllocated: 0 });
 });
 
-router.get("/cutting/batches/:id", async (req, res) => {
+router.get("/cutting/batches/:id", checkPermission("cutting", "view"), async (req, res) => {
   const id = parseInt(req.params.id);
 
   const [batch] = await db
@@ -228,7 +229,7 @@ router.get("/cutting/batches/:id", async (req, res) => {
   res.json({ batch: batchWithCode, fabricRolls, allocations });
 });
 
-router.put("/cutting/batches/:id", requireAdmin, async (req, res) => {
+router.put("/cutting/batches/:id", checkPermission("cutting", "edit"), async (req, res) => {
   const id = parseInt(req.params.id);
   const { cutter, cuttingDate, remarks, productId, materialId, material2Id } = req.body;
   const updates: Record<string, any> = {};

@@ -23,8 +23,10 @@ export default function FabricRollsPage() {
   
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { user } = useAppAuth();
-  const isAdmin = user?.role === "admin";
+  const { user, can } = useAppAuth();
+  const canCreate = can("fabric-rolls", "create");
+  const canEdit = can("fabric-rolls", "edit");
+  const canImport = can("fabric-rolls", "import");
 
   const [open, setOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -97,8 +99,8 @@ export default function FabricRollsPage() {
             <p className="text-sm text-slate-500 mt-1">Manage incoming raw material fabric rolls.</p>
           </div>
           <div className="flex items-center gap-2">
-            {isAdmin && <Button variant="outline" className="rounded-xl gap-1.5" onClick={() => setImportOpen(true)}><Upload className="h-4 w-4" /> Import</Button>}
-            <Dialog open={open} onOpenChange={setOpen}>
+            {canImport && <Button variant="outline" className="rounded-xl gap-1.5" onClick={() => setImportOpen(true)}><Upload className="h-4 w-4" /> Import</Button>}
+            {canCreate && <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button className="rounded-xl shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5">
                   <Plus className="h-4 w-4 mr-2" /> Add New Roll
@@ -163,7 +165,7 @@ export default function FabricRollsPage() {
                 </div>
               </form>
             </DialogContent>
-          </Dialog>
+          </Dialog>}
           </div>
         </CardHeader>
         <CardContent className="p-0 bg-white">
@@ -176,11 +178,11 @@ export default function FabricRollsPage() {
                 <TableHead className="text-right">Available Qty</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
-                {isAdmin && <TableHead className="w-16"></TableHead>}
+                {canEdit && <TableHead className="w-16"></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? <TableRow><TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow> :
+              {isLoading ? <TableRow><TableCell colSpan={canEdit ? 7 : 6} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow> :
                 data?.map(roll => {
                   return (
                     <TableRow key={roll.id} className="group">
@@ -202,7 +204,7 @@ export default function FabricRollsPage() {
                       <TableCell className="text-slate-500 text-sm">
                         {roll.receivedDate ? format(new Date(roll.receivedDate), 'MMM d, yyyy') : '-'}
                       </TableCell>
-                      {isAdmin && (
+                      {canEdit && (
                         <TableCell>
                           <Button
                             size="sm"
@@ -219,7 +221,7 @@ export default function FabricRollsPage() {
                 })
               }
               {data?.length === 0 && (
-                <TableRow><TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-12 text-slate-500">No fabric rolls found. Add one to start.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 7 : 6} className="text-center py-12 text-slate-500">No fabric rolls found. Add one to start.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

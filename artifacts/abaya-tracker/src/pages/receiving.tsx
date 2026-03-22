@@ -39,8 +39,9 @@ export default function ReceivingPage() {
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { user } = useAppAuth();
-  const isAdmin = user?.role === "admin";
+  const { user, can } = useAppAuth();
+  const canCreate = can("receiving", "create");
+  const canEdit = can("receiving", "edit");
 
   const [open, setOpen] = useState(false);
   const [selectedAllocationId, setSelectedAllocationId] = useState<number | null>(null);
@@ -149,7 +150,7 @@ export default function ReceivingPage() {
             </CardTitle>
             <p className="text-sm text-slate-500 mt-1">Log pieces received back. Supports partial receiving — enter as many receipts as needed.</p>
           </div>
-          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
+          {canCreate && <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
             <DialogTrigger asChild>
               <Button className="rounded-xl shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5">
                 <Plus className="h-4 w-4 mr-2" /> Log Receipt
@@ -280,7 +281,7 @@ export default function ReceivingPage() {
                 </div>
               </form>
             </DialogContent>
-          </Dialog>
+          </Dialog>}
         </CardHeader>
 
         <CardContent className="p-0 bg-white">
@@ -294,12 +295,12 @@ export default function ReceivingPage() {
                 <TableHead className="text-right">Good Rcvd</TableHead>
                 <TableHead className="text-right">Rej / Dmg</TableHead>
                 <TableHead>Receive Date</TableHead>
-                {isAdmin && <TableHead className="w-16"></TableHead>}
+                {canEdit && <TableHead className="w-16"></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 8 : 7} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
               ) : (
                 data?.map(rec => (
                   <TableRow key={rec.id} className="group hover:bg-slate-50/50">
@@ -333,7 +334,7 @@ export default function ReceivingPage() {
                     <TableCell className="text-slate-600 text-sm">
                       {rec.receiveDate ? format(new Date(rec.receiveDate), 'MMM d, yyyy') : '-'}
                     </TableCell>
-                    {isAdmin && (
+                    {canEdit && (
                       <TableCell>
                         <Button
                           size="sm"
@@ -349,7 +350,7 @@ export default function ReceivingPage() {
                 ))
               )}
               {!isLoading && data?.length === 0 && (
-                <TableRow><TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-12 text-slate-500">No receivings logged yet.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 8 : 7} className="text-center py-12 text-slate-500">No receivings logged yet.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

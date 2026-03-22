@@ -16,6 +16,7 @@ import {
 import { eq, sql, and } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit.js";
+import { checkPermission } from "./permissions.js";
 import { computeItemCode } from "../lib/itemCode.js";
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
@@ -133,7 +134,7 @@ function denyAllocationRole(req: any, res: any, next: any) {
   next();
 }
 
-router.get("/receiving", denyAllocationRole, async (_req, res) => {
+router.get("/receiving", checkPermission("receiving", "view"), async (_req, res) => {
   const rows = await db
     .select({
       id: receivingsTable.id,
@@ -178,7 +179,7 @@ router.get("/receiving", denyAllocationRole, async (_req, res) => {
   })));
 });
 
-router.post("/receiving", denyAllocationRole, async (req, res) => {
+router.post("/receiving", checkPermission("receiving", "create"), async (req, res) => {
   const {
     allocationId,
     quantityReceived,
@@ -251,7 +252,7 @@ router.post("/receiving", denyAllocationRole, async (req, res) => {
 
 // Export helper for use by other routes
 export { updateBatchStatus };
-router.put("/receiving/:id", requireAdmin, async (req, res) => {
+router.put("/receiving/:id", checkPermission("receiving", "edit"), async (req, res) => {
   const id = parseInt(req.params.id);
   const { receiveDate, remarks } = req.body;
   const [row] = await db
