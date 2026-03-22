@@ -81,8 +81,8 @@ export const sizesTable = pgTable("sizes", {
 
 export const colorsTable = pgTable("colors", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull().unique(),
-  code: text("code"),
+  name: text("name").notNull(),
+  code: text("code").unique(),
 });
 
 export const materialsTable = pgTable("materials", {
