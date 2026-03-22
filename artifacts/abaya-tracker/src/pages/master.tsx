@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertCircle, Pencil, Plus, Loader2, Users, Shield } from "lucide-react";
+import { AlertCircle, Pencil, Plus, Loader2, Users, Shield, Upload } from "lucide-react";
+import { ImportDialog } from "@/components/import-dialog";
 import { useState } from "react";
 import {
   useListCategories, useCreateCategory, getListCategoriesQueryKey,
@@ -175,6 +176,7 @@ function ColorsTab({ isAdmin }: { isAdmin: boolean }) {
   const { toast } = useToast();
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [newCode, setNewCode] = useState("");
   const [newName, setNewName] = useState("");
 
@@ -251,6 +253,7 @@ function ColorsTab({ isAdmin }: { isAdmin: boolean }) {
         addLabel="Add Color"
         open={createOpen}
         onOpenChange={(v: boolean) => { setCreateOpen(v); if (!v) { setNewCode(""); setNewName(""); } }}
+        importButton={isAdmin && <ImportBtn onClick={() => setImportOpen(true)} />}
       >
         <form onSubmit={onCreateSubmit} className="space-y-4 pt-4">
           <ColorCodeInput value={newCode} onChange={setNewCode} existingCodes={existingCodes} />
@@ -345,6 +348,7 @@ function ColorsTab({ isAdmin }: { isAdmin: boolean }) {
           </DialogContent>
         </Dialog>
       )}
+      <ImportDialog open={importOpen} onOpenChange={setImportOpen} moduleName="Colors" moduleKey="colors" onSuccess={() => queryClient.invalidateQueries({ queryKey: getListColorsQueryKey() })} />
     </>
   );
 }
@@ -353,6 +357,7 @@ function SizesTab({ isAdmin }: { isAdmin: boolean }) {
   const { data, isLoading } = useListSizes();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const { mutate, isPending } = useCreateSize({
     mutation: { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListSizesQueryKey() }); setOpen(false); } }
   });
@@ -364,7 +369,8 @@ function SizesTab({ isAdmin }: { isAdmin: boolean }) {
   };
 
   return (
-    <MasterCard title="Sizes" onAdd={() => setOpen(true)} addLabel="Add Size" open={open} onOpenChange={setOpen}>
+    <>
+    <MasterCard title="Sizes" onAdd={() => setOpen(true)} addLabel="Add Size" open={open} onOpenChange={setOpen} importButton={isAdmin && <ImportBtn onClick={() => setImportOpen(true)} />}>
       <form onSubmit={onSubmit} className="space-y-4 pt-4">
         <div><label className="text-sm font-medium block mb-1.5">Size Name</label><input name="name" className="form-input-styled" required /></div>
         <div><label className="text-sm font-medium block mb-1.5">Sort Order</label><input type="number" name="sortOrder" className="form-input-styled" defaultValue="0" /></div>
@@ -383,6 +389,8 @@ function SizesTab({ isAdmin }: { isAdmin: boolean }) {
         </Table>
       </div>
     </MasterCard>
+    <ImportDialog open={importOpen} onOpenChange={setImportOpen} moduleName="Sizes" moduleKey="sizes" onSuccess={() => queryClient.invalidateQueries({ queryKey: getListSizesQueryKey() })} />
+    </>
   );
 }
 
@@ -540,6 +548,14 @@ function FabricsTab({ isAdmin }: { isAdmin: boolean }) {
   );
 }
 
+function ImportBtn({ onClick }: { onClick: () => void }) {
+  return (
+    <Button variant="outline" className="rounded-xl gap-1.5" onClick={onClick}>
+      <Upload className="h-4 w-4" /> Import
+    </Button>
+  );
+}
+
 function ProductsTab({ isAdmin }: { isAdmin: boolean }) {
   const { data, isLoading } = useListProducts();
   const { data: categories } = useListCategories();
@@ -547,6 +563,7 @@ function ProductsTab({ isAdmin }: { isAdmin: boolean }) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [newCode, setNewCode] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
 
   const existingCodes = (data ?? []).map((p) => ({ id: p.id, code: p.code ?? null }));
   const createCodeDup =
@@ -573,7 +590,15 @@ function ProductsTab({ isAdmin }: { isAdmin: boolean }) {
   };
 
   return (
-    <MasterCard title="Products / Designs" onAdd={() => setOpen(true)} addLabel="Add Product" open={open} onOpenChange={(v: boolean) => { setOpen(v); if (!v) setNewCode(""); }}>
+    <>
+    <MasterCard
+      title="Products / Designs"
+      onAdd={() => setOpen(true)}
+      addLabel="Add Product"
+      open={open}
+      onOpenChange={(v: boolean) => { setOpen(v); if (!v) setNewCode(""); }}
+      importButton={isAdmin && <ImportBtn onClick={() => setImportOpen(true)} />}
+    >
       <form onSubmit={onSubmit} className="space-y-4 pt-4">
         <div><label className="text-sm font-medium block mb-1.5">Product Name/Design</label><input name="name" className="form-input-styled" required /></div>
         <div>
@@ -627,6 +652,8 @@ function ProductsTab({ isAdmin }: { isAdmin: boolean }) {
         </Table>
       </div>
     </MasterCard>
+    <ImportDialog open={importOpen} onOpenChange={setImportOpen} moduleName="Products" moduleKey="products" onSuccess={() => queryClient.invalidateQueries({ queryKey: getListProductsQueryKey() })} />
+    </>
   );
 }
 
@@ -637,6 +664,7 @@ function TeamsTab({ isAdmin }: { isAdmin: boolean }) {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editTeam, setEditTeam] = useState<any | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const onInvalidate = () => queryClient.invalidateQueries({ queryKey: getListTeamsQueryKey() });
 
@@ -678,7 +706,7 @@ function TeamsTab({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <>
-      <MasterCard title="Teams" onAdd={() => setCreateOpen(true)} addLabel="Add Team" open={createOpen} onOpenChange={setCreateOpen}>
+      <MasterCard title="Teams" onAdd={() => setCreateOpen(true)} addLabel="Add Team" open={createOpen} onOpenChange={setCreateOpen} importButton={isAdmin && <ImportBtn onClick={() => setImportOpen(true)} />}>
         <form onSubmit={onCreateSubmit} className="space-y-4 pt-4">
           <div>
             <label className="text-sm font-medium block mb-1.5">Team Name <span className="text-red-500">*</span></label>
@@ -777,6 +805,7 @@ function TeamsTab({ isAdmin }: { isAdmin: boolean }) {
           </DialogContent>
         </Dialog>
       )}
+      <ImportDialog open={importOpen} onOpenChange={setImportOpen} moduleName="Teams" moduleKey="teams" onSuccess={onInvalidate} />
     </>
   );
 }
@@ -788,6 +817,7 @@ function StitchersTab({ isAdmin }: { isAdmin: boolean }) {
   const { toast } = useToast();
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editStitcher, setEditStitcher] = useState<any | null>(null);
 
   const onInvalidate = () => queryClient.invalidateQueries({ queryKey: getListStitchersQueryKey() });
@@ -836,7 +866,7 @@ function StitchersTab({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <>
-      <MasterCard title="Stitchers" onAdd={() => setCreateOpen(true)} addLabel="Add Stitcher" open={createOpen} onOpenChange={setCreateOpen}>
+      <MasterCard title="Stitchers" onAdd={() => setCreateOpen(true)} addLabel="Add Stitcher" open={createOpen} onOpenChange={setCreateOpen} importButton={isAdmin && <ImportBtn onClick={() => setImportOpen(true)} />}>
         <form onSubmit={onCreateSubmit} className="space-y-4 pt-4">
           <div>
             <label className="text-sm font-medium block mb-1.5">Full Name <span className="text-red-500">*</span></label>
@@ -959,6 +989,7 @@ function StitchersTab({ isAdmin }: { isAdmin: boolean }) {
           </DialogContent>
         </Dialog>
       )}
+      <ImportDialog open={importOpen} onOpenChange={setImportOpen} moduleName="Stitchers" moduleKey="stitchers" onSuccess={onInvalidate} />
     </>
   );
 }
@@ -969,6 +1000,7 @@ function MaterialsTab({ isAdmin }: { isAdmin: boolean }) {
   const { toast } = useToast();
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [newCode, setNewCode] = useState("");
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
@@ -1050,6 +1082,7 @@ function MaterialsTab({ isAdmin }: { isAdmin: boolean }) {
         addLabel="Add Material"
         open={createOpen}
         onOpenChange={(v: boolean) => { setCreateOpen(v); if (!v) { setNewCode(""); setNewName(""); setNewDesc(""); } }}
+        importButton={isAdmin && <ImportBtn onClick={() => setImportOpen(true)} />}
       >
         <form onSubmit={onCreateSubmit} className="space-y-4 pt-4">
           <div>
@@ -1198,28 +1231,32 @@ function MaterialsTab({ isAdmin }: { isAdmin: boolean }) {
           </DialogContent>
         </Dialog>
       )}
+      <ImportDialog open={importOpen} onOpenChange={setImportOpen} moduleName="Materials" moduleKey="materials" onSuccess={onInvalidate} />
     </>
   );
 }
 
-function MasterCard({ title, children, onAdd, addLabel, open, onOpenChange }: any) {
+function MasterCard({ title, children, onAdd, addLabel, open, onOpenChange, importButton }: any) {
   return (
     <Card className="shadow-lg border-slate-200 rounded-2xl overflow-hidden">
       <CardHeader className="bg-slate-50/50 border-b border-slate-100 flex flex-row items-center justify-between py-5 px-6">
         <CardTitle className="text-xl font-display text-slate-800">{title}</CardTitle>
-        <Dialog open={open} onOpenChange={onOpenChange}>
-          <DialogTrigger asChild>
-            <Button onClick={onAdd} className="rounded-xl shadow-md shadow-primary/20 bg-primary hover:bg-primary/90 transition-all hover:-translate-y-0.5">
-              <Plus className="h-4 w-4 mr-2" /> {addLabel}
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          {importButton}
+          <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogTrigger asChild>
+              <Button onClick={onAdd} className="rounded-xl shadow-md shadow-primary/20 bg-primary hover:bg-primary/90 transition-all hover:-translate-y-0.5">
+                <Plus className="h-4 w-4 mr-2" /> {addLabel}
+              </Button>
+            </DialogTrigger>
           <DialogContent className="sm:max-w-[425px] rounded-2xl p-6 border-0 shadow-2xl">
             <DialogHeader>
               <DialogTitle className="text-xl font-display">{addLabel}</DialogTitle>
             </DialogHeader>
             {children[0]}
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </CardHeader>
       <CardContent className="p-6 bg-white">
         {children[1]}

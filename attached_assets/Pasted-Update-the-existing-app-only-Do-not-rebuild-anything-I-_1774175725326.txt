@@ -1,0 +1,131 @@
+Update the existing app only. Do not rebuild anything.
+
+I need to add an Import (Excel/CSV upload) feature for the following modules:
+
+1. Master Data:
+- Products
+- Colors
+- Sizes
+- Materials
+- Stitchers
+- Teams
+
+2. Fabric Rolls
+
+3. (Optional but recommended)
+- Finished Goods (future use)
+- Cutting Batches (optional advanced)
+
+----------------------------------------
+
+GENERAL REQUIREMENTS
+
+1. File Support
+- Support CSV and Excel (.xlsx)
+- Use a simple file upload input in UI
+
+2. Column Mapping
+Each module should accept structured columns:
+
+Products:
+- code (required, unique)
+- name (required)
+- category (optional)
+- description (optional)
+
+Colors:
+- code (required, unique)
+- name (required)
+
+Sizes:
+- name (required)
+
+Materials:
+- code (required, unique)
+- name (required)
+
+Stitchers:
+- code (optional)
+- name (required)
+- team (optional)
+
+Teams:
+- code (optional)
+- name (required)
+
+Fabric Rolls:
+- rollNumber (required, unique)
+- fabric (required)
+- color (required)
+- quantity (required)
+- unit (required)
+- supplier (optional)
+
+----------------------------------------
+
+3. Validation Rules
+
+- Do NOT allow duplicate codes
+- Respect existing uniqueness rules
+- Skip or reject invalid rows with clear error messages
+- Show summary after import:
+  - total rows
+  - successful inserts
+  - failed rows with reasons
+
+----------------------------------------
+
+4. Backend
+
+- Create import API endpoints per module:
+  POST /import/products
+  POST /import/colors
+  POST /import/materials
+  POST /import/fabric-rolls
+  etc.
+
+- Parse file using a library (e.g. csv-parser or xlsx)
+- Validate each row before insert
+- Insert valid rows in bulk (batch insert)
+
+----------------------------------------
+
+5. Frontend
+
+- Add "Import" button on each module page
+- Open modal with:
+  - file upload
+  - download sample template button
+  - import status/result display
+
+----------------------------------------
+
+6. Templates (VERY IMPORTANT)
+
+Provide downloadable sample templates for each module:
+- correct column names
+- example values
+
+----------------------------------------
+
+7. Error Handling
+
+- Do not crash on bad data
+- Show row-level errors
+- Example:
+  Row 3: duplicate code
+  Row 5: missing required field
+
+----------------------------------------
+
+8. Data Safety
+
+- Do NOT overwrite existing records
+- Only insert new records
+- Ignore duplicates or report them
+
+----------------------------------------
+
+Goal:
+
+Allow fast bulk data entry using Excel/CSV for master data and fabric rolls, while keeping validation strict and safe for production use.

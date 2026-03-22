@@ -13,6 +13,7 @@ import finishedGoodsRouter from "./finished-goods.js";
 import inventoryRouter from "./inventory.js";
 import reportsRouter from "./reports.js";
 import traceabilityRouter from "./traceability.js";
+import importRouter from "./import.js";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(finishedGoodsRouter);
 router.use(inventoryRouter);
 router.use(reportsRouter);
 router.use(traceabilityRouter);
+router.use(importRouter);
 
 export default router;

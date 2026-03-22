@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Loader2, Layers, Pencil } from "lucide-react";
+import { Plus, Loader2, Layers, Pencil, Upload } from "lucide-react";
+import { ImportDialog } from "@/components/import-dialog";
 import { 
   useListFabricRolls, useCreateFabricRoll, getListFabricRollsQueryKey,
   useListFabrics, useListColors, useUpdateFabricRoll
@@ -26,6 +27,7 @@ export default function FabricRollsPage() {
   const isAdmin = user?.role === "admin";
 
   const [open, setOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<any>(null);
 
@@ -94,12 +96,14 @@ export default function FabricRollsPage() {
             </CardTitle>
             <p className="text-sm text-slate-500 mt-1">Manage incoming raw material fabric rolls.</p>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button className="rounded-xl shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5">
-                <Plus className="h-4 w-4 mr-2" /> Add New Roll
-              </Button>
-            </DialogTrigger>
+          <div className="flex items-center gap-2">
+            {isAdmin && <Button variant="outline" className="rounded-xl gap-1.5" onClick={() => setImportOpen(true)}><Upload className="h-4 w-4" /> Import</Button>}
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button className="rounded-xl shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5">
+                  <Plus className="h-4 w-4 mr-2" /> Add New Roll
+                </Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-[600px] rounded-2xl p-6 border-0 shadow-2xl">
               <DialogHeader>
                 <DialogTitle className="text-xl font-display">Register Fabric Roll</DialogTitle>
@@ -160,6 +164,7 @@ export default function FabricRollsPage() {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </CardHeader>
         <CardContent className="p-0 bg-white">
           <Table>
@@ -254,6 +259,7 @@ export default function FabricRollsPage() {
           )}
         </DialogContent>
       </Dialog>
+      <ImportDialog open={importOpen} onOpenChange={setImportOpen} moduleName="Fabric Rolls" moduleKey="fabric-rolls" onSuccess={() => queryClient.invalidateQueries({ queryKey: getListFabricRollsQueryKey() })} />
     </AppLayout>
   );
 }
