@@ -95,6 +95,12 @@ router.post("/cutting/batches", async (req, res) => {
   if (!batchNumber || !String(batchNumber).trim()) {
     return res.status(400).json({ error: "Batch number is required." });
   }
+  if (!sizeId) {
+    return res.status(400).json({ error: "Size is required." });
+  }
+  if (!colorId) {
+    return res.status(400).json({ error: "Color is required." });
+  }
 
   const existing = await db
     .select({ id: cuttingBatchesTable.id })
@@ -109,7 +115,7 @@ router.post("/cutting/batches", async (req, res) => {
     .insert(cuttingBatchesTable)
     .values({
       batchNumber: String(batchNumber).trim(),
-      productId,
+      productId: productId || null,
       fabricId: fabricId || null,
       materialId: materialId || null,
       material2Id: material2Id || null,
@@ -216,7 +222,7 @@ router.get("/cutting/batches/:id", async (req, res) => {
   const batchWithCode = {
     ...batch,
     totalAllocated: batch.quantityCut - batch.availableForAllocation,
-    itemCode: computeItemCode(batch.productCode, batch.fabricCode, batch.materialCode, batch.material2Code),
+    itemCode: computeItemCode(batch.productCode, batch.colorCode, batch.materialCode, batch.material2Code),
   };
 
   res.json({ batch: batchWithCode, fabricRolls, allocations });
@@ -224,18 +230,26 @@ router.get("/cutting/batches/:id", async (req, res) => {
 
 router.put("/cutting/batches/:id", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
-  const { cutter, cuttingDate, remarks } = req.body;
+  const { cutter, cuttingDate, remarks, productId, materialId, material2Id } = req.body;
+  const updates: Record<string, any> = {};
+  if (cutter !== undefined) updates.cutter = cutter;
+  if (cuttingDate) updates.cuttingDate = new Date(cuttingDate);
+  if (remarks !== undefined) updates.remarks = remarks;
+  if (productId !== undefined) updates.productId = productId || null;
+  if (materialId !== undefined) updates.materialId = materialId || null;
+  if (material2Id !== undefined) updates.material2Id = material2Id || null;
+
+  if (Object.keys(updates).length === 0) {
+    return res.status(400).json({ error: "No fields to update." });
+  }
+
   const [row] = await db
     .update(cuttingBatchesTable)
-    .set({
-      cutter: cutter !== undefined ? cutter : undefined,
-      cuttingDate: cuttingDate ? new Date(cuttingDate) : undefined,
-      remarks: remarks !== undefined ? remarks : undefined,
-    })
+    .set(updates)
     .where(eq(cuttingBatchesTable.id, id))
     .returning();
   if (!row) return res.status(404).json({ error: "Cutting batch not found." });
-  await logAudit(req, "UPDATE", "cutting_batches", String(id), `Updated cutting batch #${id}: cutter=${cutter}`);
+  await logAudit(req, "UPDATE", "cutting_batches", String(id), `Updated cutting batch #${id}`);
   res.json(row);
 });
 

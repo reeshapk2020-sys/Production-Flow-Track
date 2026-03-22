@@ -12,4 +12,8 @@ export interface CreateAllocationBody {
   quantityIssued: number;
   issueDate: string;
   remarks?: string;
+  /** Set product on the batch if missing (required for allocation) */
+  batchProductId?: number;
+  /** Set material 1 on the batch if missing (required for allocation) */
+  batchMaterialId?: number;
 }

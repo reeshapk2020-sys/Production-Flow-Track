@@ -1,0 +1,54 @@
+Update the existing app only. Do not rebuild from scratch.
+
+I need to change the validation flow between Cutting and Allocation.
+
+Requirements:
+
+1. Cutting stage validation
+At the Cutting stage:
+- Product / Design should NOT be compulsory
+- Material 1 should NOT be compulsory
+- Material 2 should NOT be compulsory
+- Size should be compulsory
+- Color should be compulsory
+
+So users must be able to save a cutting batch even if Product/Design and Materials are blank, as long as Size and Color are filled.
+
+2. Allocation stage validation
+At the Allocation stage:
+- Product / Design must be compulsory
+- Material 1 must be compulsory
+- Material 2 can remain optional if that is how the system currently works
+- Allocation should not be allowed to save unless the required item identity fields are complete
+
+3. Complete missing fields before allocation
+If a cutting batch was created without Product/Design or Material 1, then Allocation must require those missing values before allowing allocation.
+
+Implement this in a practical way:
+- either allow Allocation screen to complete/update the missing linked identity fields for that batch before saving
+- or block allocation with a clear message telling the user which required fields are missing
+
+4. Keep Size and Color rules
+- Size must remain compulsory at Cutting
+- Color must remain compulsory at Cutting
+- These should flow forward to Allocation and downstream modules
+
+5. Validation in frontend and backend
+Apply the same rules in both:
+- frontend form validation
+- backend/API validation
+
+6. Data safety
+- preserve existing records
+- do not break old cutting batches
+- do not rebuild from scratch
+- do not change unrelated modules
+- do not change database unless absolutely necessary
+
+7. UI clarity
+Show clear validation messages:
+- at Cutting: only require Size and Color
+- at Allocation: require Product/Design and Material 1 before allocation can be saved
+
+Goal:
+Cutting should allow partial identity entry, but Allocation should enforce completion of the required identity fields before work is issued.

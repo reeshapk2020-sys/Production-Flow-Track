@@ -1763,7 +1763,7 @@ components:
               quantityUsed:
                 type: number
             required: [fabricRollId, quantityUsed]
-      required: [batchNumber, productId, quantityCut, cuttingDate]
+      required: [batchNumber, sizeId, colorId, quantityCut, cuttingDate]
 
     UpdateCuttingBatchBody:
       type: object
@@ -1774,6 +1774,12 @@ components:
           type: string
         remarks:
           type: string
+        productId:
+          type: integer
+        materialId:
+          type: integer
+        material2Id:
+          type: integer
 
     # ALLOCATION
     Allocation:
@@ -1846,6 +1852,12 @@ components:
           type: string
         remarks:
           type: string
+        batchProductId:
+          type: integer
+          description: Set product on the batch if missing (required for allocation)
+        batchMaterialId:
+          type: integer
+          description: Set material 1 on the batch if missing (required for allocation)
       required: [cuttingBatchId, stitcherId, quantityIssued, issueDate]
 
     UpdateAllocationBody:

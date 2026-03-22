@@ -97,14 +97,40 @@ router.get("/allocation", async (_req, res) => {
 });
 
 router.post("/allocation", async (req, res) => {
-  const { cuttingBatchId, stitcherId, quantityIssued, issueDate, remarks } = req.body;
+  const { cuttingBatchId, stitcherId, quantityIssued, issueDate, remarks,
+    batchProductId, batchMaterialId } = req.body;
 
   const [batch] = await db
-    .select({ availableForAllocation: cuttingBatchesTable.availableForAllocation })
+    .select({
+      availableForAllocation: cuttingBatchesTable.availableForAllocation,
+      productId: cuttingBatchesTable.productId,
+      materialId: cuttingBatchesTable.materialId,
+    })
     .from(cuttingBatchesTable)
     .where(eq(cuttingBatchesTable.id, cuttingBatchId));
 
   if (!batch) return res.status(404).json({ error: "Cutting batch not found" });
+
+  if (batchProductId || batchMaterialId) {
+    const batchUpdates: Record<string, any> = {};
+    if (batchProductId) batchUpdates.productId = batchProductId;
+    if (batchMaterialId) batchUpdates.materialId = batchMaterialId;
+    await db.update(cuttingBatchesTable).set(batchUpdates)
+      .where(eq(cuttingBatchesTable.id, cuttingBatchId));
+    if (batchProductId) batch.productId = batchProductId;
+    if (batchMaterialId) batch.materialId = batchMaterialId;
+  }
+
+  const missing: string[] = [];
+  if (!batch.productId) missing.push("Product/Design");
+  if (!batch.materialId) missing.push("Material 1");
+  if (missing.length > 0) {
+    return res.status(400).json({
+      error: `Cannot allocate: the cutting batch is missing required fields: ${missing.join(", ")}. Please complete them before allocation.`,
+      missingFields: missing,
+    });
+  }
+
   if (batch.availableForAllocation < quantityIssued) {
     return res
       .status(400)

@@ -10,12 +10,12 @@ import type { CreateCuttingBatchBodyFabricUsagesItem } from "./createCuttingBatc
 export interface CreateCuttingBatchBody {
   /** Manually entered batch number, must be unique */
   batchNumber: string;
-  productId: number;
+  productId?: number;
   fabricId?: number;
   materialId?: number;
   material2Id?: number;
-  sizeId?: number;
-  colorId?: number;
+  sizeId: number;
+  colorId: number;
   quantityCut: number;
   cutter?: string;
   cuttingDate: string;

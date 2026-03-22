@@ -323,12 +323,12 @@ export type CreateCuttingBatchBodyFabricUsagesItem = {
 export interface CreateCuttingBatchBody {
   /** Manually entered batch number, must be unique */
   batchNumber: string;
-  productId: number;
+  productId?: number;
   fabricId?: number;
   materialId?: number;
   material2Id?: number;
-  sizeId?: number;
-  colorId?: number;
+  sizeId: number;
+  colorId: number;
   quantityCut: number;
   cutter?: string;
   cuttingDate: string;
@@ -340,6 +340,9 @@ export interface UpdateCuttingBatchBody {
   cutter?: string;
   cuttingDate?: string;
   remarks?: string;
+  productId?: number;
+  materialId?: number;
+  material2Id?: number;
 }
 
 export interface CreateAllocationBody {
@@ -348,6 +351,10 @@ export interface CreateAllocationBody {
   quantityIssued: number;
   issueDate: string;
   remarks?: string;
+  /** Set product on the batch if missing (required for allocation) */
+  batchProductId?: number;
+  /** Set material 1 on the batch if missing (required for allocation) */
+  batchMaterialId?: number;
 }
 
 export interface UpdateAllocationBody {

@@ -10,4 +10,7 @@ export interface UpdateCuttingBatchBody {
   cutter?: string;
   cuttingDate?: string;
   remarks?: string;
+  productId?: number;
+  materialId?: number;
+  material2Id?: number;
 }

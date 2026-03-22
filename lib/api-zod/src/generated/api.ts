@@ -536,12 +536,12 @@ export const CreateCuttingBatchBody = zod.object({
   batchNumber: zod
     .string()
     .describe("Manually entered batch number, must be unique"),
-  productId: zod.number(),
+  productId: zod.number().optional(),
   fabricId: zod.number().optional(),
   materialId: zod.number().optional(),
   material2Id: zod.number().optional(),
-  sizeId: zod.number().optional(),
-  colorId: zod.number().optional(),
+  sizeId: zod.number(),
+  colorId: zod.number(),
   quantityCut: zod.number(),
   cutter: zod.string().optional(),
   cuttingDate: zod.string(),
@@ -650,6 +650,9 @@ export const UpdateCuttingBatchBody = zod.object({
   cutter: zod.string().optional(),
   cuttingDate: zod.string().optional(),
   remarks: zod.string().optional(),
+  productId: zod.number().optional(),
+  materialId: zod.number().optional(),
+  material2Id: zod.number().optional(),
 });
 
 export const UpdateCuttingBatchResponse = zod.object({
@@ -730,6 +733,16 @@ export const CreateAllocationBody = zod.object({
   quantityIssued: zod.number(),
   issueDate: zod.string(),
   remarks: zod.string().optional(),
+  batchProductId: zod
+    .number()
+    .optional()
+    .describe("Set product on the batch if missing (required for allocation)"),
+  batchMaterialId: zod
+    .number()
+    .optional()
+    .describe(
+      "Set material 1 on the batch if missing (required for allocation)",
+    ),
 });
 
 /**

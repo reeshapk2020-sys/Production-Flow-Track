@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Loader2, Send, Info, Pencil } from "lucide-react";
+import { Plus, Loader2, Send, Info, Pencil, AlertTriangle } from "lucide-react";
 import {
   useListAllocations, useCreateAllocation, getListAllocationsQueryKey,
-  useListCuttingBatches, useListStitchers, useUpdateAllocation
+  useListCuttingBatches, useListStitchers, useUpdateAllocation,
+  useListProducts, useListMaterials, getListCuttingBatchesQueryKey
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -41,6 +42,8 @@ export default function AllocationPage() {
   const { data, isLoading } = useListAllocations();
   const { data: batches } = useListCuttingBatches();
   const { data: stitchers } = useListStitchers();
+  const { data: products } = useListProducts();
+  const { data: materials } = useListMaterials();
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -56,12 +59,14 @@ export default function AllocationPage() {
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListAllocationsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListCuttingBatchesQueryKey() });
         setOpen(false);
         setSelectedBatch(null);
         toast({ title: "Allocation created successfully" });
       },
       onError: (e: any) => {
-        toast({ title: "Error", description: e.message || "Failed to allocate", variant: "destructive" });
+        const msg = e?.response?.data?.error || e.message || "Failed to allocate";
+        toast({ title: "Error", description: msg, variant: "destructive" });
       }
     }
   });
@@ -80,18 +85,31 @@ export default function AllocationPage() {
     }
   });
 
+  const batchNeedsProduct = selectedBatch && !selectedBatch.productId;
+  const batchNeedsMaterial = selectedBatch && !selectedBatch.materialId;
+  const batchNeedsCompletion = batchNeedsProduct || batchNeedsMaterial;
+
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    mutate({
-      data: {
-        cuttingBatchId: Number(fd.get("cuttingBatchId")),
-        stitcherId: Number(fd.get("stitcherId")),
-        quantityIssued: Number(fd.get("quantityIssued")),
-        issueDate: fd.get("issueDate") as string,
-        remarks: fd.get("remarks") as string,
-      }
-    });
+    const payload: any = {
+      cuttingBatchId: Number(fd.get("cuttingBatchId")),
+      stitcherId: Number(fd.get("stitcherId")),
+      quantityIssued: Number(fd.get("quantityIssued")),
+      issueDate: fd.get("issueDate") as string,
+      remarks: fd.get("remarks") as string,
+    };
+    if (batchNeedsProduct) {
+      const pid = Number(fd.get("batchProductId"));
+      if (!pid) { toast({ title: "Product/Design is required for allocation", variant: "destructive" }); return; }
+      payload.batchProductId = pid;
+    }
+    if (batchNeedsMaterial) {
+      const mid = Number(fd.get("batchMaterialId"));
+      if (!mid) { toast({ title: "Material 1 is required for allocation", variant: "destructive" }); return; }
+      payload.batchMaterialId = mid;
+    }
+    mutate({ data: payload });
   };
 
   const onEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -151,16 +169,50 @@ export default function AllocationPage() {
                     ))}
                   </select>
                   {selectedBatch && (
-                    <div className="mt-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2 flex items-start gap-2">
-                      <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-                      <div className="text-xs text-blue-700 space-y-0.5">
-                        <div><strong>Total Cut:</strong> {selectedBatch.totalCutQuantity} pcs &nbsp;|&nbsp; <strong>Available:</strong> {selectedBatch.availableForAllocation} pcs</div>
-                        {selectedBatch.sizeName && <div><strong>Size:</strong> {selectedBatch.sizeName} &nbsp;|&nbsp; <strong>Color:</strong> {fmtCode(selectedBatch.colorCode, selectedBatch.colorName)}</div>}
-                        {selectedBatch.itemCode && (
-                          <div><strong>Item Code:</strong> <span className="font-mono bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded">{selectedBatch.itemCode}</span></div>
-                        )}
+                    <>
+                      <div className="mt-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2 flex items-start gap-2">
+                        <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                        <div className="text-xs text-blue-700 space-y-0.5">
+                          <div><strong>Total Cut:</strong> {selectedBatch.totalCutQuantity} pcs &nbsp;|&nbsp; <strong>Available:</strong> {selectedBatch.availableForAllocation} pcs</div>
+                          {selectedBatch.sizeName && <div><strong>Size:</strong> {selectedBatch.sizeName} &nbsp;|&nbsp; <strong>Color:</strong> {fmtCode(selectedBatch.colorCode, selectedBatch.colorName)}</div>}
+                          {selectedBatch.itemCode && (
+                            <div><strong>Item Code:</strong> <span className="font-mono bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded">{selectedBatch.itemCode}</span></div>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                      {batchNeedsCompletion && (
+                        <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-3 space-y-3">
+                          <div className="flex items-start gap-2">
+                            <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                            <p className="text-xs text-amber-800 font-medium">This batch is missing required fields. Please complete them below before allocating.</p>
+                          </div>
+                          <div className="grid grid-cols-1 gap-3">
+                            {batchNeedsProduct && (
+                              <div>
+                                <label className="text-sm font-medium block mb-1">Product / Design <span className="text-red-500">*</span></label>
+                                <select name="batchProductId" className="form-input-styled bg-white" required>
+                                  <option value="">Select Product...</option>
+                                  {products?.filter((p: any) => p.isActive).map((p: any) => (
+                                    <option key={p.id} value={p.id}>{p.code} - {p.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+                            {batchNeedsMaterial && (
+                              <div>
+                                <label className="text-sm font-medium block mb-1">Material 1 <span className="text-red-500">*</span></label>
+                                <select name="batchMaterialId" className="form-input-styled bg-white" required>
+                                  <option value="">Select Material...</option>
+                                  {materials?.filter((m: any) => m.isActive).map((m: any) => (
+                                    <option key={m.id} value={m.id}>{fmtCode(m.code, m.name)}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 

@@ -158,7 +158,6 @@ export const cuttingBatchesTable = pgTable("cutting_batches", {
   id: serial("id").primaryKey(),
   batchNumber: text("batch_number").notNull().unique(),
   productId: integer("product_id")
-    .notNull()
     .references(() => productsTable.id),
   fabricId: integer("fabric_id").references(() => fabricsTable.id),
   materialId: integer("material_id").references(() => materialsTable.id),

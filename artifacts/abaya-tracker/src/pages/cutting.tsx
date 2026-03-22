@@ -92,24 +92,38 @@ export default function CuttingPage() {
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isDuplicate) return;
+
     const fd = new FormData(e.currentTarget);
     const fabricRollId = Number(fd.get("fabricRollId"));
     const quantityUsed = Number(fd.get("quantityUsed"));
-    mutate({
-      data: {
-        batchNumber: batchNumber.trim(),
-        productId: Number(fd.get("productId")),
-        materialId: Number(fd.get("materialId")) || undefined,
-        material2Id: Number(fd.get("material2Id")) || undefined,
-        sizeId: Number(fd.get("sizeId")) || undefined,
-        colorId: Number(fd.get("colorId")) || undefined,
-        quantityCut: Number(fd.get("quantityCut")),
-        cutter: fd.get("cutter") as string,
-        cuttingDate: fd.get("cuttingDate") as string,
-        remarks: fd.get("remarks") as string,
-        fabricUsages: fabricRollId ? [{ fabricRollId, quantityUsed }] : [],
-      },
-    });
+
+    const sizeId = Number(fd.get("sizeId"));
+    const colorId = Number(fd.get("colorId"));
+
+    if (!sizeId || !colorId) {
+      alert("Size and Color are required");
+      return;
+    }
+
+    const data: any = {
+      batchNumber: batchNumber.trim(),
+      materialId: Number(fd.get("materialId")) || undefined,
+      material2Id: Number(fd.get("material2Id")) || undefined,
+      sizeId,
+      colorId,
+      quantityCut: Number(fd.get("quantityCut")),
+      cutter: fd.get("cutter") as string,
+      cuttingDate: fd.get("cuttingDate") as string,
+      remarks: fd.get("remarks") as string,
+      fabricUsages: fabricRollId ? [{ fabricRollId, quantityUsed }] : [],
+    };
+
+    const productId = Number(fd.get("productId"));
+    if (productId) {
+      data.productId = productId;
+    }
+
+    mutate({ data });
   };
 
   const onEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -175,23 +189,23 @@ export default function CuttingPage() {
                   <h3 className="font-semibold text-slate-800 text-sm uppercase tracking-wider">Product Selection</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2">
-                      <label className="text-sm font-medium block mb-1.5">Design / Product</label>
-                      <select name="productId" className="form-input-styled bg-white" required>
-                        <option value="">Select Design...</option>
+                      <label className="text-sm font-medium block mb-1.5">Design / Product <span className="text-xs text-slate-400 font-normal">(optional at cutting)</span></label>
+                      <select name="productId" className="form-input-styled bg-white">
+                        <option value="">— None —</option>
                         {products?.filter(p=>p.isActive).map(p => <option key={p.id} value={p.id}>{p.code} - {p.name}</option>)}
                       </select>
                     </div>
                     <div className="col-span-1">
-                      <label className="text-sm font-medium block mb-1.5">Size</label>
-                      <select name="sizeId" className="form-input-styled bg-white">
-                        <option value="">Any Size</option>
+                      <label className="text-sm font-medium block mb-1.5">Size <span className="text-red-500">*</span></label>
+                      <select name="sizeId" className="form-input-styled bg-white" required>
+                        <option value="">Select Size...</option>
                         {sizes?.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                       </select>
                     </div>
                     <div className="col-span-1">
-                      <label className="text-sm font-medium block mb-1.5">Color</label>
-                      <select name="colorId" className="form-input-styled bg-white">
-                        <option value="">Any Color</option>
+                      <label className="text-sm font-medium block mb-1.5">Color <span className="text-red-500">*</span></label>
+                      <select name="colorId" className="form-input-styled bg-white" required>
+                        <option value="">Select Color...</option>
                         {colors?.map(c => <option key={c.id} value={c.id}>{c.code ? `${c.code} — ${c.name}` : c.name}</option>)}
                       </select>
                     </div>
