@@ -1,0 +1,113 @@
+Update the existing app only. Do not rebuild anything.
+
+Please implement this carefully and do not break the existing Finished Goods workflow.
+
+I need a separate Opening Finished Goods Inventory module so I can add old finished stock already موجود in my store from previous years.
+
+================================
+1. ADD OPENING FINISHED GOODS INVENTORY MODULE
+================================
+
+Create a separate module/page for:
+Opening Finished Goods Inventory
+
+Purpose:
+- to add existing finished stock already in store
+- this is old inventory / opening balance
+- this is NOT newly produced stock from the current production flow
+
+================================
+2. ALLOW BOTH MANUAL ENTRY AND IMPORT
+================================
+
+The module must support both:
+
+A. Manual entry through the app UI
+B. Bulk import through Excel/CSV
+
+Manual entry is important because I may want to add old stock one by one directly from the app, not only through import.
+
+================================
+3. OPENING STOCK ENTRY (ITEM-CODE-WISE)
+================================
+
+For each opening stock entry, support fields such as:
+- item code
+- product code (optional)
+- product / item name (optional)
+- size
+- color
+- quantity
+- remarks (optional)
+
+Important:
+- itemCode is the main identity
+- if itemCode already exists in the system, link it properly where possible
+- do not force full production linkage for old stock if history is not available
+
+================================
+4. IMPORT FUNCTIONALITY
+================================
+
+Allow import of opening finished goods inventory from Excel/CSV.
+
+Requirements:
+- admin-controlled import
+- downloadable template
+- validate rows before import
+- show row-level errors
+- allow bulk import of current store stock
+
+Columns should support:
+- itemCode
+- productCode
+- productName
+- size
+- color
+- quantity
+- remarks
+
+================================
+5. OPENING STOCK LOGIC
+================================
+
+Important:
+- opening stock must be stored separately from normal finished goods production entries
+- do not treat opening stock as newly finished production
+- do not affect production reports incorrectly
+
+But:
+- opening stock must be included in total finished goods inventory / available stock
+
+================================
+6. FINISHED GOODS INVENTORY DISPLAY
+================================
+
+In Finished Goods inventory, show:
+- Opening Stock
+- Produced Stock
+- Total Available Stock
+
+If possible, show:
+- Opening Qty
+- Produced Qty
+- Total Available Qty
+
+Support:
+- search by item code
+- filter by product / size / color
+- export to Excel
+
+================================
+7. SAFETY
+================================
+
+- do not break current finished goods module
+- do not break current production flow
+- preserve existing data
+- do not rebuild from scratch
+- keep this as a separate opening inventory feature
+- make minimal schema changes only if necessary
+
+Goal:
+I want to add old finished goods stock both manually through the app and by Excel import, item-code wise, as opening stock, so it becomes part of finished goods inventory without affecting current production entries.

@@ -8,6 +8,7 @@ import {
   allocationsTable,
   finishingRecordsTable,
   finishedGoodsTable,
+  openingFinishedGoodsTable,
 } from "@workspace/db/schema";
 import { sql, eq } from "drizzle-orm";
 import { checkPermission } from "./permissions.js";
@@ -64,6 +65,10 @@ router.get("/inventory/summary", checkPermission("inventory", "view"), async (_r
     .select({ totalQuantity: sql<number>`COALESCE(SUM(${finishedGoodsTable.quantity}), 0)::int` })
     .from(finishedGoodsTable);
 
+  const [openingStock] = await db
+    .select({ totalQuantity: sql<number>`COALESCE(SUM(${openingFinishedGoodsTable.quantity}), 0)::int` })
+    .from(openingFinishedGoodsTable);
+
   res.json({
     rawMaterial: {
       totalRolls: rawMaterial.totalRolls || 0,
@@ -84,7 +89,9 @@ router.get("/inventory/summary", checkPermission("inventory", "view"), async (_r
       packing: Math.max(0, packingQty.qty || 0),
     },
     finishedGoods: {
-      totalQuantity: finishedGoods.totalQuantity || 0,
+      totalQuantity: (finishedGoods.totalQuantity || 0) + (openingStock.totalQuantity || 0),
+      producedQuantity: finishedGoods.totalQuantity || 0,
+      openingQuantity: openingStock.totalQuantity || 0,
     },
   });
 });

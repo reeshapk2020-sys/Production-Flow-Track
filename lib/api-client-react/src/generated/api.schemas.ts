@@ -664,14 +664,14 @@ export interface UpdateFinishedGoodsBody {
 }
 
 export interface StockSummary {
-  productId?: number;
-  productCode?: string;
-  productName: string;
-  sizeId?: number;
-  sizeName?: string;
-  colorId?: number;
-  colorCode?: string;
-  colorName?: string;
+  productCode?: string | null;
+  productName: string | null;
+  sizeName?: string | null;
+  colorCode?: string | null;
+  colorName?: string | null;
+  itemCode?: string | null;
+  producedQty?: number;
+  openingQty?: number;
   totalQuantity: number;
 }
 
@@ -699,6 +699,8 @@ export type InventorySummaryInFinishing = {
 
 export type InventorySummaryFinishedGoods = {
   totalQuantity: number;
+  producedQuantity?: number;
+  openingQuantity?: number;
 };
 
 export interface InventorySummary {
@@ -831,6 +833,49 @@ export interface TraceSearchResult {
   batchNumber?: string;
 }
 
+export interface OpeningFinishedGoods {
+  id: number;
+  itemCode: string;
+  productCode?: string | null;
+  productName?: string | null;
+  sizeName?: string | null;
+  colorName?: string | null;
+  quantity: number;
+  remarks?: string | null;
+  enteredBy?: string | null;
+  createdAt?: string;
+}
+
+export interface CreateOpeningFinishedGoodsBody {
+  itemCode: string;
+  productCode?: string;
+  productName?: string;
+  sizeName?: string;
+  colorName?: string;
+  quantity: number;
+  remarks?: string;
+}
+
+export type ImportResultErrorsItem = {
+  row?: number;
+  message?: string;
+};
+
+export interface ImportResult {
+  imported: number;
+  total: number;
+  errors: ImportResultErrorsItem[];
+}
+
+export interface OpeningFinishedGoodsSummary {
+  itemCode: string;
+  productCode?: string | null;
+  productName?: string | null;
+  sizeName?: string | null;
+  colorName?: string | null;
+  totalQuantity: number;
+}
+
 export type ListCuttingBatchesParams = {
   startDate?: string;
   endDate?: string;
@@ -881,6 +926,17 @@ export type ListFinishedGoodsParams = {
   productId?: number;
   colorId?: number;
   batchNumber?: string;
+};
+
+export type ListOpeningFinishedGoodsParams = {
+  itemCode?: string;
+  productCode?: string;
+  sizeName?: string;
+  colorName?: string;
+};
+
+export type ImportOpeningFinishedGoodsBody = {
+  rows: CreateOpeningFinishedGoodsBody[];
 };
 
 export type GetStitcherPerformanceReportParams = {

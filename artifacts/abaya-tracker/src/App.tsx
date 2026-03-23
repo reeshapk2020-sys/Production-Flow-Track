@@ -16,6 +16,7 @@ import OutsourcePage from "./pages/outsource";
 import ReceivingPage from "./pages/receiving";
 import FinishingPage from "./pages/finishing";
 import FinishedGoodsPage from "./pages/finished-goods";
+import OpeningFinishedGoodsPage from "./pages/opening-finished-goods";
 import InventoryPage from "./pages/inventory";
 import ReportsPage from "./pages/reports";
 import TraceabilityPage from "./pages/traceability";
@@ -43,6 +44,7 @@ const PATH_TO_MODULE: Record<string, string> = {
   "/receiving": "receiving",
   "/finishing": "finishing",
   "/finished-goods": "finished-goods",
+  "/opening-finished-goods": "opening-finished-goods",
   "/inventory": "inventory",
   "/reports": "reports",
   "/traceability": "reports",
@@ -98,6 +100,7 @@ function Router() {
       <Route path="/receiving" component={() => <ProtectedRoute component={ReceivingPage} path="/receiving" />} />
       <Route path="/finishing" component={() => <ProtectedRoute component={FinishingPage} path="/finishing" />} />
       <Route path="/finished-goods" component={() => <ProtectedRoute component={FinishedGoodsPage} path="/finished-goods" />} />
+      <Route path="/opening-finished-goods" component={() => <ProtectedRoute component={OpeningFinishedGoodsPage} path="/opening-finished-goods" />} />
       <Route path="/inventory" component={() => <ProtectedRoute component={InventoryPage} path="/inventory" />} />
       <Route path="/reports" component={() => <ProtectedRoute component={ReportsPage} path="/reports" />} />
       <Route path="/traceability" component={() => <ProtectedRoute component={TraceabilityPage} path="/traceability" />} />

@@ -47,6 +47,7 @@ artifacts/
 │       │   ├── reports.ts        # Dashboard + all reports
 │       │   ├── purchase-orders.ts # Purchase order CRUD + batch summary
 │       │   ├── orders.ts         # Customer order CRUD + batch summary
+│       │   ├── opening-finished-goods.ts # Opening stock CRUD + CSV import + template
 │       │   └── traceability.ts   # Batch journey tracing (includes production source)
 │       ├── lib/
 │       │   ├── auth.ts           # OIDC session management
@@ -86,6 +87,7 @@ lib/
 - `fabric_rolls` - Raw material / fabric roll inventory
 - `purchase_orders` - Purchase orders from suppliers (poNumber, supplierName/customerName, date, remarks)
 - `orders` - Customer orders (orderNumber, customerName, date, remarks)
+- `opening_finished_goods` - Opening/old finished goods inventory (itemCode, productCode, productName, sizeName, colorName, quantity, remarks)
 - `cutting_batches` - Cutting batch records; stores fabricId, materialId, material2Id FKs for item identity; productionFor (reesha_stock/purchase_order/order), poId, orderId
 - `cutting_fabric_usage` - Links fabric rolls to cutting batches
 - `allocations` - Allocation of cut pieces to stitchers (has `workType` and `outsourceCategory` columns)

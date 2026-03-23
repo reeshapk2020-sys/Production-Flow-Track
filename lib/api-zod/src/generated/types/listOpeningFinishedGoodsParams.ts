@@ -6,8 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type InventorySummaryFinishedGoods = {
-  totalQuantity: number;
-  producedQuantity?: number;
-  openingQuantity?: number;
+export type ListOpeningFinishedGoodsParams = {
+  itemCode?: string;
+  productCode?: string;
+  sizeName?: string;
+  colorName?: string;
 };

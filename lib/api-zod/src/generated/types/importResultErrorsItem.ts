@@ -6,8 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type InventorySummaryFinishedGoods = {
-  totalQuantity: number;
-  producedQuantity?: number;
-  openingQuantity?: number;
+export type ImportResultErrorsItem = {
+  row?: number;
+  message?: string;
 };

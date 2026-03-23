@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Database, Layers, Scissors, Send,
   Inbox, Settings2, Package, Box, BarChart3,
   GitBranch, Shield, Users, LogOut, Loader2, ChevronRight, KeyRound, ArrowUpRight,
-  FileText, ShoppingCart
+  FileText, ShoppingCart, PackageOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -18,6 +18,7 @@ const NAV_ITEMS = [
   { path: "/receiving", label: "Receiving", icon: Inbox, roles: ["admin", "stitching"] },
   { path: "/finishing", label: "Finishing", icon: Settings2, roles: ["admin", "finishing"] },
   { path: "/finished-goods", label: "Finished Goods", icon: Package, roles: ["admin", "store"] },
+  { path: "/opening-finished-goods", label: "Opening Stock", icon: PackageOpen, roles: ["admin", "store"] },
   { path: "/inventory", label: "Inventory", icon: Box, roles: ["admin", "store", "reporting"] },
   { path: "/reports", label: "Reports", icon: BarChart3, roles: ["admin", "reporting"] },
   { path: "/purchase-orders", label: "Purchase Orders", icon: FileText, roles: ["admin", "cutting"] },
@@ -49,6 +50,7 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
     "/receiving": "receiving",
     "/finishing": "finishing",
     "/finished-goods": "finished-goods",
+    "/opening-finished-goods": "opening-finished-goods",
     "/inventory": "inventory",
     "/reports": "reports",
     "/purchase-orders": "purchase-orders",

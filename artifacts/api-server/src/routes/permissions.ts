@@ -24,7 +24,7 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
 const MODULES = [
   "products", "colors", "sizes", "materials", "teams", "stitchers",
   "fabric-rolls", "cutting", "allocation", "outsource", "receiving", "finishing", "purchase-orders", "orders",
-  "finished-goods", "reports", "inventory",
+  "finished-goods", "opening-finished-goods", "reports", "inventory",
 ];
 
 const SYSTEM_ROLES = ["admin", "cutting", "allocation", "stitching", "finishing", "store", "reporting", "data_entry", "supervisor"];

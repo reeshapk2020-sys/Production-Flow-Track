@@ -1209,6 +1209,143 @@ paths:
                 items:
                   $ref: "#/components/schemas/StockSummary"
 
+  # OPENING FINISHED GOODS
+  /opening-finished-goods:
+    get:
+      operationId: listOpeningFinishedGoods
+      tags: [opening-finished-goods]
+      summary: List opening finished goods inventory
+      parameters:
+        - name: itemCode
+          in: query
+          schema:
+            type: string
+        - name: productCode
+          in: query
+          schema:
+            type: string
+        - name: sizeName
+          in: query
+          schema:
+            type: string
+        - name: colorName
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of opening stock entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OpeningFinishedGoods"
+    post:
+      operationId: createOpeningFinishedGoods
+      tags: [opening-finished-goods]
+      summary: Add opening stock entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOpeningFinishedGoodsBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpeningFinishedGoods"
+
+  /opening-finished-goods/{id}:
+    put:
+      operationId: updateOpeningFinishedGoods
+      tags: [opening-finished-goods]
+      summary: Update opening stock entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOpeningFinishedGoodsBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpeningFinishedGoods"
+    delete:
+      operationId: deleteOpeningFinishedGoods
+      tags: [opening-finished-goods]
+      summary: Delete opening stock entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
+  /opening-finished-goods/template:
+    get:
+      operationId: getOpeningFinishedGoodsTemplate
+      tags: [opening-finished-goods]
+      summary: Download CSV template for import
+      responses:
+        "200":
+          description: CSV template file
+
+  /opening-finished-goods/import:
+    post:
+      operationId: importOpeningFinishedGoods
+      tags: [opening-finished-goods]
+      summary: Bulk import opening stock from CSV/Excel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rows:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/CreateOpeningFinishedGoodsBody"
+              required: [rows]
+      responses:
+        "200":
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportResult"
+
+  /opening-finished-goods/summary:
+    get:
+      operationId: getOpeningFinishedGoodsSummary
+      tags: [opening-finished-goods]
+      summary: Get opening stock summary grouped by item code
+      responses:
+        "200":
+          description: Summary by item code
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OpeningFinishedGoodsSummary"
+
   # INVENTORY
   /inventory/summary:
     get:
@@ -2866,22 +3003,28 @@ components:
     StockSummary:
       type: object
       properties:
-        productId:
-          type: integer
         productCode:
           type: string
+          nullable: true
         productName:
           type: string
-        sizeId:
-          type: integer
+          nullable: true
         sizeName:
           type: string
-        colorId:
-          type: integer
+          nullable: true
         colorCode:
           type: string
+          nullable: true
         colorName:
           type: string
+          nullable: true
+        itemCode:
+          type: string
+          nullable: true
+        producedQty:
+          type: integer
+        openingQty:
+          type: integer
         totalQuantity:
           type: integer
       required: [productName, totalQuantity]
@@ -2930,6 +3073,10 @@ components:
           type: object
           properties:
             totalQuantity:
+              type: integer
+            producedQuantity:
+              type: integer
+            openingQuantity:
               type: integer
           required: [totalQuantity]
       required: [rawMaterial, cuttingWip, pendingWithStitchers, inFinishing, finishedGoods]
@@ -3180,3 +3327,92 @@ components:
         batchNumber:
           type: string
       required: [type, id, label]
+
+    OpeningFinishedGoods:
+      type: object
+      properties:
+        id:
+          type: integer
+        itemCode:
+          type: string
+        productCode:
+          type: string
+          nullable: true
+        productName:
+          type: string
+          nullable: true
+        sizeName:
+          type: string
+          nullable: true
+        colorName:
+          type: string
+          nullable: true
+        quantity:
+          type: integer
+        remarks:
+          type: string
+          nullable: true
+        enteredBy:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required: [id, itemCode, quantity]
+
+    CreateOpeningFinishedGoodsBody:
+      type: object
+      properties:
+        itemCode:
+          type: string
+        productCode:
+          type: string
+        productName:
+          type: string
+        sizeName:
+          type: string
+        colorName:
+          type: string
+        quantity:
+          type: integer
+        remarks:
+          type: string
+      required: [itemCode, quantity]
+
+    ImportResult:
+      type: object
+      properties:
+        imported:
+          type: integer
+        total:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              row:
+                type: integer
+              message:
+                type: string
+      required: [imported, total, errors]
+
+    OpeningFinishedGoodsSummary:
+      type: object
+      properties:
+        itemCode:
+          type: string
+        productCode:
+          type: string
+          nullable: true
+        productName:
+          type: string
+          nullable: true
+        sizeName:
+          type: string
+          nullable: true
+        colorName:
+          type: string
+          nullable: true
+        totalQuantity:
+          type: integer
+      required: [itemCode, totalQuantity]

@@ -6,8 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type InventorySummaryFinishedGoods = {
+export interface OpeningFinishedGoodsSummary {
+  itemCode: string;
+  productCode?: string | null;
+  productName?: string | null;
+  sizeName?: string | null;
+  colorName?: string | null;
   totalQuantity: number;
-  producedQuantity?: number;
-  openingQuantity?: number;
-};
+}

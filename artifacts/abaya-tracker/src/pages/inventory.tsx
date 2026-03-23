@@ -163,10 +163,13 @@ export default function InventoryPage() {
           title="Finished Goods Store" 
           icon={Package} 
           metrics={[
-            { label: "Total Sellable Pieces", value: data.finishedGoods.totalQuantity.toLocaleString() }
+            { label: "Produced", value: (data.finishedGoods.producedQuantity ?? data.finishedGoods.totalQuantity).toLocaleString() },
+            { label: "Opening Stock", value: (data.finishedGoods.openingQuantity ?? 0).toLocaleString() },
+            { label: "Total Sellable", value: data.finishedGoods.totalQuantity.toLocaleString() },
           ]} 
           color="bg-emerald-600 text-white shadow-xl shadow-emerald-600/20 scale-105" 
           iconColor="text-emerald-300"
+          gridCols={3}
         />
 
       </div>

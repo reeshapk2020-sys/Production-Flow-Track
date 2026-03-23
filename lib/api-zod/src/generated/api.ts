@@ -1300,18 +1300,137 @@ export const GetFinishedGoodsBatchInfoResponse = zod.object({
  * @summary Get current finished goods stock summary
  */
 export const GetFinishedGoodsStockResponseItem = zod.object({
-  productId: zod.number().optional(),
-  productCode: zod.string().optional(),
-  productName: zod.string(),
-  sizeId: zod.number().optional(),
-  sizeName: zod.string().optional(),
-  colorId: zod.number().optional(),
-  colorCode: zod.string().optional(),
-  colorName: zod.string().optional(),
+  productCode: zod.string().nullish(),
+  productName: zod.string().nullable(),
+  sizeName: zod.string().nullish(),
+  colorCode: zod.string().nullish(),
+  colorName: zod.string().nullish(),
+  itemCode: zod.string().nullish(),
+  producedQty: zod.number().optional(),
+  openingQty: zod.number().optional(),
   totalQuantity: zod.number(),
 });
 export const GetFinishedGoodsStockResponse = zod.array(
   GetFinishedGoodsStockResponseItem,
+);
+
+/**
+ * @summary List opening finished goods inventory
+ */
+export const ListOpeningFinishedGoodsQueryParams = zod.object({
+  itemCode: zod.coerce.string().optional(),
+  productCode: zod.coerce.string().optional(),
+  sizeName: zod.coerce.string().optional(),
+  colorName: zod.coerce.string().optional(),
+});
+
+export const ListOpeningFinishedGoodsResponseItem = zod.object({
+  id: zod.number(),
+  itemCode: zod.string(),
+  productCode: zod.string().nullish(),
+  productName: zod.string().nullish(),
+  sizeName: zod.string().nullish(),
+  colorName: zod.string().nullish(),
+  quantity: zod.number(),
+  remarks: zod.string().nullish(),
+  enteredBy: zod.string().nullish(),
+  createdAt: zod.string().optional(),
+});
+export const ListOpeningFinishedGoodsResponse = zod.array(
+  ListOpeningFinishedGoodsResponseItem,
+);
+
+/**
+ * @summary Add opening stock entry
+ */
+export const CreateOpeningFinishedGoodsBody = zod.object({
+  itemCode: zod.string(),
+  productCode: zod.string().optional(),
+  productName: zod.string().optional(),
+  sizeName: zod.string().optional(),
+  colorName: zod.string().optional(),
+  quantity: zod.number(),
+  remarks: zod.string().optional(),
+});
+
+/**
+ * @summary Update opening stock entry
+ */
+export const UpdateOpeningFinishedGoodsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateOpeningFinishedGoodsBody = zod.object({
+  itemCode: zod.string(),
+  productCode: zod.string().optional(),
+  productName: zod.string().optional(),
+  sizeName: zod.string().optional(),
+  colorName: zod.string().optional(),
+  quantity: zod.number(),
+  remarks: zod.string().optional(),
+});
+
+export const UpdateOpeningFinishedGoodsResponse = zod.object({
+  id: zod.number(),
+  itemCode: zod.string(),
+  productCode: zod.string().nullish(),
+  productName: zod.string().nullish(),
+  sizeName: zod.string().nullish(),
+  colorName: zod.string().nullish(),
+  quantity: zod.number(),
+  remarks: zod.string().nullish(),
+  enteredBy: zod.string().nullish(),
+  createdAt: zod.string().optional(),
+});
+
+/**
+ * @summary Delete opening stock entry
+ */
+export const DeleteOpeningFinishedGoodsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Bulk import opening stock from CSV/Excel
+ */
+export const ImportOpeningFinishedGoodsBody = zod.object({
+  rows: zod.array(
+    zod.object({
+      itemCode: zod.string(),
+      productCode: zod.string().optional(),
+      productName: zod.string().optional(),
+      sizeName: zod.string().optional(),
+      colorName: zod.string().optional(),
+      quantity: zod.number(),
+      remarks: zod.string().optional(),
+    }),
+  ),
+});
+
+export const ImportOpeningFinishedGoodsResponse = zod.object({
+  imported: zod.number(),
+  total: zod.number(),
+  errors: zod.array(
+    zod.object({
+      row: zod.number().optional(),
+      message: zod.string().optional(),
+    }),
+  ),
+});
+
+/**
+ * @summary Get opening stock summary grouped by item code
+ */
+export const GetOpeningFinishedGoodsSummaryResponseItem = zod.object({
+  itemCode: zod.string(),
+  productCode: zod.string().nullish(),
+  productName: zod.string().nullish(),
+  sizeName: zod.string().nullish(),
+  colorName: zod.string().nullish(),
+  totalQuantity: zod.number(),
+});
+export const GetOpeningFinishedGoodsSummaryResponse = zod.array(
+  GetOpeningFinishedGoodsSummaryResponseItem,
 );
 
 /**
@@ -1338,6 +1457,8 @@ export const GetInventorySummaryResponse = zod.object({
   }),
   finishedGoods: zod.object({
     totalQuantity: zod.number(),
+    producedQuantity: zod.number().optional(),
+    openingQuantity: zod.number().optional(),
   }),
 });
 

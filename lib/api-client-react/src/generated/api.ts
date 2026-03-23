@@ -33,6 +33,7 @@ import type {
   CreateFinishedGoodsBody,
   CreateFinishingRecordBody,
   CreateMaterialBody,
+  CreateOpeningFinishedGoodsBody,
   CreateOrderBody,
   CreateProductBody,
   CreatePurchaseOrderBody,
@@ -58,14 +59,19 @@ import type {
   GetStitcherPerformanceReportParams,
   GetTeamPerformanceReportParams,
   HealthStatus,
+  ImportOpeningFinishedGoodsBody,
+  ImportResult,
   InventorySummary,
   ListAllocationsParams,
   ListCuttingBatchesParams,
   ListFinishedGoodsParams,
   ListFinishingRecordsParams,
+  ListOpeningFinishedGoodsParams,
   ListOutsourceTransfersParams,
   ListReceivingsParams,
   Material,
+  OpeningFinishedGoods,
+  OpeningFinishedGoodsSummary,
   Order,
   OrderDetail,
   OutsourceAllocation,
@@ -4832,6 +4838,615 @@ export function useGetFinishedGoodsStock<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetFinishedGoodsStockQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List opening finished goods inventory
+ */
+export const getListOpeningFinishedGoodsUrl = (
+  params?: ListOpeningFinishedGoodsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/opening-finished-goods?${stringifiedParams}`
+    : `/api/opening-finished-goods`;
+};
+
+export const listOpeningFinishedGoods = async (
+  params?: ListOpeningFinishedGoodsParams,
+  options?: RequestInit,
+): Promise<OpeningFinishedGoods[]> => {
+  return customFetch<OpeningFinishedGoods[]>(
+    getListOpeningFinishedGoodsUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListOpeningFinishedGoodsQueryKey = (
+  params?: ListOpeningFinishedGoodsParams,
+) => {
+  return [`/api/opening-finished-goods`, ...(params ? [params] : [])] as const;
+};
+
+export const getListOpeningFinishedGoodsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listOpeningFinishedGoods>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListOpeningFinishedGoodsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listOpeningFinishedGoods>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListOpeningFinishedGoodsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listOpeningFinishedGoods>>
+  > = ({ signal }) =>
+    listOpeningFinishedGoods(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listOpeningFinishedGoods>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListOpeningFinishedGoodsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listOpeningFinishedGoods>>
+>;
+export type ListOpeningFinishedGoodsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List opening finished goods inventory
+ */
+
+export function useListOpeningFinishedGoods<
+  TData = Awaited<ReturnType<typeof listOpeningFinishedGoods>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListOpeningFinishedGoodsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listOpeningFinishedGoods>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListOpeningFinishedGoodsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Add opening stock entry
+ */
+export const getCreateOpeningFinishedGoodsUrl = () => {
+  return `/api/opening-finished-goods`;
+};
+
+export const createOpeningFinishedGoods = async (
+  createOpeningFinishedGoodsBody: CreateOpeningFinishedGoodsBody,
+  options?: RequestInit,
+): Promise<OpeningFinishedGoods> => {
+  return customFetch<OpeningFinishedGoods>(getCreateOpeningFinishedGoodsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createOpeningFinishedGoodsBody),
+  });
+};
+
+export const getCreateOpeningFinishedGoodsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createOpeningFinishedGoods>>,
+    TError,
+    { data: BodyType<CreateOpeningFinishedGoodsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createOpeningFinishedGoods>>,
+  TError,
+  { data: BodyType<CreateOpeningFinishedGoodsBody> },
+  TContext
+> => {
+  const mutationKey = ["createOpeningFinishedGoods"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createOpeningFinishedGoods>>,
+    { data: BodyType<CreateOpeningFinishedGoodsBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createOpeningFinishedGoods(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateOpeningFinishedGoodsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createOpeningFinishedGoods>>
+>;
+export type CreateOpeningFinishedGoodsMutationBody =
+  BodyType<CreateOpeningFinishedGoodsBody>;
+export type CreateOpeningFinishedGoodsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Add opening stock entry
+ */
+export const useCreateOpeningFinishedGoods = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createOpeningFinishedGoods>>,
+    TError,
+    { data: BodyType<CreateOpeningFinishedGoodsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createOpeningFinishedGoods>>,
+  TError,
+  { data: BodyType<CreateOpeningFinishedGoodsBody> },
+  TContext
+> => {
+  return useMutation(getCreateOpeningFinishedGoodsMutationOptions(options));
+};
+
+/**
+ * @summary Update opening stock entry
+ */
+export const getUpdateOpeningFinishedGoodsUrl = (id: number) => {
+  return `/api/opening-finished-goods/${id}`;
+};
+
+export const updateOpeningFinishedGoods = async (
+  id: number,
+  createOpeningFinishedGoodsBody: CreateOpeningFinishedGoodsBody,
+  options?: RequestInit,
+): Promise<OpeningFinishedGoods> => {
+  return customFetch<OpeningFinishedGoods>(
+    getUpdateOpeningFinishedGoodsUrl(id),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(createOpeningFinishedGoodsBody),
+    },
+  );
+};
+
+export const getUpdateOpeningFinishedGoodsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateOpeningFinishedGoods>>,
+    TError,
+    { id: number; data: BodyType<CreateOpeningFinishedGoodsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateOpeningFinishedGoods>>,
+  TError,
+  { id: number; data: BodyType<CreateOpeningFinishedGoodsBody> },
+  TContext
+> => {
+  const mutationKey = ["updateOpeningFinishedGoods"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateOpeningFinishedGoods>>,
+    { id: number; data: BodyType<CreateOpeningFinishedGoodsBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateOpeningFinishedGoods(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateOpeningFinishedGoodsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateOpeningFinishedGoods>>
+>;
+export type UpdateOpeningFinishedGoodsMutationBody =
+  BodyType<CreateOpeningFinishedGoodsBody>;
+export type UpdateOpeningFinishedGoodsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update opening stock entry
+ */
+export const useUpdateOpeningFinishedGoods = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateOpeningFinishedGoods>>,
+    TError,
+    { id: number; data: BodyType<CreateOpeningFinishedGoodsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateOpeningFinishedGoods>>,
+  TError,
+  { id: number; data: BodyType<CreateOpeningFinishedGoodsBody> },
+  TContext
+> => {
+  return useMutation(getUpdateOpeningFinishedGoodsMutationOptions(options));
+};
+
+/**
+ * @summary Delete opening stock entry
+ */
+export const getDeleteOpeningFinishedGoodsUrl = (id: number) => {
+  return `/api/opening-finished-goods/${id}`;
+};
+
+export const deleteOpeningFinishedGoods = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteOpeningFinishedGoodsUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteOpeningFinishedGoodsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteOpeningFinishedGoods>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteOpeningFinishedGoods>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteOpeningFinishedGoods"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteOpeningFinishedGoods>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteOpeningFinishedGoods(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteOpeningFinishedGoodsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteOpeningFinishedGoods>>
+>;
+
+export type DeleteOpeningFinishedGoodsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete opening stock entry
+ */
+export const useDeleteOpeningFinishedGoods = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteOpeningFinishedGoods>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteOpeningFinishedGoods>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteOpeningFinishedGoodsMutationOptions(options));
+};
+
+/**
+ * @summary Download CSV template for import
+ */
+export const getGetOpeningFinishedGoodsTemplateUrl = () => {
+  return `/api/opening-finished-goods/template`;
+};
+
+export const getOpeningFinishedGoodsTemplate = async (
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getGetOpeningFinishedGoodsTemplateUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetOpeningFinishedGoodsTemplateQueryKey = () => {
+  return [`/api/opening-finished-goods/template`] as const;
+};
+
+export const getGetOpeningFinishedGoodsTemplateQueryOptions = <
+  TData = Awaited<ReturnType<typeof getOpeningFinishedGoodsTemplate>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getOpeningFinishedGoodsTemplate>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetOpeningFinishedGoodsTemplateQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getOpeningFinishedGoodsTemplate>>
+  > = ({ signal }) =>
+    getOpeningFinishedGoodsTemplate({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getOpeningFinishedGoodsTemplate>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetOpeningFinishedGoodsTemplateQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getOpeningFinishedGoodsTemplate>>
+>;
+export type GetOpeningFinishedGoodsTemplateQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Download CSV template for import
+ */
+
+export function useGetOpeningFinishedGoodsTemplate<
+  TData = Awaited<ReturnType<typeof getOpeningFinishedGoodsTemplate>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getOpeningFinishedGoodsTemplate>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetOpeningFinishedGoodsTemplateQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Bulk import opening stock from CSV/Excel
+ */
+export const getImportOpeningFinishedGoodsUrl = () => {
+  return `/api/opening-finished-goods/import`;
+};
+
+export const importOpeningFinishedGoods = async (
+  importOpeningFinishedGoodsBody: ImportOpeningFinishedGoodsBody,
+  options?: RequestInit,
+): Promise<ImportResult> => {
+  return customFetch<ImportResult>(getImportOpeningFinishedGoodsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(importOpeningFinishedGoodsBody),
+  });
+};
+
+export const getImportOpeningFinishedGoodsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof importOpeningFinishedGoods>>,
+    TError,
+    { data: BodyType<ImportOpeningFinishedGoodsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof importOpeningFinishedGoods>>,
+  TError,
+  { data: BodyType<ImportOpeningFinishedGoodsBody> },
+  TContext
+> => {
+  const mutationKey = ["importOpeningFinishedGoods"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof importOpeningFinishedGoods>>,
+    { data: BodyType<ImportOpeningFinishedGoodsBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return importOpeningFinishedGoods(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ImportOpeningFinishedGoodsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof importOpeningFinishedGoods>>
+>;
+export type ImportOpeningFinishedGoodsMutationBody =
+  BodyType<ImportOpeningFinishedGoodsBody>;
+export type ImportOpeningFinishedGoodsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Bulk import opening stock from CSV/Excel
+ */
+export const useImportOpeningFinishedGoods = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof importOpeningFinishedGoods>>,
+    TError,
+    { data: BodyType<ImportOpeningFinishedGoodsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof importOpeningFinishedGoods>>,
+  TError,
+  { data: BodyType<ImportOpeningFinishedGoodsBody> },
+  TContext
+> => {
+  return useMutation(getImportOpeningFinishedGoodsMutationOptions(options));
+};
+
+/**
+ * @summary Get opening stock summary grouped by item code
+ */
+export const getGetOpeningFinishedGoodsSummaryUrl = () => {
+  return `/api/opening-finished-goods/summary`;
+};
+
+export const getOpeningFinishedGoodsSummary = async (
+  options?: RequestInit,
+): Promise<OpeningFinishedGoodsSummary[]> => {
+  return customFetch<OpeningFinishedGoodsSummary[]>(
+    getGetOpeningFinishedGoodsSummaryUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetOpeningFinishedGoodsSummaryQueryKey = () => {
+  return [`/api/opening-finished-goods/summary`] as const;
+};
+
+export const getGetOpeningFinishedGoodsSummaryQueryOptions = <
+  TData = Awaited<ReturnType<typeof getOpeningFinishedGoodsSummary>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getOpeningFinishedGoodsSummary>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetOpeningFinishedGoodsSummaryQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getOpeningFinishedGoodsSummary>>
+  > = ({ signal }) =>
+    getOpeningFinishedGoodsSummary({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getOpeningFinishedGoodsSummary>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetOpeningFinishedGoodsSummaryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getOpeningFinishedGoodsSummary>>
+>;
+export type GetOpeningFinishedGoodsSummaryQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get opening stock summary grouped by item code
+ */
+
+export function useGetOpeningFinishedGoodsSummary<
+  TData = Awaited<ReturnType<typeof getOpeningFinishedGoodsSummary>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getOpeningFinishedGoodsSummary>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetOpeningFinishedGoodsSummaryQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

@@ -6,14 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface StockSummary {
+export interface OpeningFinishedGoods {
+  id: number;
+  itemCode: string;
   productCode?: string | null;
-  productName: string | null;
+  productName?: string | null;
   sizeName?: string | null;
-  colorCode?: string | null;
   colorName?: string | null;
-  itemCode?: string | null;
-  producedQty?: number;
-  openingQty?: number;
-  totalQuantity: number;
+  quantity: number;
+  remarks?: string | null;
+  enteredBy?: string | null;
+  createdAt?: string;
 }

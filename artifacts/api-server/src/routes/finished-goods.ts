@@ -9,6 +9,7 @@ import {
   materialsTable,
   sizesTable,
   colorsTable,
+  openingFinishedGoodsTable,
 } from "@workspace/db/schema";
 import { eq, sql, and, gte, lte, ilike } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -171,26 +172,92 @@ router.post("/finished-goods", checkPermission("finished-goods", "create"), asyn
 });
 
 router.get("/finished-goods/stock", checkPermission("finished-goods", "view"), async (_req, res) => {
-  const rows = await db
+  const producedRows = await db
     .select({
-      productId: productsTable.id,
       productCode: productsTable.code,
       productName: productsTable.name,
-      sizeId: sizesTable.id,
       sizeName: sizesTable.name,
-      colorId: colorsTable.id,
       colorCode: colorsTable.code,
       colorName: colorsTable.name,
-      totalQuantity: sql<number>`SUM(${finishedGoodsTable.quantity})::int`,
+      producedQty: sql<number>`SUM(${finishedGoodsTable.quantity})::int`,
     })
     .from(finishedGoodsTable)
     .leftJoin(cuttingBatchesTable, eq(finishedGoodsTable.cuttingBatchId, cuttingBatchesTable.id))
     .leftJoin(productsTable, eq(cuttingBatchesTable.productId, productsTable.id))
     .leftJoin(sizesTable, eq(cuttingBatchesTable.sizeId, sizesTable.id))
     .leftJoin(colorsTable, eq(cuttingBatchesTable.colorId, colorsTable.id))
-    .groupBy(productsTable.id, productsTable.code, productsTable.name, sizesTable.id, sizesTable.name, colorsTable.id, colorsTable.code, colorsTable.name)
+    .groupBy(productsTable.code, productsTable.name, sizesTable.name, colorsTable.code, colorsTable.name)
     .orderBy(productsTable.name);
-  res.json(rows);
+
+  const openingRows = await db
+    .select({
+      itemCode: openingFinishedGoodsTable.itemCode,
+      productCode: openingFinishedGoodsTable.productCode,
+      productName: openingFinishedGoodsTable.productName,
+      sizeName: openingFinishedGoodsTable.sizeName,
+      colorName: openingFinishedGoodsTable.colorName,
+      openingQty: sql<number>`SUM(${openingFinishedGoodsTable.quantity})::int`,
+    })
+    .from(openingFinishedGoodsTable)
+    .groupBy(
+      openingFinishedGoodsTable.itemCode,
+      openingFinishedGoodsTable.productCode,
+      openingFinishedGoodsTable.productName,
+      openingFinishedGoodsTable.sizeName,
+      openingFinishedGoodsTable.colorName
+    )
+    .orderBy(openingFinishedGoodsTable.itemCode);
+
+  const mergedMap = new Map<string, any>();
+
+  const normalize = (s: string | null | undefined) => (s || "").trim().toLowerCase();
+  const makeKey = (productCode: string | null, sizeName: string | null, colorCode: string | null, colorName: string | null) =>
+    `${normalize(productCode)}|${normalize(sizeName)}|${normalize(colorCode || colorName)}`;
+
+  for (const r of producedRows) {
+    const key = makeKey(r.productCode, r.sizeName, r.colorCode, r.colorName);
+    const existing = mergedMap.get(key);
+    if (existing) {
+      existing.producedQty += r.producedQty;
+      existing.totalQuantity = existing.producedQty + existing.openingQty;
+    } else {
+      mergedMap.set(key, {
+        productCode: r.productCode,
+        productName: r.productName,
+        sizeName: r.sizeName,
+        colorCode: r.colorCode,
+        colorName: r.colorName,
+        itemCode: [r.productCode, r.colorCode].filter(Boolean).join("-") || null,
+        producedQty: r.producedQty,
+        openingQty: 0,
+        totalQuantity: r.producedQty,
+      });
+    }
+  }
+
+  for (const r of openingRows) {
+    const key = makeKey(r.productCode, r.sizeName, null, r.colorName);
+    const existing = mergedMap.get(key);
+    if (existing) {
+      existing.openingQty += r.openingQty;
+      existing.totalQuantity = existing.producedQty + existing.openingQty;
+    } else {
+      mergedMap.set(key, {
+        productCode: r.productCode,
+        productName: r.productName,
+        sizeName: r.sizeName,
+        colorCode: null,
+        colorName: r.colorName,
+        itemCode: r.itemCode,
+        producedQty: 0,
+        openingQty: r.openingQty,
+        totalQuantity: r.openingQty,
+      });
+    }
+  }
+
+  const result = Array.from(mergedMap.values()).sort((a, b) => (a.productName || "").localeCompare(b.productName || ""));
+  res.json(result);
 });
 
 router.put("/finished-goods/:id", checkPermission("finished-goods", "edit"), async (req, res) => {

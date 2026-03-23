@@ -310,6 +310,21 @@ export const finishedGoodsTable = pgTable("finished_goods", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// ===== OPENING FINISHED GOODS (Old / Opening Balance Stock) =====
+
+export const openingFinishedGoodsTable = pgTable("opening_finished_goods", {
+  id: serial("id").primaryKey(),
+  itemCode: text("item_code").notNull(),
+  productCode: text("product_code"),
+  productName: text("product_name"),
+  sizeName: text("size_name"),
+  colorName: text("color_name"),
+  quantity: integer("quantity").notNull(),
+  remarks: text("remarks"),
+  enteredBy: text("entered_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // ===== AUDIT LOG =====
 
 export const auditLogsTable = pgTable("audit_logs", {
@@ -434,6 +449,13 @@ export const insertFinishedGoodsSchema = createInsertSchema(finishedGoodsTable).
 });
 export type InsertFinishedGoods = z.infer<typeof insertFinishedGoodsSchema>;
 export type FinishedGoods = typeof finishedGoodsTable.$inferSelect;
+
+export const insertOpeningFinishedGoodsSchema = createInsertSchema(openingFinishedGoodsTable).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertOpeningFinishedGoods = z.infer<typeof insertOpeningFinishedGoodsSchema>;
+export type OpeningFinishedGoods = typeof openingFinishedGoodsTable.$inferSelect;
 
 export const insertAuditLogSchema = createInsertSchema(auditLogsTable).omit({
   id: true,
