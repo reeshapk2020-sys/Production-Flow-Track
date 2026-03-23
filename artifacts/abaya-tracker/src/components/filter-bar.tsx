@@ -5,7 +5,8 @@ import { Filter, X } from "lucide-react";
 interface FilterField {
   name: string;
   label: string;
-  type: "date" | "select";
+  type: "date" | "select" | "text";
+  placeholder?: string;
   options?: { value: string | number; label: string }[];
 }
 
@@ -63,7 +64,15 @@ export function FilterBar({ fields, values, onChange }: FilterBarProps) {
           {fields.map(field => (
             <div key={field.name}>
               <label className="text-xs font-medium text-slate-500 block mb-1">{field.label}</label>
-              {field.type === "date" ? (
+              {field.type === "text" ? (
+                <input
+                  type="text"
+                  placeholder={field.placeholder || "Search..."}
+                  className="w-full text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:ring-1 focus:ring-primary/30 focus:border-primary outline-none"
+                  value={values[field.name] || ""}
+                  onChange={e => handleChange(field.name, e.target.value)}
+                />
+              ) : field.type === "date" ? (
                 <input
                   type="date"
                   className="w-full text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:ring-1 focus:ring-primary/30 focus:border-primary outline-none"

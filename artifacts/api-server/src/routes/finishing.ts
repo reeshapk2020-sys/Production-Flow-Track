@@ -11,7 +11,7 @@ import {
   sizesTable,
   colorsTable,
 } from "@workspace/db/schema";
-import { eq, sql, inArray, and, gte, lte } from "drizzle-orm";
+import { eq, sql, inArray, and, gte, lte, ilike } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit.js";
 import { checkPermission } from "./permissions.js";
@@ -63,12 +63,13 @@ async function getTotalFinishingOutput(batchId: number): Promise<number> {
 
 /** GET /finishing – all finishing records (all historical stages merged) */
 router.get("/finishing", checkPermission("finishing", "view"), async (req, res) => {
-  const { startDate, endDate, productId, colorId } = req.query;
+  const { startDate, endDate, productId, colorId, batchNumber } = req.query;
   const conditions: any[] = [];
   if (startDate) conditions.push(gte(finishingRecordsTable.processDate, new Date(startDate as string)));
   if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); conditions.push(lte(finishingRecordsTable.processDate, ed)); }
   if (productId) conditions.push(eq(cuttingBatchesTable.productId, Number(productId)));
   if (colorId) conditions.push(eq(cuttingBatchesTable.colorId, Number(colorId)));
+  if (batchNumber) conditions.push(ilike(cuttingBatchesTable.batchNumber, `%${batchNumber}%`));
 
   let q = db
     .select({

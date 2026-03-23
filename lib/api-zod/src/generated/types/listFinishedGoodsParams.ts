@@ -11,4 +11,5 @@ export type ListFinishedGoodsParams = {
   endDate?: string;
   productId?: number;
   colorId?: number;
+  batchNumber?: string;
 };

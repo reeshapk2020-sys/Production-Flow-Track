@@ -4865,8 +4865,8 @@ export const getGetDailyProductionReportUrl = (
 export const getDailyProductionReport = async (
   params?: GetDailyProductionReportParams,
   options?: RequestInit,
-): Promise<DailyProductionReport> => {
-  return customFetch<DailyProductionReport>(
+): Promise<DailyProductionReport[]> => {
+  return customFetch<DailyProductionReport[]>(
     getGetDailyProductionReportUrl(params),
     {
       ...options,

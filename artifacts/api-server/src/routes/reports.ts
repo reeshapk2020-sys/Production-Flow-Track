@@ -13,7 +13,7 @@ import {
   colorsTable,
   auditLogsTable,
 } from "@workspace/db/schema";
-import { eq, sql, and, gte, lte } from "drizzle-orm";
+import { eq, sql, and, gte, lte, ilike } from "drizzle-orm";
 import { checkPermission } from "./permissions.js";
 
 const router: IRouter = Router();
@@ -139,13 +139,15 @@ router.get("/dashboard", checkPermission("reports", "view"), async (_req, res) =
 
 router.get("/reports/stitcher-performance", checkPermission("reports", "view"), async (req, res) => {
   const { startDate, endDate, stitcherId, teamId } = req.query;
-  const conditions: any[] = [eq(allocationsTable.allocationType, "individual")];
-  if (startDate) conditions.push(gte(allocationsTable.issueDate, new Date(startDate as string)));
-  if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); conditions.push(lte(allocationsTable.issueDate, ed)); }
-  if (stitcherId) conditions.push(eq(stitchersTable.id, Number(stitcherId)));
-  if (teamId) conditions.push(eq(teamsTable.id, Number(teamId)));
+  const joinConditions: any[] = [eq(allocationsTable.stitcherId, stitchersTable.id), eq(allocationsTable.allocationType, "individual")];
+  if (startDate) joinConditions.push(gte(allocationsTable.issueDate, new Date(startDate as string)));
+  if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); joinConditions.push(lte(allocationsTable.issueDate, ed)); }
 
-  const rows = await db
+  const whereConditions: any[] = [];
+  if (stitcherId) whereConditions.push(eq(stitchersTable.id, Number(stitcherId)));
+  if (teamId) whereConditions.push(eq(stitchersTable.teamId, Number(teamId)));
+
+  let q = db
     .select({
       stitcherId: stitchersTable.id,
       stitcherName: stitchersTable.name,
@@ -157,7 +159,10 @@ router.get("/reports/stitcher-performance", checkPermission("reports", "view"), 
     })
     .from(stitchersTable)
     .leftJoin(teamsTable, eq(stitchersTable.teamId, teamsTable.id))
-    .leftJoin(allocationsTable, and(eq(allocationsTable.stitcherId, stitchersTable.id), ...conditions))
+    .leftJoin(allocationsTable, and(...joinConditions))
+    .$dynamic();
+  if (whereConditions.length > 0) q = q.where(and(...whereConditions)) as any;
+  const rows = await q
     .groupBy(stitchersTable.id, stitchersTable.name, teamsTable.name)
     .orderBy(sql`COALESCE(SUM(${allocationsTable.quantityIssued}), 0) desc`);
 
@@ -170,10 +175,12 @@ router.get("/reports/stitcher-performance", checkPermission("reports", "view"), 
 
 router.get("/reports/team-performance", checkPermission("reports", "view"), async (req, res) => {
   const { startDate, endDate, teamId } = req.query;
-  const conditions: any[] = [eq(allocationsTable.allocationType, "team")];
-  if (startDate) conditions.push(gte(allocationsTable.issueDate, new Date(startDate as string)));
-  if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); conditions.push(lte(allocationsTable.issueDate, ed)); }
-  if (teamId) conditions.push(eq(teamsTable.id, Number(teamId)));
+  const joinConditions: any[] = [eq(allocationsTable.teamId, teamsTable.id), eq(allocationsTable.allocationType, "team")];
+  if (startDate) joinConditions.push(gte(allocationsTable.issueDate, new Date(startDate as string)));
+  if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); joinConditions.push(lte(allocationsTable.issueDate, ed)); }
+
+  const whereConditions: any[] = [eq(teamsTable.isActive, true)];
+  if (teamId) whereConditions.push(eq(teamsTable.id, Number(teamId)));
 
   const rows = await db
     .select({
@@ -187,8 +194,8 @@ router.get("/reports/team-performance", checkPermission("reports", "view"), asyn
       totalRejected: sql<number>`COALESCE(SUM(${allocationsTable.quantityRejected}), 0)::int`,
     })
     .from(teamsTable)
-    .leftJoin(allocationsTable, and(eq(allocationsTable.teamId, teamsTable.id), ...conditions))
-    .where(eq(teamsTable.isActive, true))
+    .leftJoin(allocationsTable, and(...joinConditions))
+    .where(and(...whereConditions))
     .groupBy(teamsTable.id, teamsTable.name, teamsTable.code)
     .orderBy(sql`COALESCE(SUM(${allocationsTable.quantityIssued}), 0) desc`);
 
@@ -203,45 +210,23 @@ router.get("/reports/daily-production", checkPermission("reports", "view"), asyn
   const startStr = (req.query.startDate as string) || (req.query.date as string) || new Date().toISOString().split("T")[0];
   const endStr = (req.query.endDate as string) || startStr;
 
-  const startDate = new Date(startStr);
-  const endDate = new Date(endStr);
-  endDate.setDate(endDate.getDate() + 1);
+  const rows = await db.execute(sql`
+    WITH date_series AS (
+      SELECT d::date AS day
+      FROM generate_series(${startStr}::date, ${endStr}::date, '1 day'::interval) d
+    )
+    SELECT
+      ds.day::text AS date,
+      COALESCE((SELECT SUM(quantity_cut)::int FROM cutting_batches WHERE cutting_date::date = ds.day), 0) AS cutting,
+      COALESCE((SELECT SUM(quantity_issued)::int FROM allocations WHERE issue_date::date = ds.day), 0) AS allocated,
+      COALESCE((SELECT SUM(quantity_received)::int FROM receivings WHERE receive_date::date = ds.day), 0) AS received,
+      COALESCE((SELECT SUM(output_quantity)::int FROM finishing_records WHERE process_date::date = ds.day), 0) AS finishing,
+      COALESCE((SELECT SUM(quantity)::int FROM finished_goods WHERE entry_date::date = ds.day), 0) AS finished
+    FROM date_series ds
+    ORDER BY ds.day
+  `);
 
-  const [cutting] = await db
-    .select({ qty: sql<number>`COALESCE(SUM(${cuttingBatchesTable.quantityCut}), 0)::int` })
-    .from(cuttingBatchesTable)
-    .where(and(gte(cuttingBatchesTable.cuttingDate, startDate), lte(cuttingBatchesTable.cuttingDate, endDate)));
-
-  const [allocated] = await db
-    .select({ qty: sql<number>`COALESCE(SUM(${allocationsTable.quantityIssued}), 0)::int` })
-    .from(allocationsTable)
-    .where(and(gte(allocationsTable.issueDate, startDate), lte(allocationsTable.issueDate, endDate)));
-
-  const [received] = await db
-    .select({ qty: sql<number>`COALESCE(SUM(${receivingsTable.quantityReceived}), 0)::int` })
-    .from(receivingsTable)
-    .where(and(gte(receivingsTable.receiveDate, startDate), lte(receivingsTable.receiveDate, endDate)));
-
-  const [finishing] = await db
-    .select({ qty: sql<number>`COALESCE(SUM(${finishingRecordsTable.outputQuantity}), 0)::int` })
-    .from(finishingRecordsTable)
-    .where(and(gte(finishingRecordsTable.processDate, startDate), lte(finishingRecordsTable.processDate, endDate)));
-
-  const [finished] = await db
-    .select({ qty: sql<number>`COALESCE(SUM(${finishedGoodsTable.quantity}), 0)::int` })
-    .from(finishedGoodsTable)
-    .where(and(gte(finishedGoodsTable.entryDate, startDate), lte(finishedGoodsTable.entryDate, endDate)));
-
-  res.json({
-    startDate: startStr,
-    endDate: endStr,
-    date: startStr,
-    cutting: cutting.qty || 0,
-    allocated: allocated.qty || 0,
-    received: received.qty || 0,
-    finishing: finishing.qty || 0,
-    finished: finished.qty || 0,
-  });
+  res.json(rows.rows);
 });
 
 router.get("/reports/stage-pending", checkPermission("reports", "view"), async (_req, res) => {
@@ -270,7 +255,11 @@ router.get("/reports/stage-pending", checkPermission("reports", "view"), async (
 });
 
 router.get("/reports/batch-status", checkPermission("reports", "view"), async (req, res) => {
-  const rows = await db
+  const { batchNumber } = req.query;
+  const conditions: any[] = [];
+  if (batchNumber) conditions.push(ilike(cuttingBatchesTable.batchNumber, `%${batchNumber}%`));
+
+  let q = db
     .select({
       batchNumber: cuttingBatchesTable.batchNumber,
       productName: productsTable.name,
@@ -284,8 +273,9 @@ router.get("/reports/batch-status", checkPermission("reports", "view"), async (r
     .from(cuttingBatchesTable)
     .leftJoin(productsTable, eq(cuttingBatchesTable.productId, productsTable.id))
     .leftJoin(sizesTable, eq(cuttingBatchesTable.sizeId, sizesTable.id))
-    .leftJoin(colorsTable, eq(cuttingBatchesTable.colorId, colorsTable.id))
-    .orderBy(sql`${cuttingBatchesTable.createdAt} desc`);
+    .leftJoin(colorsTable, eq(cuttingBatchesTable.colorId, colorsTable.id));
+  if (conditions.length > 0) q = q.where(and(...conditions)) as any;
+  const rows = await q.orderBy(sql`${cuttingBatchesTable.createdAt} desc`);
 
   res.json(
     rows.map((r) => ({

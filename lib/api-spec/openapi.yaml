@@ -642,6 +642,10 @@ paths:
           in: query
           schema:
             type: integer
+        - name: batchNumber
+          in: query
+          schema:
+            type: string
       responses:
         "200":
           description: List of cutting batches
@@ -746,6 +750,10 @@ paths:
           in: query
           schema:
             type: integer
+        - name: batchNumber
+          in: query
+          schema:
+            type: string
       responses:
         "200":
           description: List of allocations
@@ -834,6 +842,10 @@ paths:
           in: query
           schema:
             type: integer
+        - name: batchNumber
+          in: query
+          schema:
+            type: string
       responses:
         "200":
           description: List of receivings
@@ -909,6 +921,10 @@ paths:
           in: query
           schema:
             type: integer
+        - name: batchNumber
+          in: query
+          schema:
+            type: string
       responses:
         "200":
           description: List of finishing records
@@ -1003,6 +1019,10 @@ paths:
           in: query
           schema:
             type: integer
+        - name: batchNumber
+          in: query
+          schema:
+            type: string
       responses:
         "200":
           description: Finished goods inventory
@@ -1198,7 +1218,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DailyProductionReport"
+                type: array
+                items:
+                  $ref: "#/components/schemas/DailyProductionReport"
 
   /reports/stage-pending:
     get:
@@ -1226,6 +1248,10 @@ paths:
           schema:
             type: string
         - name: endDate
+          in: query
+          schema:
+            type: string
+        - name: batchNumber
           in: query
           schema:
             type: string

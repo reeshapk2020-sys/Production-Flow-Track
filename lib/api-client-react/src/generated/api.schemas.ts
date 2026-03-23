@@ -666,6 +666,7 @@ export type ListCuttingBatchesParams = {
   productId?: number;
   colorId?: number;
   sizeId?: number;
+  batchNumber?: string;
 };
 
 export type ListAllocationsParams = {
@@ -676,12 +677,14 @@ export type ListAllocationsParams = {
   sizeId?: number;
   stitcherId?: number;
   teamId?: number;
+  batchNumber?: string;
 };
 
 export type ListReceivingsParams = {
   startDate?: string;
   endDate?: string;
   stitcherId?: number;
+  batchNumber?: string;
 };
 
 export type ListFinishingRecordsParams = {
@@ -689,6 +692,7 @@ export type ListFinishingRecordsParams = {
   endDate?: string;
   productId?: number;
   colorId?: number;
+  batchNumber?: string;
 };
 
 export type ListFinishedGoodsParams = {
@@ -696,6 +700,7 @@ export type ListFinishedGoodsParams = {
   endDate?: string;
   productId?: number;
   colorId?: number;
+  batchNumber?: string;
 };
 
 export type GetStitcherPerformanceReportParams = {
@@ -719,6 +724,7 @@ export type GetDailyProductionReportParams = {
 export type GetBatchStatusReportParams = {
   startDate?: string;
   endDate?: string;
+  batchNumber?: string;
 };
 
 export type GetAuditLogParams = {

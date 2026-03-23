@@ -496,6 +496,7 @@ export const ListCuttingBatchesQueryParams = zod.object({
   productId: zod.coerce.number().optional(),
   colorId: zod.coerce.number().optional(),
   sizeId: zod.coerce.number().optional(),
+  batchNumber: zod.coerce.string().optional(),
 });
 
 export const ListCuttingBatchesResponseItem = zod.object({
@@ -715,6 +716,7 @@ export const ListAllocationsQueryParams = zod.object({
   sizeId: zod.coerce.number().optional(),
   stitcherId: zod.coerce.number().optional(),
   teamId: zod.coerce.number().optional(),
+  batchNumber: zod.coerce.string().optional(),
 });
 
 export const ListAllocationsResponseItem = zod.object({
@@ -869,6 +871,7 @@ export const ListReceivingsQueryParams = zod.object({
   startDate: zod.coerce.string().optional(),
   endDate: zod.coerce.string().optional(),
   stitcherId: zod.coerce.number().optional(),
+  batchNumber: zod.coerce.string().optional(),
 });
 
 export const ListReceivingsResponseItem = zod.object({
@@ -942,6 +945,7 @@ export const ListFinishingRecordsQueryParams = zod.object({
   endDate: zod.coerce.string().optional(),
   productId: zod.coerce.number().optional(),
   colorId: zod.coerce.number().optional(),
+  batchNumber: zod.coerce.string().optional(),
 });
 
 export const ListFinishingRecordsResponseItem = zod.object({
@@ -1034,6 +1038,7 @@ export const ListFinishedGoodsQueryParams = zod.object({
   endDate: zod.coerce.string().optional(),
   productId: zod.coerce.number().optional(),
   colorId: zod.coerce.number().optional(),
+  batchNumber: zod.coerce.string().optional(),
 });
 
 export const ListFinishedGoodsResponseItem = zod.object({
@@ -1289,7 +1294,7 @@ export const GetDailyProductionReportQueryParams = zod.object({
   endDate: zod.coerce.string().optional(),
 });
 
-export const GetDailyProductionReportResponse = zod.object({
+export const GetDailyProductionReportResponseItem = zod.object({
   date: zod.string().optional(),
   startDate: zod.string().optional(),
   endDate: zod.string().optional(),
@@ -1299,6 +1304,9 @@ export const GetDailyProductionReportResponse = zod.object({
   finishing: zod.number().optional(),
   finished: zod.number(),
 });
+export const GetDailyProductionReportResponse = zod.array(
+  GetDailyProductionReportResponseItem,
+);
 
 /**
  * @summary Stage-wise pending report
@@ -1318,6 +1326,7 @@ export const GetStagePendingReportResponse = zod.array(
 export const GetBatchStatusReportQueryParams = zod.object({
   startDate: zod.coerce.string().optional(),
   endDate: zod.coerce.string().optional(),
+  batchNumber: zod.coerce.string().optional(),
 });
 
 export const GetBatchStatusReportResponseItem = zod.object({

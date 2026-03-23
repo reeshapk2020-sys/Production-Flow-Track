@@ -10,4 +10,5 @@ export type ListReceivingsParams = {
   startDate?: string;
   endDate?: string;
   stitcherId?: number;
+  batchNumber?: string;
 };

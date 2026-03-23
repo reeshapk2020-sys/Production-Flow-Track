@@ -42,7 +42,7 @@ function StatusBadge({ status }: { status: BatchStatus }) {
 
 export default function AllocationPage() {
   const [filters, setFilters] = useState<Record<string, string>>({
-    startDate: "", endDate: "", productId: "", colorId: "", sizeId: "", stitcherId: "", teamId: ""
+    startDate: "", endDate: "", productId: "", colorId: "", sizeId: "", stitcherId: "", teamId: "", batchNumber: ""
   });
 
   const filterParams: Record<string, any> = {};
@@ -52,6 +52,7 @@ export default function AllocationPage() {
   if (filters.colorId) filterParams.colorId = Number(filters.colorId);
   if (filters.sizeId) filterParams.sizeId = Number(filters.sizeId);
   if (filters.stitcherId) filterParams.stitcherId = Number(filters.stitcherId);
+  if (filters.batchNumber) filterParams.batchNumber = filters.batchNumber;
   if (filters.teamId) filterParams.teamId = Number(filters.teamId);
 
   const { data, isLoading } = useListAllocations(filterParams);
@@ -157,6 +158,7 @@ export default function AllocationPage() {
   const activeTeams = teams?.filter((t: any) => t.isActive) || [];
 
   const filterFields = [
+    { name: "batchNumber", label: "Batch Number", type: "text" as const, placeholder: "Search batch..." },
     { name: "startDate", label: "From Date", type: "date" as const },
     { name: "endDate", label: "To Date", type: "date" as const },
     { name: "productId", label: "Product", type: "select" as const, options: products?.filter((p: any) => p.isActive).map((p: any) => ({ value: p.id, label: `${p.code} - ${p.name}` })) || [] },

@@ -36,12 +36,13 @@ function BatchStatusBadge({ status }: { status: string }) {
 }
 
 export default function ReceivingPage() {
-  const [filters, setFilters] = useState<Record<string, string>>({ startDate: "", endDate: "", stitcherId: "" });
+  const [filters, setFilters] = useState<Record<string, string>>({ startDate: "", endDate: "", stitcherId: "", batchNumber: "" });
 
   const filterParams: Record<string, any> = {};
   if (filters.startDate) filterParams.startDate = filters.startDate;
   if (filters.endDate) filterParams.endDate = filters.endDate;
   if (filters.stitcherId) filterParams.stitcherId = Number(filters.stitcherId);
+  if (filters.batchNumber) filterParams.batchNumber = filters.batchNumber;
 
   const { data, isLoading } = useListReceivings(filterParams);
   const { data: allocations } = useListAllocations();
@@ -150,6 +151,7 @@ export default function ReceivingPage() {
   }) || [];
 
   const receivingFilterFields = [
+    { name: "batchNumber", label: "Batch Number", type: "text" as const, placeholder: "Search batch..." },
     { name: "startDate", label: "From Date", type: "date" as const },
     { name: "endDate", label: "To Date", type: "date" as const },
     { name: "stitcherId", label: "Stitcher", type: "select" as const, options: stitchers?.filter((s: any) => s.isActive).map((s: any) => ({ value: s.id, label: s.name })) || [] },

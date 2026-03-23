@@ -142,16 +142,18 @@ Custom roles can be created dynamically from the admin Permissions page.
 
 ## Filters
 
-- **FilterBar component** (`src/components/filter-bar.tsx`): Reusable collapsible filter bar with date range and select dropdowns
+- **FilterBar component** (`src/components/filter-bar.tsx`): Reusable collapsible filter bar with date range, select dropdowns, and text search fields
+- Supports `type: "date" | "select" | "text"` with optional `placeholder` for text fields
 - All production pages (Cutting, Allocation, Receiving, Finishing, Finished Goods) have FilterBar with relevant filters
-- All backend list endpoints support query params: `startDate`, `endDate`, plus entity-specific filters (productId, colorId, sizeId, stitcherId, teamId)
+- **Batch number search**: All production pages + Batch Status report support `batchNumber` text filter (case-insensitive partial match via `ilike`)
+- All backend list endpoints support query params: `startDate`, `endDate`, `batchNumber`, plus entity-specific filters (productId, colorId, sizeId, stitcherId, teamId)
 - Filter state managed locally per page component, passed to API hooks
 
 ## Reports
 
 - **Stitcher Performance**: Total issued/received/pending/rejected/efficiency per stitcher, with date range filters
 - **Team Performance**: Same metrics per team (uses `/reports/team-performance` endpoint), with date/team filters
-- **Daily Production**: Date-wise breakdown of cutting/allocated/received/finishing/stored quantities, with summary cards
+- **Daily Production**: Per-day row breakdown of cutting/allocated/received/finishing/stored quantities using SQL date series, with summary cards showing totals across range
 - **Stage Pending**: Bottleneck analysis showing batches stuck per production stage
 - **Batch Status**: Full overview of all batches with current stage
 

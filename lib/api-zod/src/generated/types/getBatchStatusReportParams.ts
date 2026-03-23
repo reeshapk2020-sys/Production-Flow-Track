@@ -9,4 +9,5 @@
 export type GetBatchStatusReportParams = {
   startDate?: string;
   endDate?: string;
+  batchNumber?: string;
 };

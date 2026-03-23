@@ -80,13 +80,14 @@ function StockSummaryTab() {
 }
 
 function EntryLogTab() {
-  const [filters, setFilters] = useState<Record<string, string>>({ startDate: "", endDate: "", productId: "", colorId: "" });
+  const [filters, setFilters] = useState<Record<string, string>>({ startDate: "", endDate: "", productId: "", colorId: "", batchNumber: "" });
 
   const filterParams: Record<string, any> = {};
   if (filters.startDate) filterParams.startDate = filters.startDate;
   if (filters.endDate) filterParams.endDate = filters.endDate;
   if (filters.productId) filterParams.productId = Number(filters.productId);
   if (filters.colorId) filterParams.colorId = Number(filters.colorId);
+  if (filters.batchNumber) filterParams.batchNumber = filters.batchNumber;
 
   const { data, isLoading } = useListFinishedGoods(filterParams);
   const { data: batches } = useListCuttingBatches();
@@ -183,6 +184,7 @@ function EntryLogTab() {
   };
 
   const fgFilterFields = [
+    { name: "batchNumber", label: "Batch Number", type: "text" as const, placeholder: "Search batch..." },
     { name: "startDate", label: "From Date", type: "date" as const },
     { name: "endDate", label: "To Date", type: "date" as const },
     { name: "productId", label: "Product", type: "select" as const, options: products?.filter((p: any) => p.isActive).map((p: any) => ({ value: p.id, label: `${p.code} - ${p.name}` })) || [] },

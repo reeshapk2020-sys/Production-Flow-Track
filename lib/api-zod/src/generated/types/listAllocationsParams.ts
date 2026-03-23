@@ -14,4 +14,5 @@ export type ListAllocationsParams = {
   sizeId?: number;
   stitcherId?: number;
   teamId?: number;
+  batchNumber?: string;
 };

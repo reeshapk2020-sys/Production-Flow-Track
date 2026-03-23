@@ -93,7 +93,7 @@ function withItemCode(r: any) {
 }
 
 router.get("/allocation", checkPermission("allocation", "view"), async (req, res) => {
-  const { startDate, endDate, productId, colorId, sizeId, stitcherId, teamId } = req.query;
+  const { startDate, endDate, productId, colorId, sizeId, stitcherId, teamId, batchNumber } = req.query;
   const conditions: any[] = [];
   if (startDate) conditions.push(gte(allocationsTable.issueDate, new Date(startDate as string)));
   if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); conditions.push(lte(allocationsTable.issueDate, ed)); }
@@ -102,6 +102,7 @@ router.get("/allocation", checkPermission("allocation", "view"), async (req, res
   if (sizeId) conditions.push(eq(cuttingBatchesTable.sizeId, Number(sizeId)));
   if (stitcherId) conditions.push(eq(allocationsTable.stitcherId, Number(stitcherId)));
   if (teamId) conditions.push(eq(allocationsTable.teamId, Number(teamId)));
+  if (batchNumber) conditions.push(ilike(cuttingBatchesTable.batchNumber, `%${batchNumber}%`));
 
   let q = allocJoins(db.select(allocSelect).from(allocationsTable));
   if (conditions.length > 0) q = q.where(and(...conditions));

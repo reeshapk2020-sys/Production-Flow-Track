@@ -10,7 +10,7 @@ import {
   sizesTable,
   colorsTable,
 } from "@workspace/db/schema";
-import { eq, sql, and, gte, lte } from "drizzle-orm";
+import { eq, sql, and, gte, lte, ilike } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit.js";
 import { checkPermission } from "./permissions.js";
@@ -51,12 +51,13 @@ async function getTotalStoredQty(batchId: number): Promise<number> {
 // ─── Routes ─────────────────────────────────────────────────────────────────
 
 router.get("/finished-goods", checkPermission("finished-goods", "view"), async (req, res) => {
-  const { startDate, endDate, productId, colorId } = req.query;
+  const { startDate, endDate, productId, colorId, batchNumber } = req.query;
   const conditions: any[] = [];
   if (startDate) conditions.push(gte(finishedGoodsTable.entryDate, new Date(startDate as string)));
   if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); conditions.push(lte(finishedGoodsTable.entryDate, ed)); }
   if (productId) conditions.push(eq(cuttingBatchesTable.productId, Number(productId)));
   if (colorId) conditions.push(eq(cuttingBatchesTable.colorId, Number(colorId)));
+  if (batchNumber) conditions.push(ilike(cuttingBatchesTable.batchNumber, `%${batchNumber}%`));
 
   let q = db
     .select({

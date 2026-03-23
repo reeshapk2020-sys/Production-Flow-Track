@@ -264,8 +264,18 @@ function PendingReport() {
 }
 
 function BatchReport() {
-  const { data, isLoading } = useGetBatchStatusReport();
+  const [filters, setFilters] = useState<Record<string, string>>({ batchNumber: "" });
+  const filterParams: Record<string, any> = {};
+  if (filters.batchNumber) filterParams.batchNumber = filters.batchNumber;
+  const { data, isLoading } = useGetBatchStatusReport(filterParams);
+
+  const batchFilterFields = [
+    { name: "batchNumber", label: "Batch Number", type: "text" as const, placeholder: "Search batch..." },
+  ];
+
   return (
+    <>
+    <FilterBar fields={batchFilterFields} values={filters} onChange={setFilters} />
     <ReportCard title="All Batches Overview">
       <Table>
         <TableHeader className="bg-slate-50">
@@ -298,6 +308,7 @@ function BatchReport() {
         </TableBody>
       </Table>
     </ReportCard>
+    </>
   );
 }
 

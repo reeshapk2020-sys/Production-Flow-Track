@@ -13,7 +13,7 @@ import {
   finishingRecordsTable,
   finishedGoodsTable,
 } from "@workspace/db/schema";
-import { eq, sql, and, gte, lte } from "drizzle-orm";
+import { eq, sql, and, gte, lte, ilike } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit.js";
 import { checkPermission } from "./permissions.js";
@@ -135,11 +135,12 @@ function denyAllocationRole(req: any, res: any, next: any) {
 }
 
 router.get("/receiving", checkPermission("receiving", "view"), async (req, res) => {
-  const { startDate, endDate, stitcherId } = req.query;
+  const { startDate, endDate, stitcherId, batchNumber } = req.query;
   const conditions: any[] = [];
   if (startDate) conditions.push(gte(receivingsTable.receiveDate, new Date(startDate as string)));
   if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); conditions.push(lte(receivingsTable.receiveDate, ed)); }
   if (stitcherId) conditions.push(eq(allocationsTable.stitcherId, Number(stitcherId)));
+  if (batchNumber) conditions.push(ilike(cuttingBatchesTable.batchNumber, `%${batchNumber}%`));
 
   let q = db
     .select({

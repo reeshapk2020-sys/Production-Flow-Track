@@ -12,4 +12,5 @@ export type ListCuttingBatchesParams = {
   productId?: number;
   colorId?: number;
   sizeId?: number;
+  batchNumber?: string;
 };

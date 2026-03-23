@@ -38,7 +38,7 @@ function BatchStatusBadge({ status }: { status: string }) {
 
 export default function CuttingPage() {
   const [filters, setFilters] = useState<Record<string, string>>({
-    startDate: "", endDate: "", productId: "", colorId: "", sizeId: ""
+    startDate: "", endDate: "", productId: "", colorId: "", sizeId: "", batchNumber: ""
   });
 
   const filterParams: Record<string, any> = {};
@@ -47,6 +47,7 @@ export default function CuttingPage() {
   if (filters.productId) filterParams.productId = Number(filters.productId);
   if (filters.colorId) filterParams.colorId = Number(filters.colorId);
   if (filters.sizeId) filterParams.sizeId = Number(filters.sizeId);
+  if (filters.batchNumber) filterParams.batchNumber = filters.batchNumber;
 
   const { data, isLoading } = useListCuttingBatches(filterParams);
   const { data: products } = useListProducts();
@@ -163,6 +164,7 @@ export default function CuttingPage() {
   const withinTolerance = selectedRoll && qtyUsedNum > Number(selectedRoll.availableQuantity) && qtyUsedNum <= Number(selectedRoll.availableQuantity) + TOLERANCE;
 
   const filterFields = [
+    { name: "batchNumber", label: "Batch Number", type: "text" as const, placeholder: "Search batch..." },
     { name: "startDate", label: "From Date", type: "date" as const },
     { name: "endDate", label: "To Date", type: "date" as const },
     { name: "productId", label: "Product", type: "select" as const, options: products?.filter((p: any) => p.isActive).map((p: any) => ({ value: p.id, label: `${p.code} - ${p.name}` })) || [] },
