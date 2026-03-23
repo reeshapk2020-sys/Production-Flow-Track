@@ -23,4 +23,7 @@ export interface Receiving {
   receiveDate: string;
   remarks?: string;
   receivedBy?: string;
+  productionFor?: string | null;
+  poNumber?: string | null;
+  orderNumber?: string | null;
 }

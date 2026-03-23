@@ -532,6 +532,11 @@ export const ListCuttingBatchesResponseItem = zod.object({
   cuttingDate: zod.string().optional(),
   remarks: zod.string().optional(),
   status: zod.string().optional(),
+  productionFor: zod.string().nullish(),
+  poId: zod.number().nullish(),
+  orderId: zod.number().nullish(),
+  poNumber: zod.string().nullish(),
+  orderNumber: zod.string().nullish(),
   createdAt: zod.string().optional(),
 });
 export const ListCuttingBatchesResponse = zod.array(
@@ -563,6 +568,9 @@ export const CreateCuttingBatchBody = zod.object({
       }),
     )
     .optional(),
+  productionFor: zod.string().nullish(),
+  poId: zod.number().nullish(),
+  orderId: zod.number().nullish(),
 });
 
 /**
@@ -606,6 +614,11 @@ export const GetCuttingBatchResponse = zod.object({
     cuttingDate: zod.string().optional(),
     remarks: zod.string().optional(),
     status: zod.string().optional(),
+    productionFor: zod.string().nullish(),
+    poId: zod.number().nullish(),
+    orderId: zod.number().nullish(),
+    poNumber: zod.string().nullish(),
+    orderNumber: zod.string().nullish(),
     createdAt: zod.string().optional(),
   }),
   fabricRolls: zod.array(
@@ -654,6 +667,9 @@ export const GetCuttingBatchResponse = zod.object({
       issueDate: zod.string().optional(),
       remarks: zod.string().optional(),
       status: zod.string().optional(),
+      productionFor: zod.string().nullish(),
+      poNumber: zod.string().nullish(),
+      orderNumber: zod.string().nullish(),
     }),
   ),
 });
@@ -672,6 +688,9 @@ export const UpdateCuttingBatchBody = zod.object({
   productId: zod.number().optional(),
   materialId: zod.number().optional(),
   material2Id: zod.number().optional(),
+  productionFor: zod.string().nullish(),
+  poId: zod.number().nullish(),
+  orderId: zod.number().nullish(),
 });
 
 export const UpdateCuttingBatchResponse = zod.object({
@@ -707,6 +726,11 @@ export const UpdateCuttingBatchResponse = zod.object({
   cuttingDate: zod.string().optional(),
   remarks: zod.string().optional(),
   status: zod.string().optional(),
+  productionFor: zod.string().nullish(),
+  poId: zod.number().nullish(),
+  orderId: zod.number().nullish(),
+  poNumber: zod.string().nullish(),
+  orderNumber: zod.string().nullish(),
   createdAt: zod.string().optional(),
 });
 
@@ -761,6 +785,9 @@ export const ListAllocationsResponseItem = zod.object({
   issueDate: zod.string().optional(),
   remarks: zod.string().optional(),
   status: zod.string().optional(),
+  productionFor: zod.string().nullish(),
+  poNumber: zod.string().nullish(),
+  orderNumber: zod.string().nullish(),
 });
 export const ListAllocationsResponse = zod.array(ListAllocationsResponseItem);
 
@@ -839,6 +866,9 @@ export const GetAllocationResponse = zod.object({
   issueDate: zod.string().optional(),
   remarks: zod.string().optional(),
   status: zod.string().optional(),
+  productionFor: zod.string().nullish(),
+  poNumber: zod.string().nullish(),
+  orderNumber: zod.string().nullish(),
 });
 
 /**
@@ -890,6 +920,9 @@ export const UpdateAllocationResponse = zod.object({
   issueDate: zod.string().optional(),
   remarks: zod.string().optional(),
   status: zod.string().optional(),
+  productionFor: zod.string().nullish(),
+  poNumber: zod.string().nullish(),
+  orderNumber: zod.string().nullish(),
 });
 
 /**
@@ -919,6 +952,9 @@ export const ListReceivingsResponseItem = zod.object({
   receiveDate: zod.string(),
   remarks: zod.string().optional(),
   receivedBy: zod.string().optional(),
+  productionFor: zod.string().nullish(),
+  poNumber: zod.string().nullish(),
+  orderNumber: zod.string().nullish(),
 });
 export const ListReceivingsResponse = zod.array(ListReceivingsResponseItem);
 
@@ -963,6 +999,9 @@ export const UpdateReceivingResponse = zod.object({
   receiveDate: zod.string(),
   remarks: zod.string().optional(),
   receivedBy: zod.string().optional(),
+  productionFor: zod.string().nullish(),
+  poNumber: zod.string().nullish(),
+  orderNumber: zod.string().nullish(),
 });
 
 /**
@@ -1363,6 +1402,11 @@ export const GetDashboardResponse = zod.object({
         cuttingDate: zod.string().optional(),
         remarks: zod.string().optional(),
         status: zod.string().optional(),
+        productionFor: zod.string().nullish(),
+        poId: zod.number().nullish(),
+        orderId: zod.number().nullish(),
+        poNumber: zod.string().nullish(),
+        orderNumber: zod.string().nullish(),
         createdAt: zod.string().optional(),
       }),
     )
@@ -1522,6 +1566,236 @@ export const GetAuditLogResponseItem = zod.object({
 export const GetAuditLogResponse = zod.array(GetAuditLogResponseItem);
 
 /**
+ * @summary List all purchase orders
+ */
+export const ListPurchaseOrdersResponseItem = zod.object({
+  id: zod.number(),
+  poNumber: zod.string(),
+  supplierName: zod.string(),
+  remarks: zod.string().nullish(),
+  status: zod.string(),
+  createdAt: zod.string().optional(),
+});
+export const ListPurchaseOrdersResponse = zod.array(
+  ListPurchaseOrdersResponseItem,
+);
+
+/**
+ * @summary Create a purchase order
+ */
+export const CreatePurchaseOrderBody = zod.object({
+  poNumber: zod.string(),
+  supplierName: zod.string(),
+  remarks: zod.string().nullish(),
+  status: zod.string().optional(),
+});
+
+/**
+ * @summary Get purchase order detail with batches
+ */
+export const GetPurchaseOrderParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetPurchaseOrderResponse = zod.object({
+  id: zod.number(),
+  poNumber: zod.string(),
+  supplierName: zod.string(),
+  remarks: zod.string().nullish(),
+  status: zod.string(),
+  createdAt: zod.string().optional(),
+  batches: zod
+    .array(
+      zod.object({
+        id: zod.number(),
+        batchNumber: zod.string(),
+        productId: zod.number().optional(),
+        productCode: zod.string().optional(),
+        productName: zod.string().optional(),
+        fabricId: zod.number().optional(),
+        fabricCode: zod.string().optional(),
+        fabricName: zod.string().optional(),
+        materialId: zod.number().optional(),
+        materialCode: zod.string().optional(),
+        materialName: zod.string().optional(),
+        material2Id: zod.number().optional(),
+        material2Code: zod.string().optional(),
+        material2Name: zod.string().optional(),
+        sizeId: zod.number().optional(),
+        sizeName: zod.string().optional(),
+        colorId: zod.number().optional(),
+        colorCode: zod.string().optional(),
+        colorName: zod.string().optional(),
+        itemCode: zod
+          .string()
+          .optional()
+          .describe(
+            'Computed from product+fabric+material1+material2 codes joined with \"-\"',
+          ),
+        quantityCut: zod.number(),
+        availableForAllocation: zod.number().optional(),
+        totalAllocated: zod.number().optional(),
+        cutter: zod.string().optional(),
+        cuttingDate: zod.string().optional(),
+        remarks: zod.string().optional(),
+        status: zod.string().optional(),
+        productionFor: zod.string().nullish(),
+        poId: zod.number().nullish(),
+        orderId: zod.number().nullish(),
+        poNumber: zod.string().nullish(),
+        orderNumber: zod.string().nullish(),
+        createdAt: zod.string().optional(),
+      }),
+    )
+    .optional(),
+  summary: zod
+    .object({
+      totalAllocated: zod.number().optional(),
+      totalReceived: zod.number().optional(),
+      totalFinished: zod.number().optional(),
+      totalOutsourced: zod.number().optional(),
+    })
+    .optional(),
+});
+
+/**
+ * @summary Update a purchase order
+ */
+export const UpdatePurchaseOrderParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdatePurchaseOrderBody = zod.object({
+  poNumber: zod.string().optional(),
+  supplierName: zod.string().optional(),
+  remarks: zod.string().nullish(),
+  status: zod.string().optional(),
+});
+
+export const UpdatePurchaseOrderResponse = zod.object({
+  id: zod.number(),
+  poNumber: zod.string(),
+  supplierName: zod.string(),
+  remarks: zod.string().nullish(),
+  status: zod.string(),
+  createdAt: zod.string().optional(),
+});
+
+/**
+ * @summary List all orders
+ */
+export const ListOrdersResponseItem = zod.object({
+  id: zod.number(),
+  orderNumber: zod.string(),
+  customerName: zod.string(),
+  remarks: zod.string().nullish(),
+  status: zod.string(),
+  createdAt: zod.string().optional(),
+});
+export const ListOrdersResponse = zod.array(ListOrdersResponseItem);
+
+/**
+ * @summary Create an order
+ */
+export const CreateOrderBody = zod.object({
+  orderNumber: zod.string(),
+  customerName: zod.string(),
+  remarks: zod.string().nullish(),
+  status: zod.string().optional(),
+});
+
+/**
+ * @summary Get order detail with batches
+ */
+export const GetOrderParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetOrderResponse = zod.object({
+  id: zod.number(),
+  orderNumber: zod.string(),
+  customerName: zod.string(),
+  remarks: zod.string().nullish(),
+  status: zod.string(),
+  createdAt: zod.string().optional(),
+  batches: zod
+    .array(
+      zod.object({
+        id: zod.number(),
+        batchNumber: zod.string(),
+        productId: zod.number().optional(),
+        productCode: zod.string().optional(),
+        productName: zod.string().optional(),
+        fabricId: zod.number().optional(),
+        fabricCode: zod.string().optional(),
+        fabricName: zod.string().optional(),
+        materialId: zod.number().optional(),
+        materialCode: zod.string().optional(),
+        materialName: zod.string().optional(),
+        material2Id: zod.number().optional(),
+        material2Code: zod.string().optional(),
+        material2Name: zod.string().optional(),
+        sizeId: zod.number().optional(),
+        sizeName: zod.string().optional(),
+        colorId: zod.number().optional(),
+        colorCode: zod.string().optional(),
+        colorName: zod.string().optional(),
+        itemCode: zod
+          .string()
+          .optional()
+          .describe(
+            'Computed from product+fabric+material1+material2 codes joined with \"-\"',
+          ),
+        quantityCut: zod.number(),
+        availableForAllocation: zod.number().optional(),
+        totalAllocated: zod.number().optional(),
+        cutter: zod.string().optional(),
+        cuttingDate: zod.string().optional(),
+        remarks: zod.string().optional(),
+        status: zod.string().optional(),
+        productionFor: zod.string().nullish(),
+        poId: zod.number().nullish(),
+        orderId: zod.number().nullish(),
+        poNumber: zod.string().nullish(),
+        orderNumber: zod.string().nullish(),
+        createdAt: zod.string().optional(),
+      }),
+    )
+    .optional(),
+  summary: zod
+    .object({
+      totalAllocated: zod.number().optional(),
+      totalReceived: zod.number().optional(),
+      totalFinished: zod.number().optional(),
+      totalOutsourced: zod.number().optional(),
+    })
+    .optional(),
+});
+
+/**
+ * @summary Update an order
+ */
+export const UpdateOrderParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateOrderBody = zod.object({
+  orderNumber: zod.string().optional(),
+  customerName: zod.string().optional(),
+  remarks: zod.string().nullish(),
+  status: zod.string().optional(),
+});
+
+export const UpdateOrderResponse = zod.object({
+  id: zod.number(),
+  orderNumber: zod.string(),
+  customerName: zod.string(),
+  remarks: zod.string().nullish(),
+  status: zod.string(),
+  createdAt: zod.string().optional(),
+});
+
+/**
  * @summary Get full batch journey trace
  */
 export const GetBatchTraceParams = zod.object({
@@ -1537,6 +1811,9 @@ export const GetBatchTraceResponse = zod.object({
   colorName: zod.string().optional(),
   currentStage: zod.string(),
   currentStatus: zod.string().optional(),
+  productionFor: zod.string().nullish(),
+  poNumber: zod.string().nullish(),
+  orderNumber: zod.string().nullish(),
   timeline: zod.array(
     zod.object({
       stage: zod.string(),

@@ -16,5 +16,8 @@ export interface BatchTrace {
   colorName?: string;
   currentStage: string;
   currentStatus?: string;
+  productionFor?: string | null;
+  poNumber?: string | null;
+  orderNumber?: string | null;
   timeline: TraceEvent[];
 }

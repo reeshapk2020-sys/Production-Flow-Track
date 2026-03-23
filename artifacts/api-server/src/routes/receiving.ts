@@ -13,6 +13,8 @@ import {
   finishingRecordsTable,
   finishedGoodsTable,
   outsourceTransfersTable,
+  purchaseOrdersTable,
+  ordersTable,
 } from "@workspace/db/schema";
 import { eq, sql, and, gte, lte, ilike } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -183,6 +185,9 @@ router.get("/receiving", checkPermission("receiving", "view"), async (req, res) 
       receiveDate: receivingsTable.receiveDate,
       remarks: receivingsTable.remarks,
       receivedBy: receivingsTable.receivedBy,
+      productionFor: cuttingBatchesTable.productionFor,
+      poNumber: purchaseOrdersTable.poNumber,
+      orderNumber: ordersTable.orderNumber,
       createdAt: receivingsTable.createdAt,
     })
     .from(receivingsTable)
@@ -195,6 +200,8 @@ router.get("/receiving", checkPermission("receiving", "view"), async (req, res) 
     .leftJoin(sizesTable, eq(cuttingBatchesTable.sizeId, sizesTable.id))
     .leftJoin(colorsTable, eq(cuttingBatchesTable.colorId, colorsTable.id))
     .leftJoin(stitchersTable, eq(allocationsTable.stitcherId, stitchersTable.id))
+    .leftJoin(purchaseOrdersTable, eq(cuttingBatchesTable.poId, purchaseOrdersTable.id))
+    .leftJoin(ordersTable, eq(cuttingBatchesTable.orderId, ordersTable.id))
     .$dynamic();
 
   if (conditions.length > 0) q = q.where(and(...conditions));

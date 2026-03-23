@@ -154,6 +154,32 @@ export const fabricRollsTable = pgTable("fabric_rolls", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// ===== PURCHASE ORDERS =====
+
+export const purchaseOrdersTable = pgTable("purchase_orders", {
+  id: serial("id").primaryKey(),
+  poNumber: text("po_number").notNull().unique(),
+  customerName: text("customer_name").notNull(),
+  date: timestamp("date").notNull(),
+  remarks: text("remarks"),
+  status: text("status").notNull().default("active"),
+  createdBy: text("created_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// ===== ORDERS =====
+
+export const ordersTable = pgTable("orders", {
+  id: serial("id").primaryKey(),
+  orderNumber: text("order_number").notNull().unique(),
+  customerName: text("customer_name").notNull(),
+  date: timestamp("date").notNull(),
+  remarks: text("remarks"),
+  status: text("status").notNull().default("active"),
+  createdBy: text("created_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // ===== CUTTING =====
 
 export const cuttingBatchesTable = pgTable("cutting_batches", {
@@ -172,6 +198,9 @@ export const cuttingBatchesTable = pgTable("cutting_batches", {
   cuttingDate: timestamp("cutting_date").notNull(),
   remarks: text("remarks"),
   status: batchStatusEnum("status").notNull().default("cutting"),
+  productionFor: text("production_for").notNull().default("reesha_stock"),
+  poId: integer("po_id").references(() => purchaseOrdersTable.id),
+  orderId: integer("order_id").references(() => ordersTable.id),
   createdBy: text("created_by"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

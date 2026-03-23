@@ -100,6 +100,12 @@ function BatchTimeline({ batchNumber }: { batchNumber: string }) {
             </div>
           )}
           <p className="text-lg text-slate-300">{fmtCode(data.productCode, data.productName)} • {data.sizeName || 'Any'} • {fmtCode(data.colorCode, data.colorName) || 'Any'}</p>
+          {(() => {
+            const pf = (data as any).productionFor || "reesha_stock";
+            if (pf === "purchase_order") return <Badge className="mt-2 bg-violet-500/20 text-violet-200 border-violet-400/30">PO: {(data as any).poNumber || "?"}</Badge>;
+            if (pf === "order") return <Badge className="mt-2 bg-orange-500/20 text-orange-200 border-orange-400/30">Order: {(data as any).orderNumber || "?"}</Badge>;
+            return <Badge className="mt-2 bg-slate-500/20 text-slate-300 border-slate-400/30">Reesha Stock</Badge>;
+          })()}
         </div>
       </div>
       

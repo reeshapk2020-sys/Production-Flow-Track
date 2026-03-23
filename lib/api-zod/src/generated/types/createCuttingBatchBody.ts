@@ -21,4 +21,7 @@ export interface CreateCuttingBatchBody {
   cuttingDate: string;
   remarks?: string;
   fabricUsages?: CreateCuttingBatchBodyFabricUsagesItem[];
+  productionFor?: string | null;
+  poId?: number | null;
+  orderId?: number | null;
 }

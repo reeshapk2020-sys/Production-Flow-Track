@@ -11,6 +11,8 @@ import {
   sizesTable,
   colorsTable,
   outsourceTransfersTable,
+  purchaseOrdersTable,
+  ordersTable,
 } from "@workspace/db/schema";
 import { eq, sql, and, gte, lte, ilike, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -68,6 +70,9 @@ const allocSelect = {
   issueDate: allocationsTable.issueDate,
   remarks: allocationsTable.remarks,
   status: allocationsTable.status,
+  productionFor: cuttingBatchesTable.productionFor,
+  poNumber: purchaseOrdersTable.poNumber,
+  orderNumber: ordersTable.orderNumber,
   createdAt: allocationsTable.createdAt,
 };
 
@@ -82,7 +87,9 @@ function allocJoins(q: any) {
     .leftJoin(colorsTable, eq(cuttingBatchesTable.colorId, colorsTable.id))
     .leftJoin(stitchersTable, eq(allocationsTable.stitcherId, stitchersTable.id))
     .leftJoin(teamsTable, eq(stitchersTable.teamId, teamsTable.id))
-    .leftJoin(allocTeam, eq(allocationsTable.teamId, allocTeam.id));
+    .leftJoin(allocTeam, eq(allocationsTable.teamId, allocTeam.id))
+    .leftJoin(purchaseOrdersTable, eq(cuttingBatchesTable.poId, purchaseOrdersTable.id))
+    .leftJoin(ordersTable, eq(cuttingBatchesTable.orderId, ordersTable.id));
 }
 
 function withItemCode(r: any) {

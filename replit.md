@@ -38,14 +38,16 @@ artifacts/
 │       │   ├── auth.ts           # Replit OIDC auth
 │       │   ├── master.ts         # Categories, sizes, colors, fabrics, products, stitchers, teams, users
 │       │   ├── fabric-rolls.ts   # Fabric roll management
-│       │   ├── cutting.ts        # Cutting batch management
-│       │   ├── allocation.ts     # Allocation to stitchers
-│       │   ├── receiving.ts      # Receiving from stitchers
+│       │   ├── cutting.ts        # Cutting batch management (supports productionFor/poId/orderId)
+│       │   ├── allocation.ts     # Allocation to stitchers (includes production source info)
+│       │   ├── receiving.ts      # Receiving from stitchers (includes production source info)
 │       │   ├── finishing.ts      # Finishing stages
 │       │   ├── finished-goods.ts # Finished goods store
 │       │   ├── inventory.ts      # Inventory summary
 │       │   ├── reports.ts        # Dashboard + all reports
-│       │   └── traceability.ts   # Batch journey tracing
+│       │   ├── purchase-orders.ts # Purchase order CRUD + batch summary
+│       │   ├── orders.ts         # Customer order CRUD + batch summary
+│       │   └── traceability.ts   # Batch journey tracing (includes production source)
 │       ├── lib/
 │       │   ├── auth.ts           # OIDC session management
 │       │   └── audit.ts          # Audit log utility
@@ -82,7 +84,9 @@ lib/
 
 ### Production Tables
 - `fabric_rolls` - Raw material / fabric roll inventory
-- `cutting_batches` - Cutting batch records; stores fabricId, materialId, material2Id FKs for item identity
+- `purchase_orders` - Purchase orders from suppliers (poNumber, supplierName/customerName, date, remarks)
+- `orders` - Customer orders (orderNumber, customerName, date, remarks)
+- `cutting_batches` - Cutting batch records; stores fabricId, materialId, material2Id FKs for item identity; productionFor (reesha_stock/purchase_order/order), poId, orderId
 - `cutting_fabric_usage` - Links fabric rolls to cutting batches
 - `allocations` - Allocation of cut pieces to stitchers (has `workType` and `outsourceCategory` columns)
 - `outsource_transfers` - Outsource send/return tracking (allocationId, quantitySent/Returned/Damaged, vendorName, status)

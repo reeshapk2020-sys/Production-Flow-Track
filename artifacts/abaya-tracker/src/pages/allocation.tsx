@@ -392,6 +392,12 @@ export default function AllocationPage() {
                       <TableCell>
                         <div className="font-semibold text-primary text-sm">{alloc.batchNumber}</div>
                         <div className="text-xs text-slate-500">{fmtCode(alloc.productCode, alloc.productName)}</div>
+                        {(() => {
+                          const pf = (alloc as any).productionFor || "reesha_stock";
+                          if (pf === "purchase_order") return <span className="inline-flex items-center mt-0.5 px-1.5 py-0 rounded text-[10px] font-medium bg-violet-50 text-violet-600 border border-violet-200">PO: {(alloc as any).poNumber || "?"}</span>;
+                          if (pf === "order") return <span className="inline-flex items-center mt-0.5 px-1.5 py-0 rounded text-[10px] font-medium bg-orange-50 text-orange-600 border border-orange-200">Order: {(alloc as any).orderNumber || "?"}</span>;
+                          return null;
+                        })()}
                       </TableCell>
                       <TableCell>
                         {(alloc as any).itemCode

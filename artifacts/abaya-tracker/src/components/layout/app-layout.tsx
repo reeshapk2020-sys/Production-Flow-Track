@@ -4,7 +4,8 @@ import { useAppAuth, displayName, getRoleLabel } from "@/lib/auth-context";
 import {
   LayoutDashboard, Database, Layers, Scissors, Send,
   Inbox, Settings2, Package, Box, BarChart3,
-  GitBranch, Shield, Users, LogOut, Loader2, ChevronRight, KeyRound, ArrowUpRight
+  GitBranch, Shield, Users, LogOut, Loader2, ChevronRight, KeyRound, ArrowUpRight,
+  FileText, ShoppingCart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -19,6 +20,8 @@ const NAV_ITEMS = [
   { path: "/finished-goods", label: "Finished Goods", icon: Package, roles: ["admin", "store"] },
   { path: "/inventory", label: "Inventory", icon: Box, roles: ["admin", "store", "reporting"] },
   { path: "/reports", label: "Reports", icon: BarChart3, roles: ["admin", "reporting"] },
+  { path: "/purchase-orders", label: "Purchase Orders", icon: FileText, roles: ["admin", "cutting"] },
+  { path: "/orders", label: "Orders", icon: ShoppingCart, roles: ["admin", "cutting"] },
   { path: "/traceability", label: "Traceability", icon: GitBranch, roles: ["all"] },
   { path: "/master", label: "Master Data", icon: Database, roles: ["admin"] },
   { path: "/users", label: "User Management", icon: Users, roles: ["admin"] },
@@ -48,6 +51,8 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
     "/finished-goods": "finished-goods",
     "/inventory": "inventory",
     "/reports": "reports",
+    "/purchase-orders": "purchase-orders",
+    "/orders": "orders",
   };
 
   const userRole = user?.role || "reporting";

@@ -22,6 +22,8 @@ import TraceabilityPage from "./pages/traceability";
 import AuditPage from "./pages/audit";
 import UsersPage from "./pages/users";
 import PermissionsPage from "./pages/permissions";
+import PurchaseOrdersPage from "./pages/purchase-orders";
+import OrdersPage from "./pages/orders";
 import NotFound from "./pages/not-found";
 
 const queryClient = new QueryClient({
@@ -44,6 +46,8 @@ const PATH_TO_MODULE: Record<string, string> = {
   "/inventory": "inventory",
   "/reports": "reports",
   "/traceability": "reports",
+  "/purchase-orders": "purchase-orders",
+  "/orders": "orders",
   "/master": "__admin__",
   "/users": "__admin__",
   "/permissions": "__admin__",
@@ -97,6 +101,8 @@ function Router() {
       <Route path="/inventory" component={() => <ProtectedRoute component={InventoryPage} path="/inventory" />} />
       <Route path="/reports" component={() => <ProtectedRoute component={ReportsPage} path="/reports" />} />
       <Route path="/traceability" component={() => <ProtectedRoute component={TraceabilityPage} path="/traceability" />} />
+      <Route path="/purchase-orders" component={() => <ProtectedRoute component={PurchaseOrdersPage} path="/purchase-orders" />} />
+      <Route path="/orders" component={() => <ProtectedRoute component={OrdersPage} path="/orders" />} />
       <Route path="/master" component={() => <ProtectedRoute component={MasterDataPage} path="/master" />} />
       <Route path="/users" component={() => <ProtectedRoute component={UsersPage} path="/users" />} />
       <Route path="/permissions" component={() => <ProtectedRoute component={PermissionsPage} path="/permissions" />} />

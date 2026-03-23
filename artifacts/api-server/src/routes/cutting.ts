@@ -10,6 +10,8 @@ import {
   sizesTable,
   colorsTable,
   allocationsTable,
+  purchaseOrdersTable,
+  ordersTable,
 } from "@workspace/db/schema";
 import { eq, sql, ilike, and, gte, lte } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -67,6 +69,11 @@ router.get("/cutting/batches", checkPermission("cutting", "view"), async (req, r
       cuttingDate: cuttingBatchesTable.cuttingDate,
       remarks: cuttingBatchesTable.remarks,
       status: cuttingBatchesTable.status,
+      productionFor: cuttingBatchesTable.productionFor,
+      poId: cuttingBatchesTable.poId,
+      orderId: cuttingBatchesTable.orderId,
+      poNumber: purchaseOrdersTable.poNumber,
+      orderNumber: ordersTable.orderNumber,
       createdAt: cuttingBatchesTable.createdAt,
     })
     .from(cuttingBatchesTable)
@@ -76,6 +83,8 @@ router.get("/cutting/batches", checkPermission("cutting", "view"), async (req, r
     .leftJoin(mat2, eq(cuttingBatchesTable.material2Id, mat2.id))
     .leftJoin(sizesTable, eq(cuttingBatchesTable.sizeId, sizesTable.id))
     .leftJoin(colorsTable, eq(cuttingBatchesTable.colorId, colorsTable.id))
+    .leftJoin(purchaseOrdersTable, eq(cuttingBatchesTable.poId, purchaseOrdersTable.id))
+    .leftJoin(ordersTable, eq(cuttingBatchesTable.orderId, ordersTable.id))
     .$dynamic();
 
   if (conditions.length > 0) q = q.where(and(...conditions));
@@ -103,6 +112,9 @@ router.post("/cutting/batches", checkPermission("cutting", "create"), async (req
     cuttingDate,
     remarks,
     fabricUsages,
+    productionFor,
+    poId,
+    orderId,
   } = req.body;
 
   if (!batchNumber || !String(batchNumber).trim()) {
@@ -113,6 +125,21 @@ router.post("/cutting/batches", checkPermission("cutting", "create"), async (req
   }
   if (!colorId) {
     return res.status(400).json({ error: "Color is required." });
+  }
+
+  const validProductionFor = ["reesha_stock", "purchase_order", "order"];
+  const pf = productionFor || "reesha_stock";
+  if (!validProductionFor.includes(pf)) {
+    return res.status(400).json({ error: "Invalid productionFor value." });
+  }
+  if (pf === "purchase_order" && !poId) {
+    return res.status(400).json({ error: "Purchase order is required when productionFor is 'purchase_order'." });
+  }
+  if (pf === "order" && !orderId) {
+    return res.status(400).json({ error: "Order is required when productionFor is 'order'." });
+  }
+  if (pf === "reesha_stock" && (poId || orderId)) {
+    return res.status(400).json({ error: "Cannot set PO or Order when productionFor is 'reesha_stock'." });
   }
 
   const existing = await db
@@ -164,6 +191,9 @@ router.post("/cutting/batches", checkPermission("cutting", "create"), async (req
       cutter,
       cuttingDate: new Date(cuttingDate),
       remarks,
+      productionFor: productionFor || "reesha_stock",
+      poId: poId || null,
+      orderId: orderId || null,
       createdBy: (req as any).user?.username,
     })
     .returning();
@@ -229,6 +259,11 @@ router.get("/cutting/batches/:id", checkPermission("cutting", "view"), async (re
       cuttingDate: cuttingBatchesTable.cuttingDate,
       remarks: cuttingBatchesTable.remarks,
       status: cuttingBatchesTable.status,
+      productionFor: cuttingBatchesTable.productionFor,
+      poId: cuttingBatchesTable.poId,
+      orderId: cuttingBatchesTable.orderId,
+      poNumber: purchaseOrdersTable.poNumber,
+      orderNumber: ordersTable.orderNumber,
       createdAt: cuttingBatchesTable.createdAt,
     })
     .from(cuttingBatchesTable)
@@ -238,6 +273,8 @@ router.get("/cutting/batches/:id", checkPermission("cutting", "view"), async (re
     .leftJoin(mat2, eq(cuttingBatchesTable.material2Id, mat2.id))
     .leftJoin(sizesTable, eq(cuttingBatchesTable.sizeId, sizesTable.id))
     .leftJoin(colorsTable, eq(cuttingBatchesTable.colorId, colorsTable.id))
+    .leftJoin(purchaseOrdersTable, eq(cuttingBatchesTable.poId, purchaseOrdersTable.id))
+    .leftJoin(ordersTable, eq(cuttingBatchesTable.orderId, ordersTable.id))
     .where(eq(cuttingBatchesTable.id, id));
 
   if (!batch) return res.status(404).json({ error: "Not found" });
@@ -268,7 +305,7 @@ router.get("/cutting/batches/:id", checkPermission("cutting", "view"), async (re
 
 router.put("/cutting/batches/:id", checkPermission("cutting", "edit"), async (req, res) => {
   const id = parseInt(req.params.id);
-  const { cutter, cuttingDate, remarks, productId, materialId, material2Id } = req.body;
+  const { cutter, cuttingDate, remarks, productId, materialId, material2Id, productionFor, poId, orderId } = req.body;
   const updates: Record<string, any> = {};
   if (cutter !== undefined) updates.cutter = cutter;
   if (cuttingDate) updates.cuttingDate = new Date(cuttingDate);
@@ -276,6 +313,31 @@ router.put("/cutting/batches/:id", checkPermission("cutting", "edit"), async (re
   if (productId !== undefined) updates.productId = productId || null;
   if (materialId !== undefined) updates.materialId = materialId || null;
   if (material2Id !== undefined) updates.material2Id = material2Id || null;
+  if (productionFor !== undefined) updates.productionFor = productionFor || "reesha_stock";
+  if (poId !== undefined) updates.poId = poId || null;
+  if (orderId !== undefined) updates.orderId = orderId || null;
+
+  const finalPf = updates.productionFor;
+  if (finalPf !== undefined) {
+    const validPf = ["reesha_stock", "purchase_order", "order"];
+    if (!validPf.includes(finalPf)) return res.status(400).json({ error: "Invalid productionFor value." });
+    if (finalPf === "purchase_order" && updates.poId === null && poId === undefined) {
+      return res.status(400).json({ error: "Purchase order is required when productionFor is 'purchase_order'." });
+    }
+    if (finalPf === "order" && updates.orderId === null && orderId === undefined) {
+      return res.status(400).json({ error: "Order is required when productionFor is 'order'." });
+    }
+    if (finalPf === "reesha_stock") {
+      updates.poId = null;
+      updates.orderId = null;
+    }
+    if (finalPf === "purchase_order") {
+      updates.orderId = null;
+    }
+    if (finalPf === "order") {
+      updates.poId = null;
+    }
+  }
 
   if (Object.keys(updates).length === 0) {
     return res.status(400).json({ error: "No fields to update." });

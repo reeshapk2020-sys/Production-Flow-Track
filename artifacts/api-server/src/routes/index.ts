@@ -16,6 +16,8 @@ import reportsRouter from "./reports.js";
 import traceabilityRouter from "./traceability.js";
 import importRouter from "./import.js";
 import permissionsRouter from "./permissions.js";
+import purchaseOrdersRouter from "./purchase-orders.js";
+import ordersRouter from "./orders.js";
 
 const router: IRouter = Router();
 
@@ -36,5 +38,7 @@ router.use(reportsRouter);
 router.use(traceabilityRouter);
 router.use(importRouter);
 router.use(permissionsRouter);
+router.use(purchaseOrdersRouter);
+router.use(ordersRouter);
 
 export default router;

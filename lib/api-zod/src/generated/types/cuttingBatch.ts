@@ -35,5 +35,10 @@ export interface CuttingBatch {
   cuttingDate?: string;
   remarks?: string;
   status?: string;
+  productionFor?: string | null;
+  poId?: number | null;
+  orderId?: number | null;
+  poNumber?: string | null;
+  orderNumber?: string | null;
   createdAt?: string;
 }

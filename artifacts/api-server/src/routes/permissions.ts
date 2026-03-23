@@ -23,7 +23,7 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
 
 const MODULES = [
   "products", "colors", "sizes", "materials", "teams", "stitchers",
-  "fabric-rolls", "cutting", "allocation", "outsource", "receiving", "finishing",
+  "fabric-rolls", "cutting", "allocation", "outsource", "receiving", "finishing", "purchase-orders", "orders",
   "finished-goods", "reports", "inventory",
 ];
 

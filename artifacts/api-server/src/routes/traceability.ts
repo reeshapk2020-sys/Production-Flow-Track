@@ -15,6 +15,8 @@ import {
   colorsTable,
   stitchersTable,
   outsourceTransfersTable,
+  purchaseOrdersTable,
+  ordersTable,
 } from "@workspace/db/schema";
 import { eq, like, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -47,6 +49,9 @@ router.get("/traceability/batch/:batchNumber", checkPermission("reports", "view"
       materialName: mat1.name,
       material2Code: mat2.code,
       material2Name: mat2.name,
+      productionFor: cuttingBatchesTable.productionFor,
+      poNumber: purchaseOrdersTable.poNumber,
+      orderNumber: ordersTable.orderNumber,
     })
     .from(cuttingBatchesTable)
     .leftJoin(productsTable, eq(cuttingBatchesTable.productId, productsTable.id))
@@ -55,6 +60,8 @@ router.get("/traceability/batch/:batchNumber", checkPermission("reports", "view"
     .leftJoin(fabricsTable, eq(cuttingBatchesTable.fabricId, fabricsTable.id))
     .leftJoin(mat1, eq(cuttingBatchesTable.materialId, mat1.id))
     .leftJoin(mat2, eq(cuttingBatchesTable.material2Id, mat2.id))
+    .leftJoin(purchaseOrdersTable, eq(cuttingBatchesTable.poId, purchaseOrdersTable.id))
+    .leftJoin(ordersTable, eq(cuttingBatchesTable.orderId, ordersTable.id))
     .where(eq(cuttingBatchesTable.batchNumber, batchNumber));
 
   if (!batch) return res.status(404).json({ error: "Batch not found" });
@@ -230,6 +237,9 @@ router.get("/traceability/batch/:batchNumber", checkPermission("reports", "view"
     material2Name: batch.material2Name || null,
     currentStage: batch.status || "cutting",
     currentStatus: batch.status,
+    productionFor: batch.productionFor || "reesha_stock",
+    poNumber: batch.poNumber || null,
+    orderNumber: batch.orderNumber || null,
     timeline,
   });
 });

@@ -270,6 +270,11 @@ export interface CuttingBatch {
   cuttingDate?: string;
   remarks?: string;
   status?: string;
+  productionFor?: string | null;
+  poId?: number | null;
+  orderId?: number | null;
+  poNumber?: string | null;
+  orderNumber?: string | null;
   createdAt?: string;
 }
 
@@ -317,6 +322,9 @@ export interface Allocation {
   issueDate?: string;
   remarks?: string;
   status?: string;
+  productionFor?: string | null;
+  poNumber?: string | null;
+  orderNumber?: string | null;
 }
 
 export interface CuttingBatchDetail {
@@ -344,6 +352,9 @@ export interface CreateCuttingBatchBody {
   cuttingDate: string;
   remarks?: string;
   fabricUsages?: CreateCuttingBatchBodyFabricUsagesItem[];
+  productionFor?: string | null;
+  poId?: number | null;
+  orderId?: number | null;
 }
 
 export interface UpdateCuttingBatchBody {
@@ -353,6 +364,91 @@ export interface UpdateCuttingBatchBody {
   productId?: number;
   materialId?: number;
   material2Id?: number;
+  productionFor?: string | null;
+  poId?: number | null;
+  orderId?: number | null;
+}
+
+export interface PurchaseOrder {
+  id: number;
+  poNumber: string;
+  supplierName: string;
+  remarks?: string | null;
+  status: string;
+  createdAt?: string;
+}
+
+export type PurchaseOrderDetailSummary = {
+  totalAllocated?: number;
+  totalReceived?: number;
+  totalFinished?: number;
+  totalOutsourced?: number;
+};
+
+export interface PurchaseOrderDetail {
+  id: number;
+  poNumber: string;
+  supplierName: string;
+  remarks?: string | null;
+  status: string;
+  createdAt?: string;
+  batches?: CuttingBatch[];
+  summary?: PurchaseOrderDetailSummary;
+}
+
+export interface CreatePurchaseOrderBody {
+  poNumber: string;
+  supplierName: string;
+  remarks?: string | null;
+  status?: string;
+}
+
+export interface UpdatePurchaseOrderBody {
+  poNumber?: string;
+  supplierName?: string;
+  remarks?: string | null;
+  status?: string;
+}
+
+export interface Order {
+  id: number;
+  orderNumber: string;
+  customerName: string;
+  remarks?: string | null;
+  status: string;
+  createdAt?: string;
+}
+
+export type OrderDetailSummary = {
+  totalAllocated?: number;
+  totalReceived?: number;
+  totalFinished?: number;
+  totalOutsourced?: number;
+};
+
+export interface OrderDetail {
+  id: number;
+  orderNumber: string;
+  customerName: string;
+  remarks?: string | null;
+  status: string;
+  createdAt?: string;
+  batches?: CuttingBatch[];
+  summary?: OrderDetailSummary;
+}
+
+export interface CreateOrderBody {
+  orderNumber: string;
+  customerName: string;
+  remarks?: string | null;
+  status?: string;
+}
+
+export interface UpdateOrderBody {
+  orderNumber?: string;
+  customerName?: string;
+  remarks?: string | null;
+  status?: string;
 }
 
 export interface CreateAllocationBody {
@@ -456,6 +552,9 @@ export interface Receiving {
   receiveDate: string;
   remarks?: string;
   receivedBy?: string;
+  productionFor?: string | null;
+  poNumber?: string | null;
+  orderNumber?: string | null;
 }
 
 export interface CreateReceivingBody {
@@ -718,6 +817,9 @@ export interface BatchTrace {
   colorName?: string;
   currentStage: string;
   currentStatus?: string;
+  productionFor?: string | null;
+  poNumber?: string | null;
+  orderNumber?: string | null;
   timeline: TraceEvent[];
 }
 

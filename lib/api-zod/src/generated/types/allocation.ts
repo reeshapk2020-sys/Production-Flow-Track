@@ -43,4 +43,7 @@ export interface Allocation {
   issueDate?: string;
   remarks?: string;
   status?: string;
+  productionFor?: string | null;
+  poNumber?: string | null;
+  orderNumber?: string | null;
 }

@@ -33,6 +33,10 @@ tags:
     description: Reports and analytics
   - name: traceability
     description: Batch traceability
+  - name: purchase-orders
+    description: Purchase order management
+  - name: orders
+    description: Customer order management
 
 paths:
   /healthz:
@@ -1404,6 +1408,154 @@ paths:
                 items:
                   $ref: "#/components/schemas/AuditLog"
 
+  # PURCHASE ORDERS
+  /purchase-orders:
+    get:
+      operationId: listPurchaseOrders
+      tags: [purchase-orders]
+      summary: List all purchase orders
+      responses:
+        "200":
+          description: Purchase orders list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PurchaseOrder"
+    post:
+      operationId: createPurchaseOrder
+      tags: [purchase-orders]
+      summary: Create a purchase order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePurchaseOrderBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrder"
+  /purchase-orders/{id}:
+    get:
+      operationId: getPurchaseOrder
+      tags: [purchase-orders]
+      summary: Get purchase order detail with batches
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Purchase order detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderDetail"
+    put:
+      operationId: updatePurchaseOrder
+      tags: [purchase-orders]
+      summary: Update a purchase order
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePurchaseOrderBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrder"
+
+  # ORDERS
+  /orders:
+    get:
+      operationId: listOrders
+      tags: [orders]
+      summary: List all orders
+      responses:
+        "200":
+          description: Orders list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Create an order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      summary: Get order detail with batches
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Order detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderDetail"
+    put:
+      operationId: updateOrder
+      tags: [orders]
+      summary: Update an order
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrderBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
   # TRACEABILITY
   /traceability/batch/{batchNumber}:
     get:
@@ -1950,6 +2102,21 @@ components:
           type: string
         status:
           type: string
+        productionFor:
+          type: string
+          nullable: true
+        poId:
+          type: integer
+          nullable: true
+        orderId:
+          type: integer
+          nullable: true
+        poNumber:
+          type: string
+          nullable: true
+        orderNumber:
+          type: string
+          nullable: true
         createdAt:
           type: string
       required: [id, batchNumber, quantityCut]
@@ -2018,6 +2185,15 @@ components:
               quantityUsed:
                 type: number
             required: [fabricRollId, quantityUsed]
+        productionFor:
+          type: string
+          nullable: true
+        poId:
+          type: integer
+          nullable: true
+        orderId:
+          type: integer
+          nullable: true
       required: [batchNumber, sizeId, colorId, quantityCut, cuttingDate]
 
     UpdateCuttingBatchBody:
@@ -2035,6 +2211,173 @@ components:
           type: integer
         material2Id:
           type: integer
+        productionFor:
+          type: string
+          nullable: true
+        poId:
+          type: integer
+          nullable: true
+        orderId:
+          type: integer
+          nullable: true
+
+    # PURCHASE ORDERS
+    PurchaseOrder:
+      type: object
+      properties:
+        id:
+          type: integer
+        poNumber:
+          type: string
+        supplierName:
+          type: string
+        remarks:
+          type: string
+          nullable: true
+        status:
+          type: string
+        createdAt:
+          type: string
+      required: [id, poNumber, supplierName, status]
+
+    PurchaseOrderDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        poNumber:
+          type: string
+        supplierName:
+          type: string
+        remarks:
+          type: string
+          nullable: true
+        status:
+          type: string
+        createdAt:
+          type: string
+        batches:
+          type: array
+          items:
+            $ref: "#/components/schemas/CuttingBatch"
+        summary:
+          type: object
+          properties:
+            totalAllocated:
+              type: integer
+            totalReceived:
+              type: integer
+            totalFinished:
+              type: integer
+            totalOutsourced:
+              type: integer
+      required: [id, poNumber, supplierName, status]
+
+    CreatePurchaseOrderBody:
+      type: object
+      properties:
+        poNumber:
+          type: string
+        supplierName:
+          type: string
+        remarks:
+          type: string
+          nullable: true
+        status:
+          type: string
+      required: [poNumber, supplierName]
+
+    UpdatePurchaseOrderBody:
+      type: object
+      properties:
+        poNumber:
+          type: string
+        supplierName:
+          type: string
+        remarks:
+          type: string
+          nullable: true
+        status:
+          type: string
+
+    # ORDERS
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        orderNumber:
+          type: string
+        customerName:
+          type: string
+        remarks:
+          type: string
+          nullable: true
+        status:
+          type: string
+        createdAt:
+          type: string
+      required: [id, orderNumber, customerName, status]
+
+    OrderDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        orderNumber:
+          type: string
+        customerName:
+          type: string
+        remarks:
+          type: string
+          nullable: true
+        status:
+          type: string
+        createdAt:
+          type: string
+        batches:
+          type: array
+          items:
+            $ref: "#/components/schemas/CuttingBatch"
+        summary:
+          type: object
+          properties:
+            totalAllocated:
+              type: integer
+            totalReceived:
+              type: integer
+            totalFinished:
+              type: integer
+            totalOutsourced:
+              type: integer
+      required: [id, orderNumber, customerName, status]
+
+    CreateOrderBody:
+      type: object
+      properties:
+        orderNumber:
+          type: string
+        customerName:
+          type: string
+        remarks:
+          type: string
+          nullable: true
+        status:
+          type: string
+      required: [orderNumber, customerName]
+
+    UpdateOrderBody:
+      type: object
+      properties:
+        orderNumber:
+          type: string
+        customerName:
+          type: string
+        remarks:
+          type: string
+          nullable: true
+        status:
+          type: string
 
     # ALLOCATION
     Allocation:
@@ -2121,6 +2464,15 @@ components:
           type: string
         status:
           type: string
+        productionFor:
+          type: string
+          nullable: true
+        poNumber:
+          type: string
+          nullable: true
+        orderNumber:
+          type: string
+          nullable: true
       required: [id, quantityIssued]
 
     CreateAllocationBody:
@@ -2320,6 +2672,15 @@ components:
           type: string
         receivedBy:
           type: string
+        productionFor:
+          type: string
+          nullable: true
+        poNumber:
+          type: string
+          nullable: true
+        orderNumber:
+          type: string
+          nullable: true
       required: [id, allocationId, quantityReceived, receiveDate]
 
     CreateReceivingBody:
@@ -2771,6 +3132,15 @@ components:
           type: string
         currentStatus:
           type: string
+        productionFor:
+          type: string
+          nullable: true
+        poNumber:
+          type: string
+          nullable: true
+        orderNumber:
+          type: string
+          nullable: true
         timeline:
           type: array
           items:

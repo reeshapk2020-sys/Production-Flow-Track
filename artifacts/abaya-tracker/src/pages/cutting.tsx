@@ -9,7 +9,9 @@ import {
   useListCuttingBatches, useCreateCuttingBatch, getListCuttingBatchesQueryKey,
   useListProducts, useListSizes, useListColors, useListFabricRolls,
   useListMaterials,
-  useUpdateCuttingBatch
+  useUpdateCuttingBatch,
+  useListPurchaseOrders,
+  useListOrders,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -55,6 +57,8 @@ export default function CuttingPage() {
   const { data: colors } = useListColors();
   const { data: rolls } = useListFabricRolls();
   const { data: materials } = useListMaterials();
+  const { data: purchaseOrders } = useListPurchaseOrders();
+  const { data: orders } = useListOrders();
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -64,6 +68,9 @@ export default function CuttingPage() {
 
   const [open, setOpen] = useState(false);
   const [batchNumber, setBatchNumber] = useState("");
+  const [productionFor, setProductionFor] = useState("reesha_stock");
+  const [selectedPoId, setSelectedPoId] = useState<number | undefined>();
+  const [selectedOrderId, setSelectedOrderId] = useState<number | undefined>();
   const [editOpen, setEditOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<any>(null);
   const [selectedRollId, setSelectedRollId] = useState<number | null>(null);
@@ -82,6 +89,9 @@ export default function CuttingPage() {
         queryClient.invalidateQueries({ queryKey: getListCuttingBatchesQueryKey() });
         setOpen(false);
         setBatchNumber("");
+        setProductionFor("reesha_stock");
+        setSelectedPoId(undefined);
+        setSelectedOrderId(undefined);
         toast({ title: "Cutting batch created successfully" });
       },
       onError: (err: any) => {
@@ -132,6 +142,9 @@ export default function CuttingPage() {
       cuttingDate: fd.get("cuttingDate") as string,
       remarks: fd.get("remarks") as string,
       fabricUsages: fabricRollId ? [{ fabricRollId, quantityUsed }] : [],
+      productionFor,
+      poId: productionFor === "purchase_order" ? selectedPoId : undefined,
+      orderId: productionFor === "order" ? selectedOrderId : undefined,
     };
 
     const productId = Number(fd.get("productId"));
@@ -212,6 +225,62 @@ export default function CuttingPage() {
                     <div className="flex items-center gap-2 mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                       <AlertCircle className="h-4 w-4 shrink-0" />
                       Batch number <strong>"{batchNumber.trim()}"</strong> already exists. Please enter a unique batch number.
+                    </div>
+                  )}
+                </div>
+
+                <div className="col-span-2 bg-violet-50/50 p-4 rounded-xl border border-violet-100 space-y-4">
+                  <h3 className="font-semibold text-slate-800 text-sm uppercase tracking-wider">Production Source</h3>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { value: "reesha_stock", label: "Reesha Stock" },
+                      { value: "purchase_order", label: "Purchase Order" },
+                      { value: "order", label: "Order" },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => { setProductionFor(opt.value); setSelectedPoId(undefined); setSelectedOrderId(undefined); }}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all ${
+                          productionFor === opt.value
+                            ? "bg-violet-600 text-white border-violet-600 shadow-sm"
+                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  {productionFor === "purchase_order" && (
+                    <div>
+                      <label className="text-sm font-medium block mb-1.5">Purchase Order <span className="text-red-500">*</span></label>
+                      <select
+                        className="form-input-styled bg-white"
+                        required
+                        value={selectedPoId ?? ""}
+                        onChange={(e) => setSelectedPoId(Number(e.target.value) || undefined)}
+                      >
+                        <option value="">Select PO...</option>
+                        {purchaseOrders?.filter(p => p.status !== "cancelled").map(p => (
+                          <option key={p.id} value={p.id}>{p.poNumber} — {p.supplierName}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {productionFor === "order" && (
+                    <div>
+                      <label className="text-sm font-medium block mb-1.5">Order <span className="text-red-500">*</span></label>
+                      <select
+                        className="form-input-styled bg-white"
+                        required
+                        value={selectedOrderId ?? ""}
+                        onChange={(e) => setSelectedOrderId(Number(e.target.value) || undefined)}
+                      >
+                        <option value="">Select Order...</option>
+                        {orders?.filter(o => o.status !== "cancelled").map(o => (
+                          <option key={o.id} value={o.id}>{o.orderNumber} — {o.customerName}</option>
+                        ))}
+                      </select>
                     </div>
                   )}
                 </div>
@@ -363,12 +432,13 @@ export default function CuttingPage() {
                 <TableHead className="text-right">Qty Cut</TableHead>
                 <TableHead className="text-right">Available for Alloc.</TableHead>
                 <TableHead>Date & Cutter</TableHead>
+                <TableHead>Source</TableHead>
                 <TableHead>Status</TableHead>
                 {canEdit && <TableHead className="w-16"></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? <TableRow><TableCell colSpan={canEdit ? 8 : 7} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow> :
+              {isLoading ? <TableRow><TableCell colSpan={canEdit ? 9 : 8} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow> :
                 data?.map(batch => (
                   <TableRow key={batch.id} className="group">
                     <TableCell className="font-mono text-primary font-bold">{batch.batchNumber}</TableCell>
@@ -393,6 +463,14 @@ export default function CuttingPage() {
                     <TableCell>
                       <div className="text-sm text-slate-900">{batch.cuttingDate ? format(new Date(batch.cuttingDate), 'MMM d, yyyy') : '-'}</div>
                       <div className="text-xs text-slate-500">{batch.cutter || '-'}</div>
+                    </TableCell>
+                    <TableCell>
+                      {(() => {
+                        const pf = (batch as any).productionFor || "reesha_stock";
+                        if (pf === "purchase_order") return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-50 text-violet-700 border-violet-200">PO: {(batch as any).poNumber || "?"}</span>;
+                        if (pf === "order") return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-orange-50 text-orange-700 border-orange-200">Order: {(batch as any).orderNumber || "?"}</span>;
+                        return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-slate-50 text-slate-600 border-slate-200">Reesha Stock</span>;
+                      })()}
                     </TableCell>
                     <TableCell>
                       <BatchStatusBadge status={batch.status || "cutting"} />

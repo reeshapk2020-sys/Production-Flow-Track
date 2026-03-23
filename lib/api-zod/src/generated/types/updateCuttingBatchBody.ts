@@ -13,4 +13,7 @@ export interface UpdateCuttingBatchBody {
   productId?: number;
   materialId?: number;
   material2Id?: number;
+  productionFor?: string | null;
+  poId?: number | null;
+  orderId?: number | null;
 }

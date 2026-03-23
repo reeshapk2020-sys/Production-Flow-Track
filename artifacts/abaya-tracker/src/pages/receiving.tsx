@@ -346,6 +346,12 @@ export default function ReceivingPage() {
                       <div className="font-semibold text-primary text-sm">{rec.batchNumber}</div>
                       <div className="text-xs text-slate-400 font-mono">{rec.allocationNumber}</div>
                       <div className="text-xs text-slate-500">{fmtCode(rec.productCode, rec.productName)}</div>
+                      {(() => {
+                        const pf = (rec as any).productionFor || "reesha_stock";
+                        if (pf === "purchase_order") return <span className="inline-flex items-center mt-0.5 px-1.5 py-0 rounded text-[10px] font-medium bg-violet-50 text-violet-600 border border-violet-200">PO: {(rec as any).poNumber || "?"}</span>;
+                        if (pf === "order") return <span className="inline-flex items-center mt-0.5 px-1.5 py-0 rounded text-[10px] font-medium bg-orange-50 text-orange-600 border border-orange-200">Order: {(rec as any).orderNumber || "?"}</span>;
+                        return null;
+                      })()}
                     </TableCell>
                     <TableCell>
                       {(rec as any).itemCode

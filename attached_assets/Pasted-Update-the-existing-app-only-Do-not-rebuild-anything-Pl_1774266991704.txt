@@ -1,0 +1,192 @@
+Update the existing app only. Do not rebuild anything.
+
+Please implement this carefully in phases and do not break existing functionality.
+Do NOT refactor unrelated code.
+Preserve all existing data and workflows.
+Keep current simple-stitch and outsource flows working exactly as they are.
+
+I need to add Production Source tracking (Reesha Stock / PO / Order) with proper linkage to PO and Order modules.
+
+================================
+1. ADD "PRODUCTION FOR" IN CUTTING
+================================
+
+In the Cutting module, add a new field:
+
+Production For
+
+Options:
+- Reesha Stock
+- PO
+- Order
+
+Behavior:
+- Reesha Stock = normal internal production
+- PO = batch can be linked to a PO
+- Order = batch can be linked to an Order
+
+IMPORTANT:
+- PO number and Order number should be OPTIONAL (not mandatory)
+- Do NOT block cutting if PO/Order is not selected
+- Allow creating cutting batch without selecting PO/Order
+- Allow linking PO/Order later via edit
+
+================================
+2. OPTIONAL PO / ORDER LINKING
+================================
+
+- If Production For = PO → allow selecting a PO (optional)
+- If Production For = Order → allow selecting an Order (optional)
+
+Add support to:
+- assign PO/Order during cutting
+- update PO/Order later (edit functionality)
+
+================================
+3. ADD PO MODULE
+================================
+
+Create a separate PO module.
+
+Each PO record should include:
+- PO number
+- customer name
+- date
+- remarks / notes
+- optional status
+
+The PO module should display all linked cutting batches.
+
+For each batch show:
+- batch number
+- item code / item name
+- quantity
+- current stage
+- pending quantity
+- completed quantity
+- outsource status (if applicable)
+
+Also include summary:
+- total batches
+- total quantity
+- in progress
+- completed
+- pending
+
+================================
+4. ADD ORDER MODULE
+================================
+
+Create a separate Order module.
+
+Each Order record should include:
+- Order number
+- customer name
+- date
+- remarks / notes
+- optional status
+
+The Order module should display all linked cutting batches.
+
+For each batch show:
+- batch number
+- item code / item name
+- quantity
+- current stage
+- pending quantity
+- completed quantity
+- outsource status (if applicable)
+
+Also include summary:
+- total batches
+- total quantity
+- in progress
+- completed
+- pending
+
+================================
+5. LIVE TRACKING (VERY IMPORTANT)
+================================
+
+PO and Order modules must automatically reflect real-time status of linked batches across:
+
+- Cutting
+- Allocation
+- Outsource (if applicable)
+- Receiving
+- Finishing
+- Finished Goods
+
+No manual refresh logic — use existing data relationships.
+
+================================
+6. UI VISIBILITY
+================================
+
+Show Production For and reference (PO/Order) in:
+
+- Cutting
+- Allocation
+- Receiving
+- Finishing
+- Finished Goods
+- Traceability
+
+Display:
+- Production For
+- PO number (if linked)
+- Order number (if linked)
+
+================================
+7. TRACEABILITY INTEGRATION
+================================
+
+In batch traceability view, show:
+- Production source (Reesha / PO / Order)
+- PO or Order reference if available
+
+================================
+8. DATA SAFETY RULES
+================================
+
+- Do not break existing simple-stitch flow
+- Do not break outsource workflow
+- Do not change receiving logic
+- Do not rebuild from scratch
+- Preserve all old data
+- Keep existing APIs working
+- Make minimal schema changes only if necessary
+
+================================
+9. PHASE LIMITATION
+================================
+
+For this phase, DO NOT implement:
+- dispatch
+- delivery tracking
+- invoicing
+- customer billing
+
+Only implement:
+- Production For field
+- Optional PO/Order linking
+- PO module
+- Order module
+- batch linkage and tracking
+
+================================
+GOAL
+================================
+
+Allow each cutting batch to be marked as:
+- Reesha Stock
+- PO
+- Order
+
+Allow optional linking to PO/Order (not mandatory)
+
+And show complete production tracking of linked batches inside:
+- PO module
+- Order module
+
+without breaking any existing workflows.
