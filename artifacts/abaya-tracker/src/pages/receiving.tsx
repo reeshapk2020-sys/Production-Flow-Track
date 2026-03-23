@@ -101,9 +101,11 @@ export default function ReceivingPage() {
   }
 
   const selectedAlloc = allocations?.find(a => a.id === selectedAllocationId) ?? null;
-  const pendingQty = selectedAlloc
-    ? (selectedAlloc.quantityPending ?? selectedAlloc.quantityIssued - (selectedAlloc.quantityReceived || 0) - (selectedAlloc.quantityRejected || 0))
-    : 0;
+  const isOutsource = selectedAlloc?.workType === "outsource_required";
+  const outsourceReturned = isOutsource ? (selectedAlloc?.outsourceReturned || 0) : 0;
+  const alreadyAccounted = (selectedAlloc?.quantityReceived || 0) + (selectedAlloc?.quantityRejected || 0);
+  const maxReceivable = isOutsource ? outsourceReturned : (selectedAlloc?.quantityIssued || 0);
+  const pendingQty = selectedAlloc ? Math.max(0, maxReceivable - alreadyAccounted) : 0;
   const thisEntryTotal = qtyReceived + qtyRejected + qtyDamaged;
 
   useEffect(() => {
@@ -146,8 +148,9 @@ export default function ReceivingPage() {
   };
 
   const pendingAllocations = allocations?.filter(a => {
-    const p = a.quantityPending ?? (a.quantityIssued - (a.quantityReceived || 0) - (a.quantityRejected || 0));
-    return p > 0;
+    const accounted = (a.quantityReceived || 0) + (a.quantityRejected || 0);
+    const max = a.workType === "outsource_required" ? (a.outsourceReturned || 0) : a.quantityIssued;
+    return (max - accounted) > 0;
   }) || [];
 
   const receivingFilterFields = [
@@ -194,10 +197,12 @@ export default function ReceivingPage() {
                   >
                     <option value="">Choose stitcher / batch...</option>
                     {pendingAllocations.map(a => {
-                      const pending = a.quantityPending ?? (a.quantityIssued - (a.quantityReceived || 0) - (a.quantityRejected || 0));
+                      const accounted = (a.quantityReceived || 0) + (a.quantityRejected || 0);
+                      const max = a.workType === "outsource_required" ? (a.outsourceReturned || 0) : a.quantityIssued;
+                      const pending = Math.max(0, max - accounted);
                       return (
                         <option key={a.id} value={a.id}>
-                          {a.stitcherName} — Batch {a.batchNumber} ({pending} pending)
+                          {a.stitcherName} — Batch {a.batchNumber} ({pending} pending){a.workType === "outsource_required" ? " ⬡" : ""}
                         </option>
                       );
                     })}
@@ -211,18 +216,32 @@ export default function ReceivingPage() {
                 </div>
 
                 {selectedAlloc && (
-                  <div className="bg-slate-50 rounded-xl border border-slate-100 px-4 py-3 grid grid-cols-3 gap-2 text-center">
-                    <div>
-                      <div className="text-lg font-bold text-slate-800">{selectedAlloc.quantityIssued}</div>
-                      <div className="text-xs text-slate-500">Issued</div>
-                    </div>
-                    <div>
-                      <div className="text-lg font-bold text-emerald-600">{selectedAlloc.quantityReceived || 0}</div>
-                      <div className="text-xs text-slate-500">Received</div>
-                    </div>
-                    <div>
-                      <div className="text-lg font-bold text-amber-600">{pendingQty}</div>
-                      <div className="text-xs text-slate-500">Still Pending</div>
+                  <div className="space-y-2">
+                    {isOutsource && (
+                      <div className="bg-violet-50 rounded-xl border border-violet-200 px-4 py-2 flex items-center gap-2 text-xs text-violet-700">
+                        <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                        <span>Outsource allocation ({selectedAlloc.outsourceCategory?.replace(/_/g, " ")}). Only returned-from-outsource pieces ({outsourceReturned}) can be received.</span>
+                      </div>
+                    )}
+                    <div className={`rounded-xl border px-4 py-3 grid gap-2 text-center ${isOutsource ? "grid-cols-4 bg-violet-50/40 border-violet-100" : "grid-cols-3 bg-slate-50 border-slate-100"}`}>
+                      <div>
+                        <div className="text-lg font-bold text-slate-800">{selectedAlloc.quantityIssued}</div>
+                        <div className="text-xs text-slate-500">Issued</div>
+                      </div>
+                      {isOutsource && (
+                        <div>
+                          <div className="text-lg font-bold text-violet-600">{outsourceReturned}</div>
+                          <div className="text-xs text-violet-500">From Outsource</div>
+                        </div>
+                      )}
+                      <div>
+                        <div className="text-lg font-bold text-emerald-600">{selectedAlloc.quantityReceived || 0}</div>
+                        <div className="text-xs text-slate-500">Received</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-amber-600">{pendingQty}</div>
+                        <div className="text-xs text-slate-500">Can Receive</div>
+                      </div>
                     </div>
                   </div>
                 )}

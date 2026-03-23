@@ -139,7 +139,11 @@ router.get("/dashboard", checkPermission("reports", "view"), async (_req, res) =
 
 router.get("/reports/stitcher-performance", checkPermission("reports", "view"), async (req, res) => {
   const { startDate, endDate, stitcherId, teamId } = req.query;
-  const joinConditions: any[] = [eq(allocationsTable.stitcherId, stitchersTable.id), eq(allocationsTable.allocationType, "individual")];
+  const joinConditions: any[] = [
+    eq(allocationsTable.stitcherId, stitchersTable.id),
+    eq(allocationsTable.allocationType, "individual"),
+    sql`COALESCE(${allocationsTable.workType}, 'simple_stitch') != 'outsource_required'`,
+  ];
   if (startDate) joinConditions.push(gte(allocationsTable.issueDate, new Date(startDate as string)));
   if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); joinConditions.push(lte(allocationsTable.issueDate, ed)); }
 
@@ -175,7 +179,11 @@ router.get("/reports/stitcher-performance", checkPermission("reports", "view"), 
 
 router.get("/reports/team-performance", checkPermission("reports", "view"), async (req, res) => {
   const { startDate, endDate, teamId } = req.query;
-  const joinConditions: any[] = [eq(allocationsTable.teamId, teamsTable.id), eq(allocationsTable.allocationType, "team")];
+  const joinConditions: any[] = [
+    eq(allocationsTable.teamId, teamsTable.id),
+    eq(allocationsTable.allocationType, "team"),
+    sql`COALESCE(${allocationsTable.workType}, 'simple_stitch') != 'outsource_required'`,
+  ];
   if (startDate) joinConditions.push(gte(allocationsTable.issueDate, new Date(startDate as string)));
   if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); joinConditions.push(lte(allocationsTable.issueDate, ed)); }
 

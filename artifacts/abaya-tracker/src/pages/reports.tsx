@@ -339,12 +339,26 @@ function OutsourceSummaryReport() {
   const totalPending = totalSent - totalReturned - totalDamaged;
 
   const byCat: Record<string, { sent: number; returned: number; damaged: number }> = {};
+  const byDate: Record<string, { sent: number; returned: number; damaged: number }> = {};
+  const byVendor: Record<string, { sent: number; returned: number; damaged: number }> = {};
   data?.forEach(t => {
     const cat = t.outsourceCategory || "unknown";
     if (!byCat[cat]) byCat[cat] = { sent: 0, returned: 0, damaged: 0 };
     byCat[cat].sent += t.quantitySent || 0;
     byCat[cat].returned += t.quantityReturned || 0;
     byCat[cat].damaged += t.quantityDamaged || 0;
+
+    const dateKey = t.sendDate ? format(new Date(t.sendDate), "yyyy-MM-dd") : "unknown";
+    if (!byDate[dateKey]) byDate[dateKey] = { sent: 0, returned: 0, damaged: 0 };
+    byDate[dateKey].sent += t.quantitySent || 0;
+    byDate[dateKey].returned += t.quantityReturned || 0;
+    byDate[dateKey].damaged += t.quantityDamaged || 0;
+
+    const vendor = t.vendorName || "Unknown";
+    if (!byVendor[vendor]) byVendor[vendor] = { sent: 0, returned: 0, damaged: 0 };
+    byVendor[vendor].sent += t.quantitySent || 0;
+    byVendor[vendor].returned += t.quantityReturned || 0;
+    byVendor[vendor].damaged += t.quantityDamaged || 0;
   });
 
   return (
@@ -399,6 +413,60 @@ function OutsourceSummaryReport() {
         </TableBody>
       </Table>
     </ReportCard>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <ReportCard title="By Date">
+      <Table>
+        <TableHeader className="bg-slate-50">
+          <TableRow>
+            <TableHead className="py-3">Date</TableHead>
+            <TableHead className="text-right">Sent</TableHead>
+            <TableHead className="text-right">Returned</TableHead>
+            <TableHead className="text-right">Damaged</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {Object.entries(byDate).sort(([a], [b]) => b.localeCompare(a)).map(([d, v]) => (
+            <TableRow key={d}>
+              <TableCell className="font-medium text-sm">{d !== "unknown" ? format(new Date(d), "MMM d, yyyy") : "Unknown"}</TableCell>
+              <TableCell className="text-right font-bold text-violet-600">{v.sent}</TableCell>
+              <TableCell className="text-right font-semibold text-emerald-600">{v.returned}</TableCell>
+              <TableCell className="text-right font-semibold text-red-500">{v.damaged}</TableCell>
+            </TableRow>
+          ))}
+          {Object.keys(byDate).length === 0 && !isLoading && (
+            <TableRow><TableCell colSpan={4} className="text-center py-6 text-slate-500">No data.</TableCell></TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </ReportCard>
+
+    <ReportCard title="By Vendor">
+      <Table>
+        <TableHeader className="bg-slate-50">
+          <TableRow>
+            <TableHead className="py-3">Vendor</TableHead>
+            <TableHead className="text-right">Sent</TableHead>
+            <TableHead className="text-right">Returned</TableHead>
+            <TableHead className="text-right">Damaged</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {Object.entries(byVendor).sort(([,a], [,b]) => b.sent - a.sent).map(([vendor, v]) => (
+            <TableRow key={vendor}>
+              <TableCell className="font-medium text-sm">{vendor}</TableCell>
+              <TableCell className="text-right font-bold text-violet-600">{v.sent}</TableCell>
+              <TableCell className="text-right font-semibold text-emerald-600">{v.returned}</TableCell>
+              <TableCell className="text-right font-semibold text-red-500">{v.damaged}</TableCell>
+            </TableRow>
+          ))}
+          {Object.keys(byVendor).length === 0 && !isLoading && (
+            <TableRow><TableCell colSpan={4} className="text-center py-6 text-slate-500">No data.</TableCell></TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </ReportCard>
+    </div>
 
     <ReportCard title="Transfer Details">
       <Table>

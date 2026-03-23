@@ -159,13 +159,17 @@ Custom roles can be created dynamically from the admin Permissions page.
 - **API Routes**: `GET /outsource` (transfers list), `GET /outsource/allocations` (outsource-type allocations), `POST /outsource/send`, `POST /outsource/return`
 - **Frontend Page**: `/outsource` with 3 tabs: Send to Outsource, Return from Outsource, Transfer Log
 - **Validations**: Quantity checks on send (can't exceed allocation qty), return (can't exceed pending qty), category enum enforcement, non-negative quantities
+- **Receiving constraint**: For outsource allocations, receiving qty is capped by returned-from-outsource quantity (not total issued); the receiving form shows "From Outsource" count and an info banner for outsource allocations
+- **Allocation response enrichment**: Outsource allocations include `outsourceSent`, `outsourceReturned`, `outsourceDamaged` fields in GET /allocation response
+- **Allocation status**: `recalculateAllocationTotals()` uses outsource-returned qty as effective ceiling for outsource allocations when computing status
+- **Traceability**: Timeline includes outsource sent/returned events between allocation and receiving steps
 
 ## Reports
 
-- **Stitcher Performance**: Total issued/received/pending/rejected/efficiency per stitcher, with date range filters
-- **Team Performance**: Same metrics per team (uses `/reports/team-performance` endpoint), with date/team filters
+- **Stitcher Performance**: Total issued/received/pending/rejected/efficiency per stitcher, with date range filters. Excludes outsource-required allocations from efficiency calculations.
+- **Team Performance**: Same metrics per team (uses `/reports/team-performance` endpoint), with date/team filters. Excludes outsource-required allocations from efficiency calculations.
 - **Daily Production**: Per-day row breakdown of cutting/allocated/received/finishing/stored quantities using SQL date series, with summary cards showing totals across range
-- **Outsource Summary**: Aggregated outsource stats (total sent/returned/damaged/pending), breakdown by category, and full transfer detail table
+- **Outsource Summary**: Aggregated outsource stats (total sent/returned/damaged/pending), breakdown by category, by date (date-wise summary sorted newest first), by vendor (sorted by sent volume), and full transfer detail table
 - **Stage Pending**: Bottleneck analysis showing batches stuck per production stage
 - **Batch Status**: Full overview of all batches with current stage
 

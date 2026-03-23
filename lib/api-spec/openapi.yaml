@@ -2106,6 +2106,15 @@ components:
         outsourceCategory:
           type: string
           nullable: true
+        outsourceSent:
+          type: integer
+          nullable: true
+        outsourceReturned:
+          type: integer
+          nullable: true
+        outsourceDamaged:
+          type: integer
+          nullable: true
         issueDate:
           type: string
         remarks:

@@ -1,0 +1,126 @@
+Update the existing app only. Do not rebuild anything.
+
+Please implement this carefully as Phase 2 of the outsource workflow.
+Do not refactor unrelated code.
+Do not change the existing simple-stitch flow.
+Preserve all existing data.
+
+I already have the outsource base workflow implemented.
+Now I need validation, efficiency correction, and reporting to be finalized safely.
+
+================================
+1. OUTSOURCE RECEIVING VALIDATION
+================================
+
+Add strict validation so receiving does NOT exceed actual returned outsource quantity.
+
+Business rule:
+- If allocated to stitcher = 10
+- Sent to outsource = 5
+- Returned from outsource = 5
+Then receiving for that outsource portion must NOT exceed 5
+
+Important:
+- receiving must NOT be validated against total allocated quantity in outsource cases
+- receiving must be validated against actual returned-from-outsource quantity
+- if returned quantity is 5, receiving cannot be 6 or more
+- apply this validation in BOTH frontend and backend
+- show a clear error message if limit is exceeded
+
+Also ensure:
+- outsource transfer itself is still NOT treated as receiving
+- returned-from-outsource quantity is the maximum allowed quantity for further receiving from outsource flow
+
+================================
+2. NO DOUBLE COUNTING
+================================
+
+Ensure outsource quantities are not double-counted in production flow.
+
+Rules:
+- sending to outsource must NOT increase normal received quantity
+- returning from outsource must NOT automatically count as finished or fully received
+- receiving should only increase when actual receiving is recorded
+- totals in reports must not count the same quantity twice
+
+================================
+3. EFFICIENCY CORRECTION
+================================
+
+Update stitcher and stitching team efficiency logic.
+
+Rules:
+- outsource time must be excluded/subtracted from stitcher/team efficiency calculations
+- stitcher/team should not be penalized for time spent in Heat Stone / Embroidery / Hand Stones
+- stitcher/team efficiency should reflect only their stitching responsibility time
+
+Keep this safe:
+- do not rewrite the whole reporting system
+- only adjust timing and efficiency logic where outsource batches are involved
+
+================================
+4. STITCHER / TEAM REPORT CORRECTION
+================================
+
+Update stitcher and team reports so outsource batches are handled correctly.
+
+For stitchers and teams, where relevant show:
+- total allocated
+- total received
+- pending quantity
+- completed quantity
+- adjusted efficiency excluding outsource time
+
+Make sure:
+- outsource batches do not distort normal stitcher/team performance
+- team-wise and stitcher-wise performance remains fair and accurate
+
+================================
+5. OUTSOURCE REPORT POLISH
+================================
+
+Improve the outsource reports already created.
+
+Add/confirm:
+- daily/date-wise summary
+- category-wise summary:
+  - Heat Stone
+  - Embroidery
+  - Hand Stones
+- total sent
+- total returned
+- total damaged
+- total pending
+- transfer log with filters
+
+If simple to add, also allow:
+- date range filter
+- category filter
+- batch number filter
+
+================================
+6. TRACEABILITY / STATUS POLISH
+================================
+
+For outsource batches, show clear status progression in UI/traceability, such as:
+- allocated
+- sent to outsource
+- returned from outsource
+- received / in next stage
+
+Keep this lightweight and safe.
+Do not redesign the whole traceability system.
+
+================================
+7. SAFETY
+================================
+
+- do not rebuild from scratch
+- do not break old allocations
+- do not break simple-stitch batches
+- preserve existing APIs and data
+- make minimal schema changes only if absolutely necessary
+- keep changes limited to outsource validation, efficiency correction, and reporting polish
+
+Goal:
+Finalize outsource workflow safely by enforcing receiving limits, correcting stitcher/team efficiency, and polishing outsource reports without breaking the existing production flow.

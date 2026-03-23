@@ -14,6 +14,7 @@ import {
   sizesTable,
   colorsTable,
   stitchersTable,
+  outsourceTransfersTable,
 } from "@workspace/db/schema";
 import { eq, like, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -79,6 +80,8 @@ router.get("/traceability/batch/:batchNumber", checkPermission("reports", "view"
       quantityRejected: allocationsTable.quantityRejected,
       issueDate: allocationsTable.issueDate,
       status: allocationsTable.status,
+      workType: allocationsTable.workType,
+      outsourceCategory: allocationsTable.outsourceCategory,
     })
     .from(allocationsTable)
     .leftJoin(stitchersTable, eq(allocationsTable.stitcherId, stitchersTable.id))
@@ -87,12 +90,19 @@ router.get("/traceability/batch/:batchNumber", checkPermission("reports", "view"
   // Receivings for all allocations
   const allocationIds = allocations.map((a) => a.id);
   let receivings: any[] = [];
+  let outsourceTransfers: any[] = [];
   for (const allocationId of allocationIds) {
     const recs = await db
       .select()
       .from(receivingsTable)
       .where(eq(receivingsTable.allocationId, allocationId));
     receivings = [...receivings, ...recs];
+
+    const transfers = await db
+      .select()
+      .from(outsourceTransfersTable)
+      .where(eq(outsourceTransfersTable.allocationId, allocationId));
+    outsourceTransfers = [...outsourceTransfers, ...transfers];
   }
 
   // Finishing records
@@ -130,9 +140,34 @@ router.get("/traceability/batch/:batchNumber", checkPermission("reports", "view"
       quantity: alloc.quantityIssued,
       actor: alloc.stitcherName || "Unknown",
       date: alloc.issueDate,
-      details: `Allocation #${alloc.allocationNumber} to ${alloc.stitcherName}`,
+      details: `Allocation #${alloc.allocationNumber} to ${alloc.stitcherName}${alloc.workType === "outsource_required" ? ` (Outsource: ${(alloc.outsourceCategory || "").replace(/_/g, " ")})` : ""}`,
       status: alloc.status,
     });
+  }
+
+  // Outsource transfer events
+  for (const t of outsourceTransfers) {
+    const categoryLabel = (t.outsourceCategory || "").replace(/_/g, " ");
+    timeline.push({
+      stage: "Outsource Sent",
+      eventType: "outsource_sent",
+      quantity: t.quantitySent,
+      actor: t.vendorName || "Unknown Vendor",
+      date: t.sendDate,
+      details: `Sent ${t.quantitySent} pcs for ${categoryLabel} to ${t.vendorName || "vendor"}`,
+      status: t.status,
+    });
+    if (t.status === "returned" || t.status === "partial_return") {
+      timeline.push({
+        stage: "Outsource Returned",
+        eventType: "outsource_returned",
+        quantity: t.quantityReturned,
+        actor: t.vendorName || "Unknown Vendor",
+        date: t.returnDate || t.sendDate,
+        details: `Returned ${t.quantityReturned} good, ${t.quantityDamaged || 0} damaged from ${t.vendorName || "vendor"}`,
+        status: "completed",
+      });
+    }
   }
 
   // Receiving events

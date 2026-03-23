@@ -10,8 +10,9 @@ import {
   materialsTable,
   sizesTable,
   colorsTable,
+  outsourceTransfersTable,
 } from "@workspace/db/schema";
-import { eq, sql, and, gte, lte, ilike } from "drizzle-orm";
+import { eq, sql, and, gte, lte, ilike, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit.js";
 import { checkPermission } from "./permissions.js";
@@ -109,7 +110,33 @@ router.get("/allocation", checkPermission("allocation", "view"), async (req, res
   let q = allocJoins(db.select(allocSelect).from(allocationsTable));
   if (conditions.length > 0) q = q.where(and(...conditions));
   const rows = await q.orderBy(sql`${allocationsTable.createdAt} desc`);
-  res.json(rows.map(withItemCode));
+  const mapped = rows.map(withItemCode);
+
+  const outsourceAllocIds = rows.filter(r => r.workType === "outsource_required").map(r => r.id);
+  if (outsourceAllocIds.length > 0) {
+    const outsourceSums = await db
+      .select({
+        allocationId: outsourceTransfersTable.allocationId,
+        totalSent: sql<number>`COALESCE(SUM(${outsourceTransfersTable.quantitySent}), 0)::int`,
+        totalReturned: sql<number>`COALESCE(SUM(${outsourceTransfersTable.quantityReturned}), 0)::int`,
+        totalDamaged: sql<number>`COALESCE(SUM(${outsourceTransfersTable.quantityDamaged}), 0)::int`,
+      })
+      .from(outsourceTransfersTable)
+      .where(inArray(outsourceTransfersTable.allocationId, outsourceAllocIds))
+      .groupBy(outsourceTransfersTable.allocationId);
+
+    const outsourceMap = new Map(outsourceSums.map(o => [o.allocationId, o]));
+    for (const row of mapped) {
+      if (row.workType === "outsource_required") {
+        const o = outsourceMap.get(row.id) || { totalSent: 0, totalReturned: 0, totalDamaged: 0 };
+        (row as any).outsourceSent = o.totalSent;
+        (row as any).outsourceReturned = o.totalReturned;
+        (row as any).outsourceDamaged = o.totalDamaged;
+      }
+    }
+  }
+
+  res.json(mapped);
 });
 
 router.post("/allocation", checkPermission("allocation", "create"), async (req, res) => {

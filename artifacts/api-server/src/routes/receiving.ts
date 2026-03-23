@@ -12,6 +12,7 @@ import {
   colorsTable,
   finishingRecordsTable,
   finishedGoodsTable,
+  outsourceTransfersTable,
 } from "@workspace/db/schema";
 import { eq, sql, and, gte, lte, ilike } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -37,7 +38,11 @@ const mat2 = alias(materialsTable, "mat2");
  */
 async function recalculateAllocationTotals(allocationId: number) {
   const [alloc] = await db
-    .select({ quantityIssued: allocationsTable.quantityIssued, cuttingBatchId: allocationsTable.cuttingBatchId })
+    .select({
+      quantityIssued: allocationsTable.quantityIssued,
+      cuttingBatchId: allocationsTable.cuttingBatchId,
+      workType: allocationsTable.workType,
+    })
     .from(allocationsTable)
     .where(eq(allocationsTable.id, allocationId));
 
@@ -53,15 +58,26 @@ async function recalculateAllocationTotals(allocationId: number) {
 
   const totalReceived = Number(sums?.totalReceived ?? 0);
   const totalRejected = Number(sums?.totalRejected ?? 0);
-  const pending = alloc.quantityIssued - totalReceived - totalRejected;
-  const allocStatus = pending <= 0 ? "completed" : totalReceived > 0 ? "partial" : "pending";
+
+  let effectiveCeiling = alloc.quantityIssued;
+  if (alloc.workType === "outsource_required") {
+    const [outsourceSums] = await db
+      .select({
+        totalReturned: sql<number>`COALESCE(SUM(${outsourceTransfersTable.quantityReturned}), 0)::int`,
+      })
+      .from(outsourceTransfersTable)
+      .where(eq(outsourceTransfersTable.allocationId, allocationId));
+    effectiveCeiling = Number(outsourceSums?.totalReturned ?? 0);
+  }
+
+  const pending = effectiveCeiling - totalReceived - totalRejected;
+  const allocStatus = pending <= 0 && effectiveCeiling > 0 ? "completed" : totalReceived > 0 ? "partial" : "pending";
 
   await db
     .update(allocationsTable)
     .set({ quantityReceived: totalReceived, quantityRejected: totalRejected, status: allocStatus })
     .where(eq(allocationsTable.id, allocationId));
 
-  // Now update the cutting batch status
   await updateBatchStatus(alloc.cuttingBatchId);
 }
 
@@ -221,16 +237,40 @@ router.post("/receiving", checkPermission("receiving", "create"), async (req, re
 
   const alreadyAccountedFor =
     Number(currentTotals?.totalReceived ?? 0) + Number(currentTotals?.totalRejected ?? 0);
-  const remainingPending = allocation.quantityIssued - alreadyAccountedFor;
   const thisEntry = quantityReceived + quantityRejected + quantityDamaged;
 
   if (thisEntry <= 0) {
     return res.status(400).json({ error: "At least one quantity must be greater than zero" });
   }
+
+  // For outsource allocations, receiving limit = returned-from-outsource quantity (not total issued)
+  // For simple stitch, receiving limit = total issued quantity
+  let maxReceivable: number;
+  if (allocation.workType === "outsource_required") {
+    const [outsourceTotals] = await db
+      .select({
+        totalReturned: sql<number>`COALESCE(SUM(${outsourceTransfersTable.quantityReturned}), 0)::int`,
+      })
+      .from(outsourceTransfersTable)
+      .where(eq(outsourceTransfersTable.allocationId, allocationId));
+
+    const returnedFromOutsource = Number(outsourceTotals?.totalReturned ?? 0);
+    maxReceivable = returnedFromOutsource;
+  } else {
+    maxReceivable = allocation.quantityIssued;
+  }
+
+  const remainingPending = maxReceivable - alreadyAccountedFor;
+
   if (thisEntry > remainingPending) {
+    if (allocation.workType === "outsource_required") {
+      return res
+        .status(400)
+        .json({ error: `Cannot receive more than returned-from-outsource quantity. Only ${Math.max(0, remainingPending)} pieces available for receiving.` });
+    }
     return res
       .status(400)
-      .json({ error: `Cannot receive more than pending quantity (${remainingPending})` });
+      .json({ error: `Cannot receive more than pending quantity (${Math.max(0, remainingPending)})` });
   }
 
   const [receiving] = await db
