@@ -1,0 +1,144 @@
+Update the existing app only. Do not rebuild anything.
+
+Please implement this carefully in phases and do not break existing functionality.
+Start with the outsource base workflow first, then extend the rest only if the base flow is stable.
+Do NOT refactor unrelated code.
+Do NOT remove or change the current simple-stitch flow.
+Preserve all existing data and old allocations.
+
+I need to add a proper outsource workflow for special abayas.
+
+Current business case:
+Some abayas are simple stitching only.
+Other abayas require outsource work after partial stitching, such as:
+- Heat Stone
+- Embroidery
+- Hand Stones
+
+I need the system to support this properly.
+
+================================
+1. ADD OUTSOURCE OPTION IN ALLOCATION
+================================
+
+In the Allocation module, add a field to identify the work type of the batch.
+
+Options:
+- Simple Stitch
+- Outsource Required
+
+If Outsource Required is selected, show:
+- Outsource Category:
+  - Heat Stone
+  - Embroidery
+  - Hand Stones
+
+Allocation should still be possible to:
+- individual stitcher
+- team
+
+================================
+2. SIMPLE STITCH FLOW
+================================
+
+If the batch is Simple Stitch, keep the existing workflow unchanged:
+Cutting -> Allocation -> Receiving -> Finishing -> Finished Goods
+
+================================
+3. OUTSOURCE FLOW
+================================
+
+If the batch requires outsource work, use this workflow:
+Cutting -> Allocation -> Partial Stitching -> Transfer to Outsource -> Return from Outsource -> Final Receiving / Finishing -> Finished Goods
+
+Important:
+Outsource movement should NOT be treated as receiving. It must be treated as a separate stage/transfer, not completion of stitching.
+
+This means:
+- when pieces move from stitcher/team to outsource, do not increase normal received quantity
+- do not mark stitching as fully completed
+- track outsource separately
+
+================================
+4. OUTSOURCE QUANTITY TRACKING
+================================
+
+Track relevant quantities separately, such as:
+- quantity allocated
+- quantity sent to outsource
+- quantity returned from outsource
+- pending with stitcher
+- pending with outsource
+
+Do this safely without breaking current simple-stitch logic.
+
+================================
+5. EFFICIENCY LOGIC
+================================
+
+When measuring stitcher or stitching team efficiency:
+- exclude/subtract the time spent in outsource stage
+- do not penalize stitcher/team for outsource processing time
+
+Track outsource work separately so efficiency remains fair.
+
+================================
+6. OUTSOURCE REPORTS
+================================
+
+Add daily/date-wise reporting for outsource categories:
+- Heat Stone
+- Embroidery
+- Hand Stones
+
+Show where relevant:
+- total batches handled
+- total pieces handled
+- completed quantity
+- pending quantity
+- returned quantity
+- time spent if available
+
+================================
+7. STITCHER / TEAM REPORT UPDATE
+================================
+
+Update stitcher/team reporting so:
+- outsource time is excluded from their efficiency
+- partial stitch + outsource batches are handled correctly
+- team-wise and stitcher-wise performance remains accurate
+
+================================
+8. UI / TRACEABILITY
+================================
+
+Show outsource information clearly in:
+- Allocation
+- Receiving / production flow
+- Reports
+- Traceability
+
+For relevant batches, show:
+- work type
+- outsource category
+- stitcher/team
+- current stage
+- pending/completed status
+
+================================
+9. SAFETY
+================================
+
+- do not rebuild from scratch
+- preserve existing data
+- do not break current simple-stitch workflow
+- keep old allocations working
+- extend the workflow safely
+- do not change unrelated modules
+- make minimal schema changes only if absolutely necessary
+- keep current APIs backward-compatible where possible
+- do not change receiving logic for simple-stitch batches
+- if needed, implement this in smaller internal steps, but keep the final workflow aligned with this request
+
+Goal:
+Support normal stitching and outsource-based abayas properly, with fair efficiency tracking and separate outsource reporting.

@@ -7,7 +7,7 @@ import { Loader2, FileText, Users, BarChart3 } from "lucide-react";
 import { 
   useGetStitcherPerformanceReport, useGetStagePendingReport, useGetBatchStatusReport,
   useGetTeamPerformanceReport, useGetDailyProductionReport,
-  useListTeams
+  useListTeams, useListOutsourceTransfers
 } from "@workspace/api-client-react";
 import { format } from "date-fns";
 import { fmtCode } from "@/lib/utils";
@@ -23,6 +23,7 @@ export default function ReportsPage() {
             <TabsTrigger value="stitcher" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white">Stitcher Performance</TabsTrigger>
             <TabsTrigger value="team" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-emerald-600 data-[state=active]:text-white">Team Performance</TabsTrigger>
             <TabsTrigger value="daily" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-blue-600 data-[state=active]:text-white">Daily Production</TabsTrigger>
+            <TabsTrigger value="outsource" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-violet-600 data-[state=active]:text-white">Outsource Summary</TabsTrigger>
             <TabsTrigger value="pending" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white">Stage Pending</TabsTrigger>
             <TabsTrigger value="batch" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white">Batch Status</TabsTrigger>
           </TabsList>
@@ -31,6 +32,7 @@ export default function ReportsPage() {
         <TabsContent value="stitcher" className="mt-0 outline-none"><StitcherReport /></TabsContent>
         <TabsContent value="team" className="mt-0 outline-none"><TeamReport /></TabsContent>
         <TabsContent value="daily" className="mt-0 outline-none"><DailyProductionReport /></TabsContent>
+        <TabsContent value="outsource" className="mt-0 outline-none"><OutsourceSummaryReport /></TabsContent>
         <TabsContent value="pending" className="mt-0 outline-none"><PendingReport /></TabsContent>
         <TabsContent value="batch" className="mt-0 outline-none"><BatchReport /></TabsContent>
       </Tabs>
@@ -305,6 +307,141 @@ function BatchReport() {
               </TableRow>
             ))
           }
+        </TableBody>
+      </Table>
+    </ReportCard>
+    </>
+  );
+}
+
+function OutsourceSummaryReport() {
+  const [filters, setFilters] = useState<Record<string, string>>({ startDate: "", endDate: "", outsourceCategory: "" });
+  const filterParams: Record<string, any> = {};
+  if (filters.startDate) filterParams.startDate = filters.startDate;
+  if (filters.endDate) filterParams.endDate = filters.endDate;
+  if (filters.outsourceCategory) filterParams.outsourceCategory = filters.outsourceCategory;
+
+  const { data, isLoading } = useListOutsourceTransfers(filterParams);
+
+  const filterFields = [
+    { name: "startDate", label: "From Date", type: "date" as const },
+    { name: "endDate", label: "To Date", type: "date" as const },
+    { name: "outsourceCategory", label: "Category", type: "select" as const, options: [
+      { value: "heat_stone", label: "Heat Stone" },
+      { value: "embroidery", label: "Embroidery" },
+      { value: "hand_stones", label: "Hand Stones" },
+    ]},
+  ];
+
+  const totalSent = data?.reduce((s, t) => s + (t.quantitySent || 0), 0) || 0;
+  const totalReturned = data?.reduce((s, t) => s + (t.quantityReturned || 0), 0) || 0;
+  const totalDamaged = data?.reduce((s, t) => s + (t.quantityDamaged || 0), 0) || 0;
+  const totalPending = totalSent - totalReturned - totalDamaged;
+
+  const byCat: Record<string, { sent: number; returned: number; damaged: number }> = {};
+  data?.forEach(t => {
+    const cat = t.outsourceCategory || "unknown";
+    if (!byCat[cat]) byCat[cat] = { sent: 0, returned: 0, damaged: 0 };
+    byCat[cat].sent += t.quantitySent || 0;
+    byCat[cat].returned += t.quantityReturned || 0;
+    byCat[cat].damaged += t.quantityDamaged || 0;
+  });
+
+  return (
+    <>
+    <FilterBar fields={filterFields} values={filters} onChange={setFilters} />
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="bg-violet-50 rounded-xl p-4 border border-violet-200">
+        <div className="text-xs text-violet-600 font-medium">Total Sent</div>
+        <div className="text-2xl font-bold text-violet-800">{totalSent}</div>
+      </div>
+      <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
+        <div className="text-xs text-emerald-600 font-medium">Total Returned</div>
+        <div className="text-2xl font-bold text-emerald-800">{totalReturned}</div>
+      </div>
+      <div className="bg-red-50 rounded-xl p-4 border border-red-200">
+        <div className="text-xs text-red-600 font-medium">Total Damaged</div>
+        <div className="text-2xl font-bold text-red-800">{totalDamaged}</div>
+      </div>
+      <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+        <div className="text-xs text-amber-600 font-medium">Still Pending</div>
+        <div className="text-2xl font-bold text-amber-800">{totalPending}</div>
+      </div>
+    </div>
+
+    <ReportCard title="By Category">
+      <Table>
+        <TableHeader className="bg-slate-50">
+          <TableRow>
+            <TableHead className="py-3">Category</TableHead>
+            <TableHead className="text-right">Sent</TableHead>
+            <TableHead className="text-right">Returned</TableHead>
+            <TableHead className="text-right">Damaged</TableHead>
+            <TableHead className="text-right">Pending</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {Object.entries(byCat).map(([cat, v]) => (
+            <TableRow key={cat}>
+              <TableCell className="capitalize font-medium">{cat.replace(/_/g, " ")}</TableCell>
+              <TableCell className="text-right font-bold text-violet-600">{v.sent}</TableCell>
+              <TableCell className="text-right font-semibold text-emerald-600">{v.returned}</TableCell>
+              <TableCell className="text-right font-semibold text-red-500">{v.damaged}</TableCell>
+              <TableCell className="text-right font-bold text-amber-700">{v.sent - v.returned - v.damaged}</TableCell>
+            </TableRow>
+          ))}
+          {Object.keys(byCat).length === 0 && !isLoading && (
+            <TableRow><TableCell colSpan={5} className="text-center py-8 text-slate-500">No outsource data for the selected period.</TableCell></TableRow>
+          )}
+          {isLoading && (
+            <TableRow><TableCell colSpan={5} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </ReportCard>
+
+    <ReportCard title="Transfer Details">
+      <Table>
+        <TableHeader className="bg-slate-50">
+          <TableRow>
+            <TableHead className="py-3">Batch</TableHead>
+            <TableHead>Category</TableHead>
+            <TableHead>Vendor</TableHead>
+            <TableHead className="text-right">Sent</TableHead>
+            <TableHead className="text-right">Returned</TableHead>
+            <TableHead className="text-right">Damaged</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Send Date</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {isLoading && (
+            <TableRow><TableCell colSpan={8} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
+          )}
+          {data?.map((t) => (
+            <TableRow key={t.id}>
+              <TableCell>
+                <div className="font-semibold text-sm">{t.batchNumber}</div>
+                <div className="text-xs text-slate-500">{t.productName}</div>
+              </TableCell>
+              <TableCell className="capitalize text-sm">{t.outsourceCategory?.replace(/_/g, " ")}</TableCell>
+              <TableCell className="text-sm">{t.vendorName || "-"}</TableCell>
+              <TableCell className="text-right font-bold text-violet-600">{t.quantitySent}</TableCell>
+              <TableCell className="text-right font-semibold text-emerald-600">{t.quantityReturned || 0}</TableCell>
+              <TableCell className="text-right font-semibold text-red-500">{t.quantityDamaged || 0}</TableCell>
+              <TableCell>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
+                  t.status === "returned" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                  t.status === "partial_return" ? "bg-blue-50 text-blue-700 border-blue-200" :
+                  "bg-amber-50 text-amber-700 border-amber-200"
+                }`}>{t.status?.replace(/_/g, " ")}</span>
+              </TableCell>
+              <TableCell className="text-sm text-slate-600">{t.sendDate ? format(new Date(t.sendDate), "MMM d, yyyy") : "-"}</TableCell>
+            </TableRow>
+          ))}
+          {!isLoading && (!data || data.length === 0) && (
+            <TableRow><TableCell colSpan={8} className="text-center py-8 text-slate-500">No outsource transfers found.</TableCell></TableRow>
+          )}
         </TableBody>
       </Table>
     </ReportCard>

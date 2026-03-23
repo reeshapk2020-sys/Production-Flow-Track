@@ -4,7 +4,7 @@ import { useAppAuth, displayName, getRoleLabel } from "@/lib/auth-context";
 import {
   LayoutDashboard, Database, Layers, Scissors, Send,
   Inbox, Settings2, Package, Box, BarChart3,
-  GitBranch, Shield, Users, LogOut, Loader2, ChevronRight, KeyRound
+  GitBranch, Shield, Users, LogOut, Loader2, ChevronRight, KeyRound, ArrowUpRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { path: "/fabric-rolls", label: "Fabric Rolls", icon: Layers, roles: ["admin", "cutting"] },
   { path: "/cutting", label: "Cutting", icon: Scissors, roles: ["admin", "cutting"] },
   { path: "/allocation", label: "Allocation", icon: Send, roles: ["admin", "allocation"] },
+  { path: "/outsource", label: "Outsource", icon: ArrowUpRight, roles: ["admin", "outsource"] },
   { path: "/receiving", label: "Receiving", icon: Inbox, roles: ["admin", "stitching"] },
   { path: "/finishing", label: "Finishing", icon: Settings2, roles: ["admin", "finishing"] },
   { path: "/finished-goods", label: "Finished Goods", icon: Package, roles: ["admin", "store"] },
@@ -41,6 +42,7 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
     "/fabric-rolls": "fabric-rolls",
     "/cutting": "cutting",
     "/allocation": "allocation",
+    "/outsource": "outsource",
     "/receiving": "receiving",
     "/finishing": "finishing",
     "/finished-goods": "finished-goods",

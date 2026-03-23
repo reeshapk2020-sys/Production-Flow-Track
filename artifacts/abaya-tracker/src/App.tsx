@@ -12,6 +12,7 @@ import MasterDataPage from "./pages/master";
 import FabricRollsPage from "./pages/fabric-rolls";
 import CuttingPage from "./pages/cutting";
 import AllocationPage from "./pages/allocation";
+import OutsourcePage from "./pages/outsource";
 import ReceivingPage from "./pages/receiving";
 import FinishingPage from "./pages/finishing";
 import FinishedGoodsPage from "./pages/finished-goods";
@@ -36,6 +37,7 @@ const PATH_TO_MODULE: Record<string, string> = {
   "/fabric-rolls": "fabric-rolls",
   "/cutting": "cutting",
   "/allocation": "allocation",
+  "/outsource": "outsource",
   "/receiving": "receiving",
   "/finishing": "finishing",
   "/finished-goods": "finished-goods",
@@ -88,6 +90,7 @@ function Router() {
       <Route path="/fabric-rolls" component={() => <ProtectedRoute component={FabricRollsPage} path="/fabric-rolls" />} />
       <Route path="/cutting" component={() => <ProtectedRoute component={CuttingPage} path="/cutting" />} />
       <Route path="/allocation" component={() => <ProtectedRoute component={AllocationPage} path="/allocation" />} />
+      <Route path="/outsource" component={() => <ProtectedRoute component={OutsourcePage} path="/outsource" />} />
       <Route path="/receiving" component={() => <ProtectedRoute component={ReceivingPage} path="/receiving" />} />
       <Route path="/finishing" component={() => <ProtectedRoute component={FinishingPage} path="/finishing" />} />
       <Route path="/finished-goods" component={() => <ProtectedRoute component={FinishedGoodsPage} path="/finished-goods" />} />

@@ -309,6 +309,8 @@ export interface Allocation {
   quantityReceived?: number;
   quantityPending?: number;
   quantityRejected?: number;
+  workType?: string;
+  outsourceCategory?: string | null;
   issueDate?: string;
   remarks?: string;
   status?: string;
@@ -357,6 +359,10 @@ export interface CreateAllocationBody {
   stitcherId?: number;
   teamId?: number;
   quantityIssued: number;
+  /** 'simple_stitch' or 'outsource_required' */
+  workType?: string;
+  /** 'heat_stone', 'embroidery', or 'hand_stones' */
+  outsourceCategory?: string;
   issueDate: string;
   remarks?: string;
   /** Set product on the batch if missing (required for allocation) */
@@ -367,6 +373,66 @@ export interface CreateAllocationBody {
 
 export interface UpdateAllocationBody {
   issueDate?: string;
+  remarks?: string;
+}
+
+export interface OutsourceTransfer {
+  id: number;
+  allocationId: number;
+  allocationNumber?: string;
+  batchNumber?: string;
+  productName?: string;
+  productCode?: string;
+  colorName?: string;
+  colorCode?: string;
+  sizeName?: string;
+  outsourceCategory?: string;
+  quantitySent: number;
+  quantityReturned?: number;
+  quantityDamaged?: number;
+  quantityPending?: number;
+  vendorName?: string | null;
+  sendDate?: string;
+  returnDate?: string | null;
+  status?: string;
+  remarks?: string | null;
+  assigneeName?: string;
+  allocationType?: string;
+  createdAt?: string;
+}
+
+export interface OutsourceAllocation {
+  id: number;
+  allocationNumber?: string;
+  batchNumber?: string;
+  productName?: string;
+  quantityIssued: number;
+  quantityReceived?: number;
+  workType?: string;
+  outsourceCategory?: string | null;
+  assigneeName?: string;
+  allocationType?: string;
+  status?: string;
+  totalSentToOutsource?: number;
+  totalReturnedFromOutsource?: number;
+  totalDamagedInOutsource?: number;
+  availableToSend?: number;
+}
+
+export interface SendToOutsourceBody {
+  allocationId: number;
+  quantitySent: number;
+  outsourceCategory?: string;
+  vendorName?: string;
+  sendDate?: string;
+  remarks?: string;
+}
+
+export interface ReturnFromOutsourceBody {
+  outsourceTransferId: number;
+  quantityReturned: number;
+  quantityDamaged?: number;
+  returnDate?: string;
   remarks?: string;
 }
 
@@ -685,6 +751,15 @@ export type ListReceivingsParams = {
   endDate?: string;
   stitcherId?: number;
   batchNumber?: string;
+};
+
+export type ListOutsourceTransfersParams = {
+  startDate?: string;
+  endDate?: string;
+  outsourceCategory?: string;
+  status?: string;
+  batchNumber?: string;
+  allocationId?: number;
 };
 
 export type ListFinishingRecordsParams = {

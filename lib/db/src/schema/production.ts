@@ -204,9 +204,31 @@ export const allocationsTable = pgTable("allocations", {
   quantityIssued: integer("quantity_issued").notNull(),
   quantityReceived: integer("quantity_received").notNull().default(0),
   quantityRejected: integer("quantity_rejected").notNull().default(0),
+  workType: text("work_type").notNull().default("simple_stitch"),
+  outsourceCategory: text("outsource_category"),
   issueDate: timestamp("issue_date").notNull(),
   remarks: text("remarks"),
   status: text("status").notNull().default("pending"),
+  createdBy: text("created_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// ===== OUTSOURCE TRANSFERS =====
+
+export const outsourceTransfersTable = pgTable("outsource_transfers", {
+  id: serial("id").primaryKey(),
+  allocationId: integer("allocation_id")
+    .notNull()
+    .references(() => allocationsTable.id),
+  outsourceCategory: text("outsource_category").notNull(),
+  quantitySent: integer("quantity_sent").notNull(),
+  quantityReturned: integer("quantity_returned").notNull().default(0),
+  quantityDamaged: integer("quantity_damaged").notNull().default(0),
+  vendorName: text("vendor_name"),
+  sendDate: timestamp("send_date").notNull(),
+  returnDate: timestamp("return_date"),
+  status: text("status").notNull().default("sent"),
+  remarks: text("remarks"),
   createdBy: text("created_by"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -355,6 +377,13 @@ export const insertAllocationSchema = createInsertSchema(allocationsTable).omit(
 });
 export type InsertAllocation = z.infer<typeof insertAllocationSchema>;
 export type Allocation = typeof allocationsTable.$inferSelect;
+
+export const insertOutsourceTransferSchema = createInsertSchema(outsourceTransfersTable).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertOutsourceTransfer = z.infer<typeof insertOutsourceTransferSchema>;
+export type OutsourceTransfer = typeof outsourceTransfersTable.$inferSelect;
 
 export const insertReceivingSchema = createInsertSchema(receivingsTable).omit({
   id: true,

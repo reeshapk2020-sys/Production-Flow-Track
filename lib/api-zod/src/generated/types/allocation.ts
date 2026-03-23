@@ -35,6 +35,8 @@ export interface Allocation {
   quantityReceived?: number;
   quantityPending?: number;
   quantityRejected?: number;
+  workType?: string;
+  outsourceCategory?: string | null;
   issueDate?: string;
   remarks?: string;
   status?: string;

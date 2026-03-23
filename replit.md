@@ -22,10 +22,11 @@ Full-stack multi-user web application for tracking abaya manufacturing productio
 
 1. Fabric Roll / Raw Material Entry
 2. Cutting (with fabric roll consumption)
-3. Allocation to Stitchers
-4. Receiving from Stitchers
-5. Finishing (Pressing → Buttons → Hanger → Packing)
-6. Finished Goods Store
+3. Allocation to Stitchers (supports Simple Stitch or Outsource Required work types)
+4. Outsource (Send to vendor → Return from vendor, for heat stone / embroidery / hand stones)
+5. Receiving from Stitchers
+6. Finishing (Pressing → Buttons → Hanger → Packing)
+7. Finished Goods Store
 
 ## Structure
 
@@ -83,7 +84,8 @@ lib/
 - `fabric_rolls` - Raw material / fabric roll inventory
 - `cutting_batches` - Cutting batch records; stores fabricId, materialId, material2Id FKs for item identity
 - `cutting_fabric_usage` - Links fabric rolls to cutting batches
-- `allocations` - Allocation of cut pieces to stitchers
+- `allocations` - Allocation of cut pieces to stitchers (has `workType` and `outsourceCategory` columns)
+- `outsource_transfers` - Outsource send/return tracking (allocationId, quantitySent/Returned/Damaged, vendorName, status)
 - `receivings` - Receiving records from stitchers
 - `finishing_records` - Finishing stage records (pressing/buttons/hanger/packing)
 - `finished_goods` - Finished goods store entries
@@ -118,7 +120,7 @@ Custom roles can be created dynamically from the admin Permissions page.
 - **Frontend**: `can(module, action)` helper in auth context — controls sidebar visibility, route access, and button visibility
 - **Frontend**: `getRoleLabel(role)` — returns human-readable role name (from map or auto-formatted)
 - **Admin page**: `/permissions` — grid UI for admin to toggle permissions per role + create/delete custom roles
-- **Modules**: products, colors, sizes, materials, teams, stitchers, fabric-rolls, cutting, allocation, receiving, finishing, finished-goods, reports, inventory
+- **Modules**: products, colors, sizes, materials, teams, stitchers, fabric-rolls, cutting, allocation, outsource, receiving, finishing, finished-goods, reports, inventory
 - **Actions**: view, create, edit, import
 - Admin role always has all permissions (enforced in code, cannot be changed via UI)
 - Default permissions seeded for all roles matching original hardcoded access patterns
@@ -149,11 +151,21 @@ Custom roles can be created dynamically from the admin Permissions page.
 - All backend list endpoints support query params: `startDate`, `endDate`, `batchNumber`, plus entity-specific filters (productId, colorId, sizeId, stitcherId, teamId)
 - Filter state managed locally per page component, passed to API hooks
 
+## Outsource Workflow
+
+- **Work Types**: `simple_stitch` (default) or `outsource_required` — set during allocation
+- **Outsource Categories**: `heat_stone`, `embroidery`, `hand_stones`
+- **Flow**: Allocation (marked outsource_required) → Send to vendor → Return from vendor → Receiving from stitcher
+- **API Routes**: `GET /outsource` (transfers list), `GET /outsource/allocations` (outsource-type allocations), `POST /outsource/send`, `POST /outsource/return`
+- **Frontend Page**: `/outsource` with 3 tabs: Send to Outsource, Return from Outsource, Transfer Log
+- **Validations**: Quantity checks on send (can't exceed allocation qty), return (can't exceed pending qty), category enum enforcement, non-negative quantities
+
 ## Reports
 
 - **Stitcher Performance**: Total issued/received/pending/rejected/efficiency per stitcher, with date range filters
 - **Team Performance**: Same metrics per team (uses `/reports/team-performance` endpoint), with date/team filters
 - **Daily Production**: Per-day row breakdown of cutting/allocated/received/finishing/stored quantities using SQL date series, with summary cards showing totals across range
+- **Outsource Summary**: Aggregated outsource stats (total sent/returned/damaged/pending), breakdown by category, and full transfer detail table
 - **Stage Pending**: Bottleneck analysis showing batches stuck per production stage
 - **Batch Status**: Full overview of all batches with current stage
 

@@ -61,11 +61,16 @@ import type {
   ListCuttingBatchesParams,
   ListFinishedGoodsParams,
   ListFinishingRecordsParams,
+  ListOutsourceTransfersParams,
   ListReceivingsParams,
   Material,
+  OutsourceAllocation,
+  OutsourceTransfer,
   Product,
   Receiving,
+  ReturnFromOutsourceBody,
   SearchTraceabilityParams,
+  SendToOutsourceBody,
   Size,
   StagePending,
   Stitcher,
@@ -3668,6 +3673,357 @@ export const useUpdateReceiving = <
   TContext
 > => {
   return useMutation(getUpdateReceivingMutationOptions(options));
+};
+
+/**
+ * @summary List all outsource transfers
+ */
+export const getListOutsourceTransfersUrl = (
+  params?: ListOutsourceTransfersParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/outsource?${stringifiedParams}`
+    : `/api/outsource`;
+};
+
+export const listOutsourceTransfers = async (
+  params?: ListOutsourceTransfersParams,
+  options?: RequestInit,
+): Promise<OutsourceTransfer[]> => {
+  return customFetch<OutsourceTransfer[]>(
+    getListOutsourceTransfersUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListOutsourceTransfersQueryKey = (
+  params?: ListOutsourceTransfersParams,
+) => {
+  return [`/api/outsource`, ...(params ? [params] : [])] as const;
+};
+
+export const getListOutsourceTransfersQueryOptions = <
+  TData = Awaited<ReturnType<typeof listOutsourceTransfers>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListOutsourceTransfersParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listOutsourceTransfers>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListOutsourceTransfersQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listOutsourceTransfers>>
+  > = ({ signal }) =>
+    listOutsourceTransfers(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listOutsourceTransfers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListOutsourceTransfersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listOutsourceTransfers>>
+>;
+export type ListOutsourceTransfersQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all outsource transfers
+ */
+
+export function useListOutsourceTransfers<
+  TData = Awaited<ReturnType<typeof listOutsourceTransfers>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListOutsourceTransfersParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listOutsourceTransfers>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListOutsourceTransfersQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List allocations that require outsource work
+ */
+export const getListOutsourceAllocationsUrl = () => {
+  return `/api/outsource/allocations`;
+};
+
+export const listOutsourceAllocations = async (
+  options?: RequestInit,
+): Promise<OutsourceAllocation[]> => {
+  return customFetch<OutsourceAllocation[]>(getListOutsourceAllocationsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListOutsourceAllocationsQueryKey = () => {
+  return [`/api/outsource/allocations`] as const;
+};
+
+export const getListOutsourceAllocationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listOutsourceAllocations>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listOutsourceAllocations>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListOutsourceAllocationsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listOutsourceAllocations>>
+  > = ({ signal }) => listOutsourceAllocations({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listOutsourceAllocations>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListOutsourceAllocationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listOutsourceAllocations>>
+>;
+export type ListOutsourceAllocationsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List allocations that require outsource work
+ */
+
+export function useListOutsourceAllocations<
+  TData = Awaited<ReturnType<typeof listOutsourceAllocations>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listOutsourceAllocations>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListOutsourceAllocationsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Send pieces to outsource vendor
+ */
+export const getSendToOutsourceUrl = () => {
+  return `/api/outsource/send`;
+};
+
+export const sendToOutsource = async (
+  sendToOutsourceBody: SendToOutsourceBody,
+  options?: RequestInit,
+): Promise<OutsourceTransfer> => {
+  return customFetch<OutsourceTransfer>(getSendToOutsourceUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(sendToOutsourceBody),
+  });
+};
+
+export const getSendToOutsourceMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendToOutsource>>,
+    TError,
+    { data: BodyType<SendToOutsourceBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof sendToOutsource>>,
+  TError,
+  { data: BodyType<SendToOutsourceBody> },
+  TContext
+> => {
+  const mutationKey = ["sendToOutsource"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof sendToOutsource>>,
+    { data: BodyType<SendToOutsourceBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return sendToOutsource(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SendToOutsourceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof sendToOutsource>>
+>;
+export type SendToOutsourceMutationBody = BodyType<SendToOutsourceBody>;
+export type SendToOutsourceMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Send pieces to outsource vendor
+ */
+export const useSendToOutsource = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendToOutsource>>,
+    TError,
+    { data: BodyType<SendToOutsourceBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof sendToOutsource>>,
+  TError,
+  { data: BodyType<SendToOutsourceBody> },
+  TContext
+> => {
+  return useMutation(getSendToOutsourceMutationOptions(options));
+};
+
+/**
+ * @summary Record return from outsource vendor
+ */
+export const getReturnFromOutsourceUrl = () => {
+  return `/api/outsource/return`;
+};
+
+export const returnFromOutsource = async (
+  returnFromOutsourceBody: ReturnFromOutsourceBody,
+  options?: RequestInit,
+): Promise<OutsourceTransfer> => {
+  return customFetch<OutsourceTransfer>(getReturnFromOutsourceUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(returnFromOutsourceBody),
+  });
+};
+
+export const getReturnFromOutsourceMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof returnFromOutsource>>,
+    TError,
+    { data: BodyType<ReturnFromOutsourceBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof returnFromOutsource>>,
+  TError,
+  { data: BodyType<ReturnFromOutsourceBody> },
+  TContext
+> => {
+  const mutationKey = ["returnFromOutsource"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof returnFromOutsource>>,
+    { data: BodyType<ReturnFromOutsourceBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return returnFromOutsource(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReturnFromOutsourceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof returnFromOutsource>>
+>;
+export type ReturnFromOutsourceMutationBody = BodyType<ReturnFromOutsourceBody>;
+export type ReturnFromOutsourceMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Record return from outsource vendor
+ */
+export const useReturnFromOutsource = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof returnFromOutsource>>,
+    TError,
+    { data: BodyType<ReturnFromOutsourceBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof returnFromOutsource>>,
+  TError,
+  { data: BodyType<ReturnFromOutsourceBody> },
+  TContext
+> => {
+  return useMutation(getReturnFromOutsourceMutationOptions(options));
 };
 
 /**

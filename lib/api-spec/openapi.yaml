@@ -19,6 +19,8 @@ tags:
     description: Cutting batch management
   - name: allocation
     description: Allocation to stitchers
+  - name: outsource
+    description: Outsource workflow management
   - name: receiving
     description: Receiving from stitchers
   - name: finishing
@@ -897,6 +899,100 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Receiving"
+
+  # OUTSOURCE
+  /outsource:
+    get:
+      operationId: listOutsourceTransfers
+      tags: [outsource]
+      summary: List all outsource transfers
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+        - name: outsourceCategory
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: batchNumber
+          in: query
+          schema:
+            type: string
+        - name: allocationId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of outsource transfers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OutsourceTransfer"
+
+  /outsource/allocations:
+    get:
+      operationId: listOutsourceAllocations
+      tags: [outsource]
+      summary: List allocations that require outsource work
+      responses:
+        "200":
+          description: List of outsource-type allocations with transfer totals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OutsourceAllocation"
+
+  /outsource/send:
+    post:
+      operationId: sendToOutsource
+      tags: [outsource]
+      summary: Send pieces to outsource vendor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendToOutsourceBody"
+      responses:
+        "201":
+          description: Created outsource transfer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutsourceTransfer"
+
+  /outsource/return:
+    post:
+      operationId: returnFromOutsource
+      tags: [outsource]
+      summary: Record return from outsource vendor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReturnFromOutsourceBody"
+      responses:
+        "200":
+          description: Updated outsource transfer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutsourceTransfer"
 
   # FINISHING
   /finishing:
@@ -2005,6 +2101,11 @@ components:
           type: integer
         quantityRejected:
           type: integer
+        workType:
+          type: string
+        outsourceCategory:
+          type: string
+          nullable: true
         issueDate:
           type: string
         remarks:
@@ -2027,6 +2128,12 @@ components:
           type: integer
         quantityIssued:
           type: integer
+        workType:
+          type: string
+          description: "'simple_stitch' or 'outsource_required'"
+        outsourceCategory:
+          type: string
+          description: "'heat_stone', 'embroidery', or 'hand_stones'"
         issueDate:
           type: string
         remarks:
@@ -2046,6 +2153,127 @@ components:
           type: string
         remarks:
           type: string
+
+    # OUTSOURCE
+    OutsourceTransfer:
+      type: object
+      properties:
+        id:
+          type: integer
+        allocationId:
+          type: integer
+        allocationNumber:
+          type: string
+        batchNumber:
+          type: string
+        productName:
+          type: string
+        productCode:
+          type: string
+        colorName:
+          type: string
+        colorCode:
+          type: string
+        sizeName:
+          type: string
+        outsourceCategory:
+          type: string
+        quantitySent:
+          type: integer
+        quantityReturned:
+          type: integer
+        quantityDamaged:
+          type: integer
+        quantityPending:
+          type: integer
+        vendorName:
+          type: string
+          nullable: true
+        sendDate:
+          type: string
+        returnDate:
+          type: string
+          nullable: true
+        status:
+          type: string
+        remarks:
+          type: string
+          nullable: true
+        assigneeName:
+          type: string
+        allocationType:
+          type: string
+        createdAt:
+          type: string
+      required: [id, allocationId, quantitySent]
+
+    OutsourceAllocation:
+      type: object
+      properties:
+        id:
+          type: integer
+        allocationNumber:
+          type: string
+        batchNumber:
+          type: string
+        productName:
+          type: string
+        quantityIssued:
+          type: integer
+        quantityReceived:
+          type: integer
+        workType:
+          type: string
+        outsourceCategory:
+          type: string
+          nullable: true
+        assigneeName:
+          type: string
+        allocationType:
+          type: string
+        status:
+          type: string
+        totalSentToOutsource:
+          type: integer
+        totalReturnedFromOutsource:
+          type: integer
+        totalDamagedInOutsource:
+          type: integer
+        availableToSend:
+          type: integer
+      required: [id, quantityIssued]
+
+    SendToOutsourceBody:
+      type: object
+      properties:
+        allocationId:
+          type: integer
+        quantitySent:
+          type: integer
+        outsourceCategory:
+          type: string
+        vendorName:
+          type: string
+        sendDate:
+          type: string
+        remarks:
+          type: string
+      required: [allocationId, quantitySent]
+
+    ReturnFromOutsourceBody:
+      type: object
+      properties:
+        outsourceTransferId:
+          type: integer
+        quantityReturned:
+          type: integer
+        quantityDamaged:
+          type: integer
+        returnDate:
+          type: string
+        remarks:
+          type: string
+      required: [outsourceTransferId, quantityReturned]
 
     # RECEIVING
     Receiving:

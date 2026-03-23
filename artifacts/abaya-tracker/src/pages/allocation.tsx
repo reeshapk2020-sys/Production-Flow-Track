@@ -73,6 +73,7 @@ export default function AllocationPage() {
   const [open, setOpen] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<any>(null);
   const [allocType, setAllocType] = useState<"individual" | "team">("individual");
+  const [workType, setWorkType] = useState<"simple_stitch" | "outsource_required">("simple_stitch");
   const [editOpen, setEditOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<any>(null);
 
@@ -120,6 +121,8 @@ export default function AllocationPage() {
       quantityIssued: Number(fd.get("quantityIssued")),
       issueDate: fd.get("issueDate") as string,
       remarks: fd.get("remarks") as string,
+      workType,
+      outsourceCategory: workType === "outsource_required" ? (fd.get("outsourceCategory") as string) : undefined,
     };
     if (allocType === "individual") {
       payload.stitcherId = Number(fd.get("stitcherId"));
@@ -180,7 +183,7 @@ export default function AllocationPage() {
             </CardTitle>
             <p className="text-sm text-slate-500 mt-1">Issue cut pieces to individual stitchers or teams.</p>
           </div>
-          {canCreate && <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setSelectedBatch(null); setAllocType("individual"); } }}>
+          {canCreate && <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setSelectedBatch(null); setAllocType("individual"); setWorkType("simple_stitch"); } }}>
             <DialogTrigger asChild>
               <Button className="rounded-xl shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5">
                 <Plus className="h-4 w-4 mr-2" /> Issue Batch
@@ -294,6 +297,34 @@ export default function AllocationPage() {
                   )}
                 </div>
 
+                <div>
+                  <label className="text-sm font-medium block mb-2">Work Type</label>
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      type="button"
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${workType === "simple_stitch" ? "bg-primary text-white border-primary shadow-sm" : "bg-white text-slate-600 border-slate-200 hover:border-primary/50"}`}
+                      onClick={() => setWorkType("simple_stitch")}
+                    >
+                      Simple Stitch
+                    </button>
+                    <button
+                      type="button"
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${workType === "outsource_required" ? "bg-violet-600 text-white border-violet-600 shadow-sm" : "bg-white text-slate-600 border-slate-200 hover:border-violet-400"}`}
+                      onClick={() => setWorkType("outsource_required")}
+                    >
+                      Outsource Required
+                    </button>
+                  </div>
+                  {workType === "outsource_required" && (
+                    <select name="outsourceCategory" className="form-input-styled bg-violet-50 border-violet-200" required>
+                      <option value="">Select Outsource Type...</option>
+                      <option value="heat_stone">Heat Stone</option>
+                      <option value="embroidery">Embroidery</option>
+                      <option value="hand_stones">Hand Stones</option>
+                    </select>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium block mb-1.5">Quantity Issued</label>
@@ -338,6 +369,7 @@ export default function AllocationPage() {
                 <TableHead className="py-4">Alloc. #</TableHead>
                 <TableHead>Batch / Product</TableHead>
                 <TableHead>Item Code</TableHead>
+                <TableHead>Work Type</TableHead>
                 <TableHead>Assigned To</TableHead>
                 <TableHead className="text-right">Issued</TableHead>
                 <TableHead className="text-right">Received</TableHead>
@@ -349,7 +381,7 @@ export default function AllocationPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={canEdit ? 10 : 9} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 11 : 10} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
               ) : (
                 data?.map(alloc => {
                   const pending = alloc.quantityPending ?? (alloc.quantityIssued - (alloc.quantityReceived || 0) - (alloc.quantityRejected || 0));
@@ -365,6 +397,18 @@ export default function AllocationPage() {
                         {(alloc as any).itemCode
                           ? <span className="font-mono text-xs font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded">{(alloc as any).itemCode}</span>
                           : <span className="text-xs text-slate-400">—</span>}
+                      </TableCell>
+                      <TableCell>
+                        {(alloc as any).workType === "outsource_required" ? (
+                          <div>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-50 text-violet-700 border-violet-200">Outsource</span>
+                            {(alloc as any).outsourceCategory && (
+                              <div className="text-xs text-violet-500 mt-0.5 capitalize">{(alloc as any).outsourceCategory?.replace(/_/g, ' ')}</div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-slate-50 text-slate-600 border-slate-200">Simple Stitch</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1.5">
@@ -415,7 +459,7 @@ export default function AllocationPage() {
                 })
               )}
               {!isLoading && data?.length === 0 && (
-                <TableRow><TableCell colSpan={canEdit ? 10 : 9} className="text-center py-12 text-slate-500">No allocations found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 11 : 10} className="text-center py-12 text-slate-500">No allocations found.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

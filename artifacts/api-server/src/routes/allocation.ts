@@ -62,6 +62,8 @@ const allocSelect = {
   quantityIssued: allocationsTable.quantityIssued,
   quantityReceived: allocationsTable.quantityReceived,
   quantityRejected: allocationsTable.quantityRejected,
+  workType: allocationsTable.workType,
+  outsourceCategory: allocationsTable.outsourceCategory,
   issueDate: allocationsTable.issueDate,
   remarks: allocationsTable.remarks,
   status: allocationsTable.status,
@@ -112,7 +114,7 @@ router.get("/allocation", checkPermission("allocation", "view"), async (req, res
 
 router.post("/allocation", checkPermission("allocation", "create"), async (req, res) => {
   const { cuttingBatchId, allocationType, stitcherId, teamId, quantityIssued, issueDate, remarks,
-    batchProductId, batchMaterialId } = req.body;
+    batchProductId, batchMaterialId, workType, outsourceCategory } = req.body;
 
   const type = allocationType || "individual";
   if (type === "individual" && !stitcherId) {
@@ -161,6 +163,11 @@ router.post("/allocation", checkPermission("allocation", "create"), async (req, 
 
   const allocationNumber = generateAllocationNumber();
 
+  const validWorkTypes = ["simple_stitch", "outsource_required"];
+  const wt = validWorkTypes.includes(workType) ? workType : "simple_stitch";
+  const validCategories = ["heat_stone", "embroidery", "hand_stones"];
+  const oc = wt === "outsource_required" && validCategories.includes(outsourceCategory) ? outsourceCategory : null;
+
   const [allocation] = await db
     .insert(allocationsTable)
     .values({
@@ -170,6 +177,8 @@ router.post("/allocation", checkPermission("allocation", "create"), async (req, 
       stitcherId: type === "individual" ? stitcherId : null,
       teamId: type === "team" ? teamId : null,
       quantityIssued,
+      workType: wt,
+      outsourceCategory: oc,
       issueDate: new Date(issueDate),
       remarks,
       createdBy: (req as any).user?.username,

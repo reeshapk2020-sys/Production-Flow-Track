@@ -13,6 +13,10 @@ export interface CreateAllocationBody {
   stitcherId?: number;
   teamId?: number;
   quantityIssued: number;
+  /** 'simple_stitch' or 'outsource_required' */
+  workType?: string;
+  /** 'heat_stone', 'embroidery', or 'hand_stones' */
+  outsourceCategory?: string;
   issueDate: string;
   remarks?: string;
   /** Set product on the batch if missing (required for allocation) */

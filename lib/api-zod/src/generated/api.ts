@@ -646,6 +646,8 @@ export const GetCuttingBatchResponse = zod.object({
       quantityReceived: zod.number().optional(),
       quantityPending: zod.number().optional(),
       quantityRejected: zod.number().optional(),
+      workType: zod.string().optional(),
+      outsourceCategory: zod.string().nullish(),
       issueDate: zod.string().optional(),
       remarks: zod.string().optional(),
       status: zod.string().optional(),
@@ -748,6 +750,8 @@ export const ListAllocationsResponseItem = zod.object({
   quantityReceived: zod.number().optional(),
   quantityPending: zod.number().optional(),
   quantityRejected: zod.number().optional(),
+  workType: zod.string().optional(),
+  outsourceCategory: zod.string().nullish(),
   issueDate: zod.string().optional(),
   remarks: zod.string().optional(),
   status: zod.string().optional(),
@@ -763,6 +767,14 @@ export const CreateAllocationBody = zod.object({
   stitcherId: zod.number().optional(),
   teamId: zod.number().optional(),
   quantityIssued: zod.number(),
+  workType: zod
+    .string()
+    .optional()
+    .describe("'simple_stitch' or 'outsource_required'"),
+  outsourceCategory: zod
+    .string()
+    .optional()
+    .describe("'heat_stone', 'embroidery', or 'hand_stones'"),
   issueDate: zod.string(),
   remarks: zod.string().optional(),
   batchProductId: zod
@@ -813,6 +825,8 @@ export const GetAllocationResponse = zod.object({
   quantityReceived: zod.number().optional(),
   quantityPending: zod.number().optional(),
   quantityRejected: zod.number().optional(),
+  workType: zod.string().optional(),
+  outsourceCategory: zod.string().nullish(),
   issueDate: zod.string().optional(),
   remarks: zod.string().optional(),
   status: zod.string().optional(),
@@ -859,6 +873,8 @@ export const UpdateAllocationResponse = zod.object({
   quantityReceived: zod.number().optional(),
   quantityPending: zod.number().optional(),
   quantityRejected: zod.number().optional(),
+  workType: zod.string().optional(),
+  outsourceCategory: zod.string().nullish(),
   issueDate: zod.string().optional(),
   remarks: zod.string().optional(),
   status: zod.string().optional(),
@@ -935,6 +951,118 @@ export const UpdateReceivingResponse = zod.object({
   receiveDate: zod.string(),
   remarks: zod.string().optional(),
   receivedBy: zod.string().optional(),
+});
+
+/**
+ * @summary List all outsource transfers
+ */
+export const ListOutsourceTransfersQueryParams = zod.object({
+  startDate: zod.coerce.string().optional(),
+  endDate: zod.coerce.string().optional(),
+  outsourceCategory: zod.coerce.string().optional(),
+  status: zod.coerce.string().optional(),
+  batchNumber: zod.coerce.string().optional(),
+  allocationId: zod.coerce.number().optional(),
+});
+
+export const ListOutsourceTransfersResponseItem = zod.object({
+  id: zod.number(),
+  allocationId: zod.number(),
+  allocationNumber: zod.string().optional(),
+  batchNumber: zod.string().optional(),
+  productName: zod.string().optional(),
+  productCode: zod.string().optional(),
+  colorName: zod.string().optional(),
+  colorCode: zod.string().optional(),
+  sizeName: zod.string().optional(),
+  outsourceCategory: zod.string().optional(),
+  quantitySent: zod.number(),
+  quantityReturned: zod.number().optional(),
+  quantityDamaged: zod.number().optional(),
+  quantityPending: zod.number().optional(),
+  vendorName: zod.string().nullish(),
+  sendDate: zod.string().optional(),
+  returnDate: zod.string().nullish(),
+  status: zod.string().optional(),
+  remarks: zod.string().nullish(),
+  assigneeName: zod.string().optional(),
+  allocationType: zod.string().optional(),
+  createdAt: zod.string().optional(),
+});
+export const ListOutsourceTransfersResponse = zod.array(
+  ListOutsourceTransfersResponseItem,
+);
+
+/**
+ * @summary List allocations that require outsource work
+ */
+export const ListOutsourceAllocationsResponseItem = zod.object({
+  id: zod.number(),
+  allocationNumber: zod.string().optional(),
+  batchNumber: zod.string().optional(),
+  productName: zod.string().optional(),
+  quantityIssued: zod.number(),
+  quantityReceived: zod.number().optional(),
+  workType: zod.string().optional(),
+  outsourceCategory: zod.string().nullish(),
+  assigneeName: zod.string().optional(),
+  allocationType: zod.string().optional(),
+  status: zod.string().optional(),
+  totalSentToOutsource: zod.number().optional(),
+  totalReturnedFromOutsource: zod.number().optional(),
+  totalDamagedInOutsource: zod.number().optional(),
+  availableToSend: zod.number().optional(),
+});
+export const ListOutsourceAllocationsResponse = zod.array(
+  ListOutsourceAllocationsResponseItem,
+);
+
+/**
+ * @summary Send pieces to outsource vendor
+ */
+export const SendToOutsourceBody = zod.object({
+  allocationId: zod.number(),
+  quantitySent: zod.number(),
+  outsourceCategory: zod.string().optional(),
+  vendorName: zod.string().optional(),
+  sendDate: zod.string().optional(),
+  remarks: zod.string().optional(),
+});
+
+/**
+ * @summary Record return from outsource vendor
+ */
+export const ReturnFromOutsourceBody = zod.object({
+  outsourceTransferId: zod.number(),
+  quantityReturned: zod.number(),
+  quantityDamaged: zod.number().optional(),
+  returnDate: zod.string().optional(),
+  remarks: zod.string().optional(),
+});
+
+export const ReturnFromOutsourceResponse = zod.object({
+  id: zod.number(),
+  allocationId: zod.number(),
+  allocationNumber: zod.string().optional(),
+  batchNumber: zod.string().optional(),
+  productName: zod.string().optional(),
+  productCode: zod.string().optional(),
+  colorName: zod.string().optional(),
+  colorCode: zod.string().optional(),
+  sizeName: zod.string().optional(),
+  outsourceCategory: zod.string().optional(),
+  quantitySent: zod.number(),
+  quantityReturned: zod.number().optional(),
+  quantityDamaged: zod.number().optional(),
+  quantityPending: zod.number().optional(),
+  vendorName: zod.string().nullish(),
+  sendDate: zod.string().optional(),
+  returnDate: zod.string().nullish(),
+  status: zod.string().optional(),
+  remarks: zod.string().nullish(),
+  assigneeName: zod.string().optional(),
+  allocationType: zod.string().optional(),
+  createdAt: zod.string().optional(),
 });
 
 /**
