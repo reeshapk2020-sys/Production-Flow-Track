@@ -11,4 +11,6 @@ export type OrderDetailSummary = {
   totalReceived?: number;
   totalFinished?: number;
   totalOutsourced?: number;
+  totalDispatched?: number;
+  totalDelivered?: number;
 };

@@ -28,6 +28,7 @@ import type {
   CreateCategoryBody,
   CreateColorBody,
   CreateCuttingBatchBody,
+  CreateDispatchBody,
   CreateFabricBody,
   CreateFabricRollBody,
   CreateFinishedGoodsBody,
@@ -46,6 +47,11 @@ import type {
   CuttingBatchDetail,
   DailyProductionReport,
   DashboardData,
+  DispatchAvailableStock,
+  DispatchByItemReport,
+  DispatchBySourceResponse,
+  DispatchEntry,
+  DispatchReportSummary,
   Fabric,
   FabricRoll,
   FinishedGoodsBatchInfo,
@@ -56,6 +62,8 @@ import type {
   GetBatchStatusReportParams,
   GetCurrentAuthUserResponse,
   GetDailyProductionReportParams,
+  GetDispatchReportByItemParams,
+  GetDispatchReportSummaryParams,
   GetStitcherPerformanceReportParams,
   GetTeamPerformanceReportParams,
   HealthStatus,
@@ -64,6 +72,7 @@ import type {
   InventorySummary,
   ListAllocationsParams,
   ListCuttingBatchesParams,
+  ListDispatchesParams,
   ListFinishedGoodsParams,
   ListFinishingRecordsParams,
   ListOpeningFinishedGoodsParams,
@@ -95,6 +104,7 @@ import type {
   UpdateAllocationBody,
   UpdateColorBody,
   UpdateCuttingBatchBody,
+  UpdateDispatchBody,
   UpdateFabricBody,
   UpdateFabricRollBody,
   UpdateFinishedGoodsBody,
@@ -6935,6 +6945,827 @@ export const useUpdateOrder = <
 > => {
   return useMutation(getUpdateOrderMutationOptions(options));
 };
+
+/**
+ * @summary List dispatches with filters
+ */
+export const getListDispatchesUrl = (params?: ListDispatchesParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/dispatch?${stringifiedParams}`
+    : `/api/dispatch`;
+};
+
+export const listDispatches = async (
+  params?: ListDispatchesParams,
+  options?: RequestInit,
+): Promise<DispatchEntry[]> => {
+  return customFetch<DispatchEntry[]>(getListDispatchesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListDispatchesQueryKey = (params?: ListDispatchesParams) => {
+  return [`/api/dispatch`, ...(params ? [params] : [])] as const;
+};
+
+export const getListDispatchesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listDispatches>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListDispatchesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listDispatches>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListDispatchesQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listDispatches>>> = ({
+    signal,
+  }) => listDispatches(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listDispatches>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListDispatchesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listDispatches>>
+>;
+export type ListDispatchesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List dispatches with filters
+ */
+
+export function useListDispatches<
+  TData = Awaited<ReturnType<typeof listDispatches>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListDispatchesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listDispatches>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListDispatchesQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a dispatch
+ */
+export const getCreateDispatchUrl = () => {
+  return `/api/dispatch`;
+};
+
+export const createDispatch = async (
+  createDispatchBody: CreateDispatchBody,
+  options?: RequestInit,
+): Promise<DispatchEntry> => {
+  return customFetch<DispatchEntry>(getCreateDispatchUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createDispatchBody),
+  });
+};
+
+export const getCreateDispatchMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createDispatch>>,
+    TError,
+    { data: BodyType<CreateDispatchBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createDispatch>>,
+  TError,
+  { data: BodyType<CreateDispatchBody> },
+  TContext
+> => {
+  const mutationKey = ["createDispatch"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createDispatch>>,
+    { data: BodyType<CreateDispatchBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createDispatch(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateDispatchMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createDispatch>>
+>;
+export type CreateDispatchMutationBody = BodyType<CreateDispatchBody>;
+export type CreateDispatchMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a dispatch
+ */
+export const useCreateDispatch = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createDispatch>>,
+    TError,
+    { data: BodyType<CreateDispatchBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createDispatch>>,
+  TError,
+  { data: BodyType<CreateDispatchBody> },
+  TContext
+> => {
+  return useMutation(getCreateDispatchMutationOptions(options));
+};
+
+/**
+ * @summary Update dispatch (status, remarks, etc.)
+ */
+export const getUpdateDispatchUrl = (id: number) => {
+  return `/api/dispatch/${id}`;
+};
+
+export const updateDispatch = async (
+  id: number,
+  updateDispatchBody: UpdateDispatchBody,
+  options?: RequestInit,
+): Promise<DispatchEntry> => {
+  return customFetch<DispatchEntry>(getUpdateDispatchUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateDispatchBody),
+  });
+};
+
+export const getUpdateDispatchMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateDispatch>>,
+    TError,
+    { id: number; data: BodyType<UpdateDispatchBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateDispatch>>,
+  TError,
+  { id: number; data: BodyType<UpdateDispatchBody> },
+  TContext
+> => {
+  const mutationKey = ["updateDispatch"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateDispatch>>,
+    { id: number; data: BodyType<UpdateDispatchBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateDispatch(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateDispatchMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateDispatch>>
+>;
+export type UpdateDispatchMutationBody = BodyType<UpdateDispatchBody>;
+export type UpdateDispatchMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update dispatch (status, remarks, etc.)
+ */
+export const useUpdateDispatch = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateDispatch>>,
+    TError,
+    { id: number; data: BodyType<UpdateDispatchBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateDispatch>>,
+  TError,
+  { id: number; data: BodyType<UpdateDispatchBody> },
+  TContext
+> => {
+  return useMutation(getUpdateDispatchMutationOptions(options));
+};
+
+/**
+ * @summary Delete a dispatch
+ */
+export const getDeleteDispatchUrl = (id: number) => {
+  return `/api/dispatch/${id}`;
+};
+
+export const deleteDispatch = async (
+  id: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getDeleteDispatchUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteDispatchMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteDispatch>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteDispatch>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteDispatch"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteDispatch>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteDispatch(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteDispatchMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteDispatch>>
+>;
+
+export type DeleteDispatchMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a dispatch
+ */
+export const useDeleteDispatch = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteDispatch>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteDispatch>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteDispatchMutationOptions(options));
+};
+
+/**
+ * @summary Get available stock for dispatch
+ */
+export const getGetDispatchAvailableStockUrl = () => {
+  return `/api/dispatch/available-stock`;
+};
+
+export const getDispatchAvailableStock = async (
+  options?: RequestInit,
+): Promise<DispatchAvailableStock[]> => {
+  return customFetch<DispatchAvailableStock[]>(
+    getGetDispatchAvailableStockUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetDispatchAvailableStockQueryKey = () => {
+  return [`/api/dispatch/available-stock`] as const;
+};
+
+export const getGetDispatchAvailableStockQueryOptions = <
+  TData = Awaited<ReturnType<typeof getDispatchAvailableStock>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getDispatchAvailableStock>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetDispatchAvailableStockQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getDispatchAvailableStock>>
+  > = ({ signal }) => getDispatchAvailableStock({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getDispatchAvailableStock>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetDispatchAvailableStockQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getDispatchAvailableStock>>
+>;
+export type GetDispatchAvailableStockQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get available stock for dispatch
+ */
+
+export function useGetDispatchAvailableStock<
+  TData = Awaited<ReturnType<typeof getDispatchAvailableStock>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getDispatchAvailableStock>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetDispatchAvailableStockQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Dispatch summary report
+ */
+export const getGetDispatchReportSummaryUrl = (
+  params?: GetDispatchReportSummaryParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/dispatch/reports/summary?${stringifiedParams}`
+    : `/api/dispatch/reports/summary`;
+};
+
+export const getDispatchReportSummary = async (
+  params?: GetDispatchReportSummaryParams,
+  options?: RequestInit,
+): Promise<DispatchReportSummary> => {
+  return customFetch<DispatchReportSummary>(
+    getGetDispatchReportSummaryUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetDispatchReportSummaryQueryKey = (
+  params?: GetDispatchReportSummaryParams,
+) => {
+  return [
+    `/api/dispatch/reports/summary`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetDispatchReportSummaryQueryOptions = <
+  TData = Awaited<ReturnType<typeof getDispatchReportSummary>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetDispatchReportSummaryParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDispatchReportSummary>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetDispatchReportSummaryQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getDispatchReportSummary>>
+  > = ({ signal }) =>
+    getDispatchReportSummary(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getDispatchReportSummary>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetDispatchReportSummaryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getDispatchReportSummary>>
+>;
+export type GetDispatchReportSummaryQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Dispatch summary report
+ */
+
+export function useGetDispatchReportSummary<
+  TData = Awaited<ReturnType<typeof getDispatchReportSummary>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetDispatchReportSummaryParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDispatchReportSummary>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetDispatchReportSummaryQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Dispatch report by item
+ */
+export const getGetDispatchReportByItemUrl = (
+  params?: GetDispatchReportByItemParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/dispatch/reports/by-item?${stringifiedParams}`
+    : `/api/dispatch/reports/by-item`;
+};
+
+export const getDispatchReportByItem = async (
+  params?: GetDispatchReportByItemParams,
+  options?: RequestInit,
+): Promise<DispatchByItemReport[]> => {
+  return customFetch<DispatchByItemReport[]>(
+    getGetDispatchReportByItemUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetDispatchReportByItemQueryKey = (
+  params?: GetDispatchReportByItemParams,
+) => {
+  return [
+    `/api/dispatch/reports/by-item`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetDispatchReportByItemQueryOptions = <
+  TData = Awaited<ReturnType<typeof getDispatchReportByItem>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetDispatchReportByItemParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDispatchReportByItem>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetDispatchReportByItemQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getDispatchReportByItem>>
+  > = ({ signal }) =>
+    getDispatchReportByItem(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getDispatchReportByItem>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetDispatchReportByItemQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getDispatchReportByItem>>
+>;
+export type GetDispatchReportByItemQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Dispatch report by item
+ */
+
+export function useGetDispatchReportByItem<
+  TData = Awaited<ReturnType<typeof getDispatchReportByItem>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetDispatchReportByItemParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDispatchReportByItem>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetDispatchReportByItemQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get dispatches for a PO
+ */
+export const getGetDispatchesByPoUrl = (poId: number) => {
+  return `/api/dispatch/by-po/${poId}`;
+};
+
+export const getDispatchesByPo = async (
+  poId: number,
+  options?: RequestInit,
+): Promise<DispatchBySourceResponse> => {
+  return customFetch<DispatchBySourceResponse>(getGetDispatchesByPoUrl(poId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetDispatchesByPoQueryKey = (poId: number) => {
+  return [`/api/dispatch/by-po/${poId}`] as const;
+};
+
+export const getGetDispatchesByPoQueryOptions = <
+  TData = Awaited<ReturnType<typeof getDispatchesByPo>>,
+  TError = ErrorType<unknown>,
+>(
+  poId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDispatchesByPo>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetDispatchesByPoQueryKey(poId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getDispatchesByPo>>
+  > = ({ signal }) => getDispatchesByPo(poId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!poId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getDispatchesByPo>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetDispatchesByPoQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getDispatchesByPo>>
+>;
+export type GetDispatchesByPoQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get dispatches for a PO
+ */
+
+export function useGetDispatchesByPo<
+  TData = Awaited<ReturnType<typeof getDispatchesByPo>>,
+  TError = ErrorType<unknown>,
+>(
+  poId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDispatchesByPo>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetDispatchesByPoQueryOptions(poId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get dispatches for an Order
+ */
+export const getGetDispatchesByOrderUrl = (orderId: number) => {
+  return `/api/dispatch/by-order/${orderId}`;
+};
+
+export const getDispatchesByOrder = async (
+  orderId: number,
+  options?: RequestInit,
+): Promise<DispatchBySourceResponse> => {
+  return customFetch<DispatchBySourceResponse>(
+    getGetDispatchesByOrderUrl(orderId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetDispatchesByOrderQueryKey = (orderId: number) => {
+  return [`/api/dispatch/by-order/${orderId}`] as const;
+};
+
+export const getGetDispatchesByOrderQueryOptions = <
+  TData = Awaited<ReturnType<typeof getDispatchesByOrder>>,
+  TError = ErrorType<unknown>,
+>(
+  orderId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDispatchesByOrder>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetDispatchesByOrderQueryKey(orderId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getDispatchesByOrder>>
+  > = ({ signal }) =>
+    getDispatchesByOrder(orderId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!orderId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getDispatchesByOrder>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetDispatchesByOrderQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getDispatchesByOrder>>
+>;
+export type GetDispatchesByOrderQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get dispatches for an Order
+ */
+
+export function useGetDispatchesByOrder<
+  TData = Awaited<ReturnType<typeof getDispatchesByOrder>>,
+  TError = ErrorType<unknown>,
+>(
+  orderId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDispatchesByOrder>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetDispatchesByOrderQueryOptions(orderId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Get full batch journey trace

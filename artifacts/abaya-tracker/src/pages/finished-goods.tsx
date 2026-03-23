@@ -58,11 +58,13 @@ function StockSummaryTab() {
               <TableHead>Color</TableHead>
               <TableHead className="text-right text-amber-600">Opening Qty</TableHead>
               <TableHead className="text-right text-blue-600">Produced Qty</TableHead>
-              <TableHead className="text-right text-emerald-700 font-bold">Total Available</TableHead>
+              <TableHead className="text-right text-slate-500">Total</TableHead>
+              <TableHead className="text-right text-red-500">Dispatched</TableHead>
+              <TableHead className="text-right text-emerald-700 font-bold">Available</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={7} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-emerald-300" /></TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={9} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-emerald-300" /></TableCell></TableRow> :
               data?.map((item: any, i: number) => (
                 <TableRow key={i} className="hover:bg-slate-50/50">
                   <TableCell className="font-semibold text-slate-900">{fmtCode(item.productCode, item.productName)}</TableCell>
@@ -75,12 +77,14 @@ function StockSummaryTab() {
                   <TableCell>{fmtCode(item.colorCode, item.colorName) || 'Any'}</TableCell>
                   <TableCell className="text-right text-sm text-amber-600 font-medium">{item.openingQty || 0}</TableCell>
                   <TableCell className="text-right text-sm text-blue-600 font-medium">{item.producedQty || 0}</TableCell>
-                  <TableCell className="text-right font-display text-2xl font-bold text-emerald-600">{item.totalQuantity}</TableCell>
+                  <TableCell className="text-right text-sm text-slate-500">{item.totalQuantity}</TableCell>
+                  <TableCell className="text-right text-sm text-red-500 font-medium">{item.dispatchedQty || 0}</TableCell>
+                  <TableCell className="text-right font-display text-2xl font-bold text-emerald-600">{item.availableQty ?? item.totalQuantity}</TableCell>
                 </TableRow>
               ))
             }
             {data?.length === 0 && (
-              <TableRow><TableCell colSpan={7} className="text-center py-12 text-slate-500">Store is empty.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center py-12 text-slate-500">Store is empty.</TableCell></TableRow>
             )}
           </TableBody>
         </Table>

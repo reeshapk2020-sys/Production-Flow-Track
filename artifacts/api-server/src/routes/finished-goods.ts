@@ -10,6 +10,7 @@ import {
   sizesTable,
   colorsTable,
   openingFinishedGoodsTable,
+  dispatchesTable,
 } from "@workspace/db/schema";
 import { eq, sql, and, gte, lte, ilike } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -179,6 +180,8 @@ router.get("/finished-goods/stock", checkPermission("finished-goods", "view"), a
       sizeName: sizesTable.name,
       colorCode: colorsTable.code,
       colorName: colorsTable.name,
+      materialCode: mat1.code,
+      material2Code: mat2.code,
       producedQty: sql<number>`SUM(${finishedGoodsTable.quantity})::int`,
     })
     .from(finishedGoodsTable)
@@ -186,7 +189,9 @@ router.get("/finished-goods/stock", checkPermission("finished-goods", "view"), a
     .leftJoin(productsTable, eq(cuttingBatchesTable.productId, productsTable.id))
     .leftJoin(sizesTable, eq(cuttingBatchesTable.sizeId, sizesTable.id))
     .leftJoin(colorsTable, eq(cuttingBatchesTable.colorId, colorsTable.id))
-    .groupBy(productsTable.code, productsTable.name, sizesTable.name, colorsTable.code, colorsTable.name)
+    .leftJoin(mat1, eq(cuttingBatchesTable.materialId, mat1.id))
+    .leftJoin(mat2, eq(cuttingBatchesTable.material2Id, mat2.id))
+    .groupBy(productsTable.code, productsTable.name, sizesTable.name, colorsTable.code, colorsTable.name, mat1.code, mat2.code)
     .orderBy(productsTable.name);
 
   const openingRows = await db
@@ -211,11 +216,11 @@ router.get("/finished-goods/stock", checkPermission("finished-goods", "view"), a
   const mergedMap = new Map<string, any>();
 
   const normalize = (s: string | null | undefined) => (s || "").trim().toLowerCase();
-  const makeKey = (productCode: string | null, sizeName: string | null, colorCode: string | null, colorName: string | null) =>
-    `${normalize(productCode)}|${normalize(sizeName)}|${normalize(colorCode || colorName)}`;
+  const makeKey = (productCode: string | null, sizeName: string | null, colorCode: string | null, colorName: string | null, materialCode?: string | null, material2Code?: string | null) =>
+    `${normalize(productCode)}|${normalize(sizeName)}|${normalize(colorCode || colorName)}|${normalize(materialCode)}|${normalize(material2Code)}`;
 
   for (const r of producedRows) {
-    const key = makeKey(r.productCode, r.sizeName, r.colorCode, r.colorName);
+    const key = makeKey(r.productCode, r.sizeName, r.colorCode, r.colorName, r.materialCode, r.material2Code);
     const existing = mergedMap.get(key);
     if (existing) {
       existing.producedQty += r.producedQty;
@@ -227,7 +232,7 @@ router.get("/finished-goods/stock", checkPermission("finished-goods", "view"), a
         sizeName: r.sizeName,
         colorCode: r.colorCode,
         colorName: r.colorName,
-        itemCode: [r.productCode, r.colorCode].filter(Boolean).join("-") || null,
+        itemCode: computeItemCode(r.productCode, r.colorCode, r.materialCode, r.material2Code) || null,
         producedQty: r.producedQty,
         openingQty: 0,
         totalQuantity: r.producedQty,
@@ -254,6 +259,52 @@ router.get("/finished-goods/stock", checkPermission("finished-goods", "view"), a
         totalQuantity: r.openingQty,
       });
     }
+  }
+
+  const dispatchedRows = await db
+    .select({
+      itemCode: dispatchesTable.itemCode,
+      dispatchedQty: sql<number>`SUM(${dispatchesTable.quantity})::int`,
+    })
+    .from(dispatchesTable)
+    .groupBy(dispatchesTable.itemCode);
+
+  const dispatchByItemCode = new Map<string, number>();
+  for (const d of dispatchedRows) {
+    const key = normalize(d.itemCode);
+    dispatchByItemCode.set(key, (dispatchByItemCode.get(key) || 0) + d.dispatchedQty);
+  }
+
+  const itemCodeGroups = new Map<string, string[]>();
+  for (const [k, v] of mergedMap.entries()) {
+    const ic = normalize(v.itemCode);
+    if (!itemCodeGroups.has(ic)) itemCodeGroups.set(ic, []);
+    itemCodeGroups.get(ic)!.push(k);
+  }
+
+  for (const [ic, totalDispatched] of dispatchByItemCode.entries()) {
+    const keys = itemCodeGroups.get(ic) || [];
+    if (keys.length === 0) continue;
+    const totalStock = keys.reduce((sum, k) => sum + (mergedMap.get(k)?.totalQuantity || 0), 0);
+    let remaining = totalDispatched;
+    for (const k of keys) {
+      const v = mergedMap.get(k)!;
+      const share = totalStock > 0 ? Math.round((v.totalQuantity / totalStock) * totalDispatched) : 0;
+      const allocated = Math.min(share, remaining);
+      v.dispatchedQty = allocated;
+      v.availableQty = v.totalQuantity - allocated;
+      remaining -= allocated;
+    }
+    if (remaining > 0 && keys.length > 0) {
+      const last = mergedMap.get(keys[keys.length - 1])!;
+      last.dispatchedQty += remaining;
+      last.availableQty = last.totalQuantity - last.dispatchedQty;
+    }
+  }
+
+  for (const v of mergedMap.values()) {
+    if (v.dispatchedQty === undefined) v.dispatchedQty = 0;
+    if (v.availableQty === undefined) v.availableQty = v.totalQuantity;
   }
 
   const result = Array.from(mergedMap.values()).sort((a, b) => (a.productName || "").localeCompare(b.productName || ""));

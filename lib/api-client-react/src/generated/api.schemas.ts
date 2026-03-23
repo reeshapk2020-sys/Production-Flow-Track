@@ -383,6 +383,8 @@ export type PurchaseOrderDetailSummary = {
   totalReceived?: number;
   totalFinished?: number;
   totalOutsourced?: number;
+  totalDispatched?: number;
+  totalDelivered?: number;
 };
 
 export interface PurchaseOrderDetail {
@@ -424,6 +426,8 @@ export type OrderDetailSummary = {
   totalReceived?: number;
   totalFinished?: number;
   totalOutsourced?: number;
+  totalDispatched?: number;
+  totalDelivered?: number;
 };
 
 export interface OrderDetail {
@@ -672,6 +676,8 @@ export interface StockSummary {
   itemCode?: string | null;
   producedQty?: number;
   openingQty?: number;
+  dispatchedQty?: number;
+  availableQty?: number;
   totalQuantity: number;
 }
 
@@ -876,6 +882,120 @@ export interface OpeningFinishedGoodsSummary {
   totalQuantity: number;
 }
 
+export type DispatchEntryDestinationType =
+  (typeof DispatchEntryDestinationType)[keyof typeof DispatchEntryDestinationType];
+
+export const DispatchEntryDestinationType = {
+  reesha: "reesha",
+  purchase_order: "purchase_order",
+  order: "order",
+} as const;
+
+export type DispatchEntryDeliveryStatus =
+  (typeof DispatchEntryDeliveryStatus)[keyof typeof DispatchEntryDeliveryStatus];
+
+export const DispatchEntryDeliveryStatus = {
+  pending: "pending",
+  dispatched: "dispatched",
+  delivered: "delivered",
+} as const;
+
+export interface DispatchEntry {
+  id: number;
+  dispatchNumber: string;
+  dispatchDate: string;
+  itemCode: string;
+  productCode?: string | null;
+  productName?: string | null;
+  sizeName?: string | null;
+  colorName?: string | null;
+  quantity: number;
+  destinationType: DispatchEntryDestinationType;
+  poId?: number | null;
+  orderId?: number | null;
+  poNumber?: string | null;
+  orderNumber?: string | null;
+  customerName?: string | null;
+  deliveryStatus: DispatchEntryDeliveryStatus;
+  deliveryDate?: string | null;
+  remarks?: string | null;
+  createdBy?: string | null;
+  createdAt?: string;
+}
+
+export type CreateDispatchBodyDestinationType =
+  (typeof CreateDispatchBodyDestinationType)[keyof typeof CreateDispatchBodyDestinationType];
+
+export const CreateDispatchBodyDestinationType = {
+  reesha: "reesha",
+  purchase_order: "purchase_order",
+  order: "order",
+} as const;
+
+export interface CreateDispatchBody {
+  dispatchDate: string;
+  itemCode: string;
+  productCode?: string;
+  productName?: string;
+  sizeName?: string;
+  colorName?: string;
+  quantity: number;
+  destinationType?: CreateDispatchBodyDestinationType;
+  poId?: number;
+  orderId?: number;
+  customerName?: string;
+  remarks?: string;
+}
+
+export type UpdateDispatchBodyDeliveryStatus =
+  (typeof UpdateDispatchBodyDeliveryStatus)[keyof typeof UpdateDispatchBodyDeliveryStatus];
+
+export const UpdateDispatchBodyDeliveryStatus = {
+  pending: "pending",
+  dispatched: "dispatched",
+  delivered: "delivered",
+} as const;
+
+export interface UpdateDispatchBody {
+  deliveryStatus?: UpdateDispatchBodyDeliveryStatus;
+  deliveryDate?: string;
+  customerName?: string;
+  remarks?: string;
+}
+
+export interface DispatchAvailableStock {
+  itemCode: string;
+  available: number;
+}
+
+export type DispatchReportSummaryByDestination = { [key: string]: number };
+
+export interface DispatchReportSummary {
+  totalQuantity: number;
+  pending: number;
+  dispatched: number;
+  delivered: number;
+  byDestination?: DispatchReportSummaryByDestination;
+}
+
+export interface DispatchByItemReport {
+  itemCode: string;
+  productName?: string | null;
+  totalQuantity: number;
+  totalRecords: number;
+}
+
+export type DispatchBySourceResponseSummary = {
+  totalDispatched?: number;
+  totalDelivered?: number;
+  totalPending?: number;
+};
+
+export interface DispatchBySourceResponse {
+  dispatches: DispatchEntry[];
+  summary: DispatchBySourceResponseSummary;
+}
+
 export type ListCuttingBatchesParams = {
   startDate?: string;
   endDate?: string;
@@ -967,6 +1087,45 @@ export type GetAuditLogParams = {
   startDate?: string;
   endDate?: string;
   userId?: number;
+};
+
+export type ListDispatchesParams = {
+  dispatchNumber?: string;
+  itemCode?: string;
+  startDate?: string;
+  endDate?: string;
+  destinationType?: ListDispatchesDestinationType;
+  poId?: number;
+  orderId?: number;
+  deliveryStatus?: ListDispatchesDeliveryStatus;
+};
+
+export type ListDispatchesDestinationType =
+  (typeof ListDispatchesDestinationType)[keyof typeof ListDispatchesDestinationType];
+
+export const ListDispatchesDestinationType = {
+  reesha: "reesha",
+  purchase_order: "purchase_order",
+  order: "order",
+} as const;
+
+export type ListDispatchesDeliveryStatus =
+  (typeof ListDispatchesDeliveryStatus)[keyof typeof ListDispatchesDeliveryStatus];
+
+export const ListDispatchesDeliveryStatus = {
+  pending: "pending",
+  dispatched: "dispatched",
+  delivered: "delivered",
+} as const;
+
+export type GetDispatchReportSummaryParams = {
+  startDate?: string;
+  endDate?: string;
+};
+
+export type GetDispatchReportByItemParams = {
+  startDate?: string;
+  endDate?: string;
 };
 
 export type SearchTraceabilityParams = {

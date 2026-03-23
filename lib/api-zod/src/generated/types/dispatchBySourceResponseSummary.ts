@@ -6,11 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type PurchaseOrderDetailSummary = {
-  totalAllocated?: number;
-  totalReceived?: number;
-  totalFinished?: number;
-  totalOutsourced?: number;
+export type DispatchBySourceResponseSummary = {
   totalDispatched?: number;
   totalDelivered?: number;
+  totalPending?: number;
 };

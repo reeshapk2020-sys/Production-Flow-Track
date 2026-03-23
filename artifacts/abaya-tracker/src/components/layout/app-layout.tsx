@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Database, Layers, Scissors, Send,
   Inbox, Settings2, Package, Box, BarChart3,
   GitBranch, Shield, Users, LogOut, Loader2, ChevronRight, KeyRound, ArrowUpRight,
-  FileText, ShoppingCart, PackageOpen
+  FileText, ShoppingCart, PackageOpen, Truck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -23,6 +23,7 @@ const NAV_ITEMS = [
   { path: "/reports", label: "Reports", icon: BarChart3, roles: ["admin", "reporting"] },
   { path: "/purchase-orders", label: "Purchase Orders", icon: FileText, roles: ["admin", "cutting"] },
   { path: "/orders", label: "Orders", icon: ShoppingCart, roles: ["admin", "cutting"] },
+  { path: "/dispatch", label: "Dispatch", icon: Truck, roles: ["admin", "store"] },
   { path: "/traceability", label: "Traceability", icon: GitBranch, roles: ["all"] },
   { path: "/master", label: "Master Data", icon: Database, roles: ["admin"] },
   { path: "/users", label: "User Management", icon: Users, roles: ["admin"] },
@@ -55,6 +56,7 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
     "/reports": "reports",
     "/purchase-orders": "purchase-orders",
     "/orders": "orders",
+    "/dispatch": "dispatch",
   };
 
   const userRole = user?.role || "reporting";

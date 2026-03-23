@@ -15,5 +15,7 @@ export interface StockSummary {
   itemCode?: string | null;
   producedQty?: number;
   openingQty?: number;
+  dispatchedQty?: number;
+  availableQty?: number;
   totalQuantity: number;
 }

@@ -325,6 +325,41 @@ export const openingFinishedGoodsTable = pgTable("opening_finished_goods", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// ===== DISPATCHES =====
+
+export const dispatchDestinationEnum = pgEnum("dispatch_destination", [
+  "reesha",
+  "purchase_order",
+  "order",
+]);
+
+export const deliveryStatusEnum = pgEnum("delivery_status", [
+  "pending",
+  "dispatched",
+  "delivered",
+]);
+
+export const dispatchesTable = pgTable("dispatches", {
+  id: serial("id").primaryKey(),
+  dispatchNumber: text("dispatch_number").notNull().unique(),
+  dispatchDate: timestamp("dispatch_date").notNull(),
+  itemCode: text("item_code").notNull(),
+  productCode: text("product_code"),
+  productName: text("product_name"),
+  sizeName: text("size_name"),
+  colorName: text("color_name"),
+  quantity: integer("quantity").notNull(),
+  destinationType: dispatchDestinationEnum("destination_type").notNull().default("reesha"),
+  poId: integer("po_id").references(() => purchaseOrdersTable.id),
+  orderId: integer("order_id").references(() => ordersTable.id),
+  customerName: text("customer_name"),
+  deliveryStatus: deliveryStatusEnum("delivery_status").notNull().default("pending"),
+  deliveryDate: timestamp("delivery_date"),
+  remarks: text("remarks"),
+  createdBy: text("created_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // ===== AUDIT LOG =====
 
 export const auditLogsTable = pgTable("audit_logs", {
@@ -456,6 +491,13 @@ export const insertOpeningFinishedGoodsSchema = createInsertSchema(openingFinish
 });
 export type InsertOpeningFinishedGoods = z.infer<typeof insertOpeningFinishedGoodsSchema>;
 export type OpeningFinishedGoods = typeof openingFinishedGoodsTable.$inferSelect;
+
+export const insertDispatchSchema = createInsertSchema(dispatchesTable).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertDispatch = z.infer<typeof insertDispatchSchema>;
+export type Dispatch = typeof dispatchesTable.$inferSelect;
 
 export const insertAuditLogSchema = createInsertSchema(auditLogsTable).omit({
   id: true,

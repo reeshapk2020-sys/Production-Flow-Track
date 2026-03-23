@@ -1308,6 +1308,8 @@ export const GetFinishedGoodsStockResponseItem = zod.object({
   itemCode: zod.string().nullish(),
   producedQty: zod.number().optional(),
   openingQty: zod.number().optional(),
+  dispatchedQty: zod.number().optional(),
+  availableQty: zod.number().optional(),
   totalQuantity: zod.number(),
 });
 export const GetFinishedGoodsStockResponse = zod.array(
@@ -1775,6 +1777,8 @@ export const GetPurchaseOrderResponse = zod.object({
       totalReceived: zod.number().optional(),
       totalFinished: zod.number().optional(),
       totalOutsourced: zod.number().optional(),
+      totalDispatched: zod.number().optional(),
+      totalDelivered: zod.number().optional(),
     })
     .optional(),
 });
@@ -1889,6 +1893,8 @@ export const GetOrderResponse = zod.object({
       totalReceived: zod.number().optional(),
       totalFinished: zod.number().optional(),
       totalOutsourced: zod.number().optional(),
+      totalDispatched: zod.number().optional(),
+      totalDelivered: zod.number().optional(),
     })
     .optional(),
 });
@@ -1914,6 +1920,234 @@ export const UpdateOrderResponse = zod.object({
   remarks: zod.string().nullish(),
   status: zod.string(),
   createdAt: zod.string().optional(),
+});
+
+/**
+ * @summary List dispatches with filters
+ */
+export const ListDispatchesQueryParams = zod.object({
+  dispatchNumber: zod.coerce.string().optional(),
+  itemCode: zod.coerce.string().optional(),
+  startDate: zod.coerce.string().optional(),
+  endDate: zod.coerce.string().optional(),
+  destinationType: zod.enum(["reesha", "purchase_order", "order"]).optional(),
+  poId: zod.coerce.number().optional(),
+  orderId: zod.coerce.number().optional(),
+  deliveryStatus: zod.enum(["pending", "dispatched", "delivered"]).optional(),
+});
+
+export const ListDispatchesResponseItem = zod.object({
+  id: zod.number(),
+  dispatchNumber: zod.string(),
+  dispatchDate: zod.string(),
+  itemCode: zod.string(),
+  productCode: zod.string().nullish(),
+  productName: zod.string().nullish(),
+  sizeName: zod.string().nullish(),
+  colorName: zod.string().nullish(),
+  quantity: zod.number(),
+  destinationType: zod.enum(["reesha", "purchase_order", "order"]),
+  poId: zod.number().nullish(),
+  orderId: zod.number().nullish(),
+  poNumber: zod.string().nullish(),
+  orderNumber: zod.string().nullish(),
+  customerName: zod.string().nullish(),
+  deliveryStatus: zod.enum(["pending", "dispatched", "delivered"]),
+  deliveryDate: zod.string().nullish(),
+  remarks: zod.string().nullish(),
+  createdBy: zod.string().nullish(),
+  createdAt: zod.string().optional(),
+});
+export const ListDispatchesResponse = zod.array(ListDispatchesResponseItem);
+
+/**
+ * @summary Create a dispatch
+ */
+export const CreateDispatchBody = zod.object({
+  dispatchDate: zod.string(),
+  itemCode: zod.string(),
+  productCode: zod.string().optional(),
+  productName: zod.string().optional(),
+  sizeName: zod.string().optional(),
+  colorName: zod.string().optional(),
+  quantity: zod.number(),
+  destinationType: zod.enum(["reesha", "purchase_order", "order"]).optional(),
+  poId: zod.number().optional(),
+  orderId: zod.number().optional(),
+  customerName: zod.string().optional(),
+  remarks: zod.string().optional(),
+});
+
+/**
+ * @summary Update dispatch (status, remarks, etc.)
+ */
+export const UpdateDispatchParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateDispatchBody = zod.object({
+  deliveryStatus: zod.enum(["pending", "dispatched", "delivered"]).optional(),
+  deliveryDate: zod.string().optional(),
+  customerName: zod.string().optional(),
+  remarks: zod.string().optional(),
+});
+
+export const UpdateDispatchResponse = zod.object({
+  id: zod.number(),
+  dispatchNumber: zod.string(),
+  dispatchDate: zod.string(),
+  itemCode: zod.string(),
+  productCode: zod.string().nullish(),
+  productName: zod.string().nullish(),
+  sizeName: zod.string().nullish(),
+  colorName: zod.string().nullish(),
+  quantity: zod.number(),
+  destinationType: zod.enum(["reesha", "purchase_order", "order"]),
+  poId: zod.number().nullish(),
+  orderId: zod.number().nullish(),
+  poNumber: zod.string().nullish(),
+  orderNumber: zod.string().nullish(),
+  customerName: zod.string().nullish(),
+  deliveryStatus: zod.enum(["pending", "dispatched", "delivered"]),
+  deliveryDate: zod.string().nullish(),
+  remarks: zod.string().nullish(),
+  createdBy: zod.string().nullish(),
+  createdAt: zod.string().optional(),
+});
+
+/**
+ * @summary Delete a dispatch
+ */
+export const DeleteDispatchParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteDispatchResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string().optional(),
+});
+
+/**
+ * @summary Get available stock for dispatch
+ */
+export const GetDispatchAvailableStockResponseItem = zod.object({
+  itemCode: zod.string(),
+  available: zod.number(),
+});
+export const GetDispatchAvailableStockResponse = zod.array(
+  GetDispatchAvailableStockResponseItem,
+);
+
+/**
+ * @summary Dispatch summary report
+ */
+export const GetDispatchReportSummaryQueryParams = zod.object({
+  startDate: zod.coerce.string().optional(),
+  endDate: zod.coerce.string().optional(),
+});
+
+export const GetDispatchReportSummaryResponse = zod.object({
+  totalQuantity: zod.number(),
+  pending: zod.number(),
+  dispatched: zod.number(),
+  delivered: zod.number(),
+  byDestination: zod.record(zod.string(), zod.number()).optional(),
+});
+
+/**
+ * @summary Dispatch report by item
+ */
+export const GetDispatchReportByItemQueryParams = zod.object({
+  startDate: zod.coerce.string().optional(),
+  endDate: zod.coerce.string().optional(),
+});
+
+export const GetDispatchReportByItemResponseItem = zod.object({
+  itemCode: zod.string(),
+  productName: zod.string().nullish(),
+  totalQuantity: zod.number(),
+  totalRecords: zod.number(),
+});
+export const GetDispatchReportByItemResponse = zod.array(
+  GetDispatchReportByItemResponseItem,
+);
+
+/**
+ * @summary Get dispatches for a PO
+ */
+export const GetDispatchesByPoParams = zod.object({
+  poId: zod.coerce.number(),
+});
+
+export const GetDispatchesByPoResponse = zod.object({
+  dispatches: zod.array(
+    zod.object({
+      id: zod.number(),
+      dispatchNumber: zod.string(),
+      dispatchDate: zod.string(),
+      itemCode: zod.string(),
+      productCode: zod.string().nullish(),
+      productName: zod.string().nullish(),
+      sizeName: zod.string().nullish(),
+      colorName: zod.string().nullish(),
+      quantity: zod.number(),
+      destinationType: zod.enum(["reesha", "purchase_order", "order"]),
+      poId: zod.number().nullish(),
+      orderId: zod.number().nullish(),
+      poNumber: zod.string().nullish(),
+      orderNumber: zod.string().nullish(),
+      customerName: zod.string().nullish(),
+      deliveryStatus: zod.enum(["pending", "dispatched", "delivered"]),
+      deliveryDate: zod.string().nullish(),
+      remarks: zod.string().nullish(),
+      createdBy: zod.string().nullish(),
+      createdAt: zod.string().optional(),
+    }),
+  ),
+  summary: zod.object({
+    totalDispatched: zod.number().optional(),
+    totalDelivered: zod.number().optional(),
+    totalPending: zod.number().optional(),
+  }),
+});
+
+/**
+ * @summary Get dispatches for an Order
+ */
+export const GetDispatchesByOrderParams = zod.object({
+  orderId: zod.coerce.number(),
+});
+
+export const GetDispatchesByOrderResponse = zod.object({
+  dispatches: zod.array(
+    zod.object({
+      id: zod.number(),
+      dispatchNumber: zod.string(),
+      dispatchDate: zod.string(),
+      itemCode: zod.string(),
+      productCode: zod.string().nullish(),
+      productName: zod.string().nullish(),
+      sizeName: zod.string().nullish(),
+      colorName: zod.string().nullish(),
+      quantity: zod.number(),
+      destinationType: zod.enum(["reesha", "purchase_order", "order"]),
+      poId: zod.number().nullish(),
+      orderId: zod.number().nullish(),
+      poNumber: zod.string().nullish(),
+      orderNumber: zod.string().nullish(),
+      customerName: zod.string().nullish(),
+      deliveryStatus: zod.enum(["pending", "dispatched", "delivered"]),
+      deliveryDate: zod.string().nullish(),
+      remarks: zod.string().nullish(),
+      createdBy: zod.string().nullish(),
+      createdAt: zod.string().optional(),
+    }),
+  ),
+  summary: zod.object({
+    totalDispatched: zod.number().optional(),
+    totalDelivered: zod.number().optional(),
+    totalPending: zod.number().optional(),
+  }),
 });
 
 /**

@@ -13,6 +13,7 @@ import {
   finishingRecordsTable,
   finishedGoodsTable,
   outsourceTransfersTable,
+  dispatchesTable,
 } from "@workspace/db/schema";
 import { eq, sql, ilike } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -95,6 +96,14 @@ router.get("/purchase-orders", checkPermission("purchase-orders", "view"), async
       };
     }));
 
+    const [dispSums] = await db
+      .select({
+        totalDispatched: sql<number>`COALESCE(SUM(${dispatchesTable.quantity}), 0)::int`,
+        totalDelivered: sql<number>`COALESCE(SUM(CASE WHEN ${dispatchesTable.deliveryStatus} = 'delivered' THEN ${dispatchesTable.quantity} ELSE 0 END), 0)::int`,
+      })
+      .from(dispatchesTable)
+      .where(eq(dispatchesTable.poId, po.id));
+
     const totalBatches = batchDetails.length;
     const totalQuantity = batchDetails.reduce((s, b) => s + b.quantityCut, 0);
     const totalCompleted = batchDetails.reduce((s, b) => s + b.totalFinished, 0);
@@ -105,7 +114,11 @@ router.get("/purchase-orders", checkPermission("purchase-orders", "view"), async
       ...po,
       supplierName: po.customerName,
       batches: batchDetails,
-      summary: { totalBatches, totalQuantity, totalCompleted, totalPending, inProgress },
+      summary: {
+        totalBatches, totalQuantity, totalCompleted, totalPending, inProgress,
+        totalDispatched: Number(dispSums?.totalDispatched ?? 0),
+        totalDelivered: Number(dispSums?.totalDelivered ?? 0),
+      },
     });
   }
 
@@ -139,7 +152,7 @@ router.get("/purchase-orders/:id", checkPermission("purchase-orders", "view"), a
     .leftJoin(sizesTable, eq(cuttingBatchesTable.sizeId, sizesTable.id))
     .where(eq(cuttingBatchesTable.poId, po.id));
 
-  const summary = { totalAllocated: 0, totalReceived: 0, totalFinished: 0, totalOutsourced: 0 };
+  const summary: Record<string, number> = { totalAllocated: 0, totalReceived: 0, totalFinished: 0, totalOutsourced: 0 };
   for (const b of batches) {
     const [allocSums] = await db.select({
       issued: sql<number>`COALESCE(SUM(${allocationsTable.quantityIssued}), 0)::int`,
@@ -158,6 +171,16 @@ router.get("/purchase-orders/:id", checkPermission("purchase-orders", "view"), a
     summary.totalFinished += Number(fgSums?.finished ?? 0);
     summary.totalOutsourced += Number(osSums?.sent ?? 0);
   }
+
+  const [dispSums] = await db
+    .select({
+      totalDispatched: sql<number>`COALESCE(SUM(${dispatchesTable.quantity}), 0)::int`,
+      totalDelivered: sql<number>`COALESCE(SUM(CASE WHEN ${dispatchesTable.deliveryStatus} = 'delivered' THEN ${dispatchesTable.quantity} ELSE 0 END), 0)::int`,
+    })
+    .from(dispatchesTable)
+    .where(eq(dispatchesTable.poId, po.id));
+  summary.totalDispatched = Number(dispSums?.totalDispatched ?? 0);
+  summary.totalDelivered = Number(dispSums?.totalDelivered ?? 0);
 
   res.json({ ...po, supplierName: po.customerName, batches, summary });
 });

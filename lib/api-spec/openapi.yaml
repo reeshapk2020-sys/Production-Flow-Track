@@ -37,6 +37,8 @@ tags:
     description: Purchase order management
   - name: orders
     description: Customer order management
+  - name: dispatch
+    description: Dispatch and delivery management
 
 paths:
   /healthz:
@@ -1693,6 +1695,215 @@ paths:
               schema:
                 $ref: "#/components/schemas/Order"
 
+  # DISPATCH
+  /dispatch:
+    get:
+      operationId: listDispatches
+      tags: [dispatch]
+      summary: List dispatches with filters
+      parameters:
+        - name: dispatchNumber
+          in: query
+          schema:
+            type: string
+        - name: itemCode
+          in: query
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+        - name: destinationType
+          in: query
+          schema:
+            type: string
+            enum: [reesha, purchase_order, order]
+        - name: poId
+          in: query
+          schema:
+            type: integer
+        - name: orderId
+          in: query
+          schema:
+            type: integer
+        - name: deliveryStatus
+          in: query
+          schema:
+            type: string
+            enum: [pending, dispatched, delivered]
+      responses:
+        "200":
+          description: List of dispatches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DispatchEntry"
+    post:
+      operationId: createDispatch
+      tags: [dispatch]
+      summary: Create a dispatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDispatchBody"
+      responses:
+        "201":
+          description: Created dispatch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DispatchEntry"
+
+  /dispatch/{id}:
+    put:
+      operationId: updateDispatch
+      tags: [dispatch]
+      summary: Update dispatch (status, remarks, etc.)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDispatchBody"
+      responses:
+        "200":
+          description: Updated dispatch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DispatchEntry"
+    delete:
+      operationId: deleteDispatch
+      tags: [dispatch]
+      summary: Delete a dispatch
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /dispatch/available-stock:
+    get:
+      operationId: getDispatchAvailableStock
+      tags: [dispatch]
+      summary: Get available stock for dispatch
+      responses:
+        "200":
+          description: Available stock by item code
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DispatchAvailableStock"
+
+  /dispatch/reports/summary:
+    get:
+      operationId: getDispatchReportSummary
+      tags: [dispatch]
+      summary: Dispatch summary report
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Summary report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DispatchReportSummary"
+
+  /dispatch/reports/by-item:
+    get:
+      operationId: getDispatchReportByItem
+      tags: [dispatch]
+      summary: Dispatch report by item
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: By-item report
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DispatchByItemReport"
+
+  /dispatch/by-po/{poId}:
+    get:
+      operationId: getDispatchesByPo
+      tags: [dispatch]
+      summary: Get dispatches for a PO
+      parameters:
+        - name: poId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Dispatches for PO
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DispatchBySourceResponse"
+
+  /dispatch/by-order/{orderId}:
+    get:
+      operationId: getDispatchesByOrder
+      tags: [dispatch]
+      summary: Get dispatches for an Order
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Dispatches for Order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DispatchBySourceResponse"
+
   # TRACEABILITY
   /traceability/batch/{batchNumber}:
     get:
@@ -2408,6 +2619,10 @@ components:
               type: integer
             totalOutsourced:
               type: integer
+            totalDispatched:
+              type: integer
+            totalDelivered:
+              type: integer
       required: [id, poNumber, supplierName, status]
 
     CreatePurchaseOrderBody:
@@ -2486,6 +2701,10 @@ components:
             totalFinished:
               type: integer
             totalOutsourced:
+              type: integer
+            totalDispatched:
+              type: integer
+            totalDelivered:
               type: integer
       required: [id, orderNumber, customerName, status]
 
@@ -3025,6 +3244,10 @@ components:
           type: integer
         openingQty:
           type: integer
+        dispatchedQty:
+          type: integer
+        availableQty:
+          type: integer
         totalQuantity:
           type: integer
       required: [productName, totalQuantity]
@@ -3416,3 +3639,164 @@ components:
         totalQuantity:
           type: integer
       required: [itemCode, totalQuantity]
+
+    # DISPATCH
+    DispatchEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        dispatchNumber:
+          type: string
+        dispatchDate:
+          type: string
+        itemCode:
+          type: string
+        productCode:
+          type: string
+          nullable: true
+        productName:
+          type: string
+          nullable: true
+        sizeName:
+          type: string
+          nullable: true
+        colorName:
+          type: string
+          nullable: true
+        quantity:
+          type: integer
+        destinationType:
+          type: string
+          enum: [reesha, purchase_order, order]
+        poId:
+          type: integer
+          nullable: true
+        orderId:
+          type: integer
+          nullable: true
+        poNumber:
+          type: string
+          nullable: true
+        orderNumber:
+          type: string
+          nullable: true
+        customerName:
+          type: string
+          nullable: true
+        deliveryStatus:
+          type: string
+          enum: [pending, dispatched, delivered]
+        deliveryDate:
+          type: string
+          nullable: true
+        remarks:
+          type: string
+          nullable: true
+        createdBy:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required: [id, dispatchNumber, dispatchDate, itemCode, quantity, destinationType, deliveryStatus]
+
+    CreateDispatchBody:
+      type: object
+      properties:
+        dispatchDate:
+          type: string
+        itemCode:
+          type: string
+        productCode:
+          type: string
+        productName:
+          type: string
+        sizeName:
+          type: string
+        colorName:
+          type: string
+        quantity:
+          type: integer
+        destinationType:
+          type: string
+          enum: [reesha, purchase_order, order]
+        poId:
+          type: integer
+        orderId:
+          type: integer
+        customerName:
+          type: string
+        remarks:
+          type: string
+      required: [dispatchDate, itemCode, quantity]
+
+    UpdateDispatchBody:
+      type: object
+      properties:
+        deliveryStatus:
+          type: string
+          enum: [pending, dispatched, delivered]
+        deliveryDate:
+          type: string
+        customerName:
+          type: string
+        remarks:
+          type: string
+
+    DispatchAvailableStock:
+      type: object
+      properties:
+        itemCode:
+          type: string
+        available:
+          type: integer
+      required: [itemCode, available]
+
+    DispatchReportSummary:
+      type: object
+      properties:
+        totalQuantity:
+          type: integer
+        pending:
+          type: integer
+        dispatched:
+          type: integer
+        delivered:
+          type: integer
+        byDestination:
+          type: object
+          additionalProperties:
+            type: integer
+      required: [totalQuantity, pending, dispatched, delivered]
+
+    DispatchByItemReport:
+      type: object
+      properties:
+        itemCode:
+          type: string
+        productName:
+          type: string
+          nullable: true
+        totalQuantity:
+          type: integer
+        totalRecords:
+          type: integer
+      required: [itemCode, totalQuantity, totalRecords]
+
+    DispatchBySourceResponse:
+      type: object
+      properties:
+        dispatches:
+          type: array
+          items:
+            $ref: "#/components/schemas/DispatchEntry"
+        summary:
+          type: object
+          properties:
+            totalDispatched:
+              type: integer
+            totalDelivered:
+              type: integer
+            totalPending:
+              type: integer
+      required: [dispatches, summary]

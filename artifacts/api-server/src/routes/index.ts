@@ -19,6 +19,7 @@ import permissionsRouter from "./permissions.js";
 import purchaseOrdersRouter from "./purchase-orders.js";
 import ordersRouter from "./orders.js";
 import openingFinishedGoodsRouter from "./opening-finished-goods.js";
+import dispatchRouter from "./dispatch.js";
 
 const router: IRouter = Router();
 
@@ -42,5 +43,6 @@ router.use(permissionsRouter);
 router.use(purchaseOrdersRouter);
 router.use(ordersRouter);
 router.use(openingFinishedGoodsRouter);
+router.use(dispatchRouter);
 
 export default router;

@@ -38,7 +38,7 @@ function OrderDetailRow({ orderId }: { orderId: number }) {
     <tr>
       <td colSpan={5} className="p-0">
         <div className="bg-slate-50 p-4 border-t">
-          <div className="grid grid-cols-4 gap-4 mb-3">
+          <div className="grid grid-cols-6 gap-4 mb-3">
             <div className="text-center p-2 bg-white rounded border">
               <div className="text-xs text-slate-500">Allocated</div>
               <div className="font-semibold">{summary.totalAllocated || 0}</div>
@@ -54,6 +54,14 @@ function OrderDetailRow({ orderId }: { orderId: number }) {
             <div className="text-center p-2 bg-white rounded border">
               <div className="text-xs text-slate-500">Outsourced</div>
               <div className="font-semibold">{summary.totalOutsourced || 0}</div>
+            </div>
+            <div className="text-center p-2 bg-white rounded border">
+              <div className="text-xs text-slate-500">Dispatched</div>
+              <div className="font-semibold">{summary.totalDispatched || 0}</div>
+            </div>
+            <div className="text-center p-2 bg-white rounded border">
+              <div className="text-xs text-slate-500">Delivered</div>
+              <div className="font-semibold">{summary.totalDelivered || 0}</div>
             </div>
           </div>
           {batches.length > 0 ? (

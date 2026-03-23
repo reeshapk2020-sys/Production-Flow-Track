@@ -48,6 +48,7 @@ artifacts/
 │       │   ├── purchase-orders.ts # Purchase order CRUD + batch summary
 │       │   ├── orders.ts         # Customer order CRUD + batch summary
 │       │   ├── opening-finished-goods.ts # Opening stock CRUD + CSV import + template
+│       │   ├── dispatch.ts       # Dispatch/delivery CRUD + stock validation + reports
 │       │   └── traceability.ts   # Batch journey tracing (includes production source)
 │       ├── lib/
 │       │   ├── auth.ts           # OIDC session management
@@ -96,6 +97,9 @@ lib/
 - `finishing_records` - Finishing stage records (pressing/buttons/hanger/packing)
 - `finished_goods` - Finished goods store entries
 
+### Dispatch / Delivery Tables
+- `dispatches` - Dispatch records (dispatchNumber auto DSP-NNNN, itemCode, quantity, destinationType reesha/purchase_order/order, poId/orderId FK, deliveryStatus pending/dispatched/delivered, deliveryDate)
+
 ### System Tables
 - `sessions` - Replit Auth session store
 - `users` - Replit Auth user profiles
@@ -126,7 +130,7 @@ Custom roles can be created dynamically from the admin Permissions page.
 - **Frontend**: `can(module, action)` helper in auth context — controls sidebar visibility, route access, and button visibility
 - **Frontend**: `getRoleLabel(role)` — returns human-readable role name (from map or auto-formatted)
 - **Admin page**: `/permissions` — grid UI for admin to toggle permissions per role + create/delete custom roles
-- **Modules**: products, colors, sizes, materials, teams, stitchers, fabric-rolls, cutting, allocation, outsource, receiving, finishing, finished-goods, reports, inventory
+- **Modules**: products, colors, sizes, materials, teams, stitchers, fabric-rolls, cutting, allocation, outsource, receiving, finishing, finished-goods, opening-finished-goods, dispatch, reports, inventory
 - **Actions**: view, create, edit, import
 - Admin role always has all permissions (enforced in code, cannot be changed via UI)
 - Default permissions seeded for all roles matching original hardcoded access patterns
