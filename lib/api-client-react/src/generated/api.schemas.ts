@@ -297,9 +297,14 @@ export interface Allocation {
   sizeName?: string;
   colorCode?: string;
   colorName?: string;
-  stitcherId?: number;
-  stitcherName?: string;
-  teamName?: string;
+  allocationType?: string;
+  stitcherId?: number | null;
+  stitcherName?: string | null;
+  teamId?: number | null;
+  teamName?: string | null;
+  stitcherTeamName?: string | null;
+  assigneeName?: string;
+  assigneeType?: string;
   quantityIssued: number;
   quantityReceived?: number;
   quantityPending?: number;
@@ -347,7 +352,10 @@ export interface UpdateCuttingBatchBody {
 
 export interface CreateAllocationBody {
   cuttingBatchId: number;
-  stitcherId: number;
+  /** 'individual' or 'team' */
+  allocationType?: string;
+  stitcherId?: number;
+  teamId?: number;
   quantityIssued: number;
   issueDate: string;
   remarks?: string;
@@ -564,8 +572,22 @@ export interface DashboardData {
   stageWisePending?: StagePending[];
 }
 
+export interface TeamPerformance {
+  teamId?: number;
+  teamName: string;
+  teamCode?: string;
+  memberCount?: number;
+  totalIssued: number;
+  totalReceived: number;
+  totalPending?: number;
+  totalRejected?: number;
+  efficiencyPct?: number;
+}
+
 export interface DailyProductionReport {
-  date: string;
+  date?: string;
+  startDate?: string;
+  endDate?: string;
   cutting: number;
   allocated: number;
   received: number;
@@ -638,14 +660,60 @@ export interface TraceSearchResult {
   batchNumber?: string;
 }
 
+export type ListCuttingBatchesParams = {
+  startDate?: string;
+  endDate?: string;
+  productId?: number;
+  colorId?: number;
+  sizeId?: number;
+};
+
+export type ListAllocationsParams = {
+  startDate?: string;
+  endDate?: string;
+  productId?: number;
+  colorId?: number;
+  sizeId?: number;
+  stitcherId?: number;
+  teamId?: number;
+};
+
+export type ListReceivingsParams = {
+  startDate?: string;
+  endDate?: string;
+  stitcherId?: number;
+};
+
+export type ListFinishingRecordsParams = {
+  startDate?: string;
+  endDate?: string;
+  productId?: number;
+  colorId?: number;
+};
+
+export type ListFinishedGoodsParams = {
+  startDate?: string;
+  endDate?: string;
+  productId?: number;
+  colorId?: number;
+};
+
 export type GetStitcherPerformanceReportParams = {
   startDate?: string;
   endDate?: string;
   stitcherId?: number;
 };
 
+export type GetTeamPerformanceReportParams = {
+  startDate?: string;
+  endDate?: string;
+  teamId?: number;
+};
+
 export type GetDailyProductionReportParams = {
   date?: string;
+  startDate?: string;
+  endDate?: string;
 };
 
 export type GetBatchStatusReportParams = {

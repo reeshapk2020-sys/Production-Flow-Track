@@ -7,7 +7,9 @@
  */
 
 export interface DailyProductionReport {
-  date: string;
+  date?: string;
+  startDate?: string;
+  endDate?: string;
   cutting: number;
   allocated: number;
   received: number;

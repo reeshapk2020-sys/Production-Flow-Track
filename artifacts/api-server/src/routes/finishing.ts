@@ -11,7 +11,7 @@ import {
   sizesTable,
   colorsTable,
 } from "@workspace/db/schema";
-import { eq, sql, inArray } from "drizzle-orm";
+import { eq, sql, inArray, and, gte, lte } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit.js";
 import { checkPermission } from "./permissions.js";
@@ -62,8 +62,15 @@ async function getTotalFinishingOutput(batchId: number): Promise<number> {
 // ─── Routes ─────────────────────────────────────────────────────────────────
 
 /** GET /finishing – all finishing records (all historical stages merged) */
-router.get("/finishing", checkPermission("finishing", "view"), async (_req, res) => {
-  const rows = await db
+router.get("/finishing", checkPermission("finishing", "view"), async (req, res) => {
+  const { startDate, endDate, productId, colorId } = req.query;
+  const conditions: any[] = [];
+  if (startDate) conditions.push(gte(finishingRecordsTable.processDate, new Date(startDate as string)));
+  if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); conditions.push(lte(finishingRecordsTable.processDate, ed)); }
+  if (productId) conditions.push(eq(cuttingBatchesTable.productId, Number(productId)));
+  if (colorId) conditions.push(eq(cuttingBatchesTable.colorId, Number(colorId)));
+
+  let q = db
     .select({
       id: finishingRecordsTable.id,
       cuttingBatchId: finishingRecordsTable.cuttingBatchId,
@@ -95,7 +102,10 @@ router.get("/finishing", checkPermission("finishing", "view"), async (_req, res)
     .leftJoin(mat2, eq(cuttingBatchesTable.material2Id, mat2.id))
     .leftJoin(sizesTable, eq(cuttingBatchesTable.sizeId, sizesTable.id))
     .leftJoin(colorsTable, eq(cuttingBatchesTable.colorId, colorsTable.id))
-    .orderBy(sql`${finishingRecordsTable.createdAt} desc`);
+    .$dynamic();
+
+  if (conditions.length > 0) q = q.where(and(...conditions));
+  const rows = await q.orderBy(sql`${finishingRecordsTable.createdAt} desc`);
 
   res.json(
     rows.map((r) => ({

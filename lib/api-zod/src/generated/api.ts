@@ -490,6 +490,14 @@ export const UpdateFabricRollResponse = zod.object({
 /**
  * @summary List all cutting batches
  */
+export const ListCuttingBatchesQueryParams = zod.object({
+  startDate: zod.coerce.string().optional(),
+  endDate: zod.coerce.string().optional(),
+  productId: zod.coerce.number().optional(),
+  colorId: zod.coerce.number().optional(),
+  sizeId: zod.coerce.number().optional(),
+});
+
 export const ListCuttingBatchesResponseItem = zod.object({
   id: zod.number(),
   batchNumber: zod.string(),
@@ -625,9 +633,14 @@ export const GetCuttingBatchResponse = zod.object({
       sizeName: zod.string().optional(),
       colorCode: zod.string().optional(),
       colorName: zod.string().optional(),
-      stitcherId: zod.number().optional(),
-      stitcherName: zod.string().optional(),
-      teamName: zod.string().optional(),
+      allocationType: zod.string().optional(),
+      stitcherId: zod.number().nullish(),
+      stitcherName: zod.string().nullish(),
+      teamId: zod.number().nullish(),
+      teamName: zod.string().nullish(),
+      stitcherTeamName: zod.string().nullish(),
+      assigneeName: zod.string().optional(),
+      assigneeType: zod.string().optional(),
       quantityIssued: zod.number(),
       quantityReceived: zod.number().optional(),
       quantityPending: zod.number().optional(),
@@ -694,6 +707,16 @@ export const UpdateCuttingBatchResponse = zod.object({
 /**
  * @summary List all allocations
  */
+export const ListAllocationsQueryParams = zod.object({
+  startDate: zod.coerce.string().optional(),
+  endDate: zod.coerce.string().optional(),
+  productId: zod.coerce.number().optional(),
+  colorId: zod.coerce.number().optional(),
+  sizeId: zod.coerce.number().optional(),
+  stitcherId: zod.coerce.number().optional(),
+  teamId: zod.coerce.number().optional(),
+});
+
 export const ListAllocationsResponseItem = zod.object({
   id: zod.number(),
   allocationNumber: zod.string().optional(),
@@ -711,9 +734,14 @@ export const ListAllocationsResponseItem = zod.object({
   sizeName: zod.string().optional(),
   colorCode: zod.string().optional(),
   colorName: zod.string().optional(),
-  stitcherId: zod.number().optional(),
-  stitcherName: zod.string().optional(),
-  teamName: zod.string().optional(),
+  allocationType: zod.string().optional(),
+  stitcherId: zod.number().nullish(),
+  stitcherName: zod.string().nullish(),
+  teamId: zod.number().nullish(),
+  teamName: zod.string().nullish(),
+  stitcherTeamName: zod.string().nullish(),
+  assigneeName: zod.string().optional(),
+  assigneeType: zod.string().optional(),
   quantityIssued: zod.number(),
   quantityReceived: zod.number().optional(),
   quantityPending: zod.number().optional(),
@@ -729,7 +757,9 @@ export const ListAllocationsResponse = zod.array(ListAllocationsResponseItem);
  */
 export const CreateAllocationBody = zod.object({
   cuttingBatchId: zod.number(),
-  stitcherId: zod.number(),
+  allocationType: zod.string().optional().describe("'individual' or 'team'"),
+  stitcherId: zod.number().optional(),
+  teamId: zod.number().optional(),
   quantityIssued: zod.number(),
   issueDate: zod.string(),
   remarks: zod.string().optional(),
@@ -769,9 +799,14 @@ export const GetAllocationResponse = zod.object({
   sizeName: zod.string().optional(),
   colorCode: zod.string().optional(),
   colorName: zod.string().optional(),
-  stitcherId: zod.number().optional(),
-  stitcherName: zod.string().optional(),
-  teamName: zod.string().optional(),
+  allocationType: zod.string().optional(),
+  stitcherId: zod.number().nullish(),
+  stitcherName: zod.string().nullish(),
+  teamId: zod.number().nullish(),
+  teamName: zod.string().nullish(),
+  stitcherTeamName: zod.string().nullish(),
+  assigneeName: zod.string().optional(),
+  assigneeType: zod.string().optional(),
   quantityIssued: zod.number(),
   quantityReceived: zod.number().optional(),
   quantityPending: zod.number().optional(),
@@ -810,9 +845,14 @@ export const UpdateAllocationResponse = zod.object({
   sizeName: zod.string().optional(),
   colorCode: zod.string().optional(),
   colorName: zod.string().optional(),
-  stitcherId: zod.number().optional(),
-  stitcherName: zod.string().optional(),
-  teamName: zod.string().optional(),
+  allocationType: zod.string().optional(),
+  stitcherId: zod.number().nullish(),
+  stitcherName: zod.string().nullish(),
+  teamId: zod.number().nullish(),
+  teamName: zod.string().nullish(),
+  stitcherTeamName: zod.string().nullish(),
+  assigneeName: zod.string().optional(),
+  assigneeType: zod.string().optional(),
   quantityIssued: zod.number(),
   quantityReceived: zod.number().optional(),
   quantityPending: zod.number().optional(),
@@ -825,6 +865,12 @@ export const UpdateAllocationResponse = zod.object({
 /**
  * @summary List all receivings from stitchers
  */
+export const ListReceivingsQueryParams = zod.object({
+  startDate: zod.coerce.string().optional(),
+  endDate: zod.coerce.string().optional(),
+  stitcherId: zod.coerce.number().optional(),
+});
+
 export const ListReceivingsResponseItem = zod.object({
   id: zod.number(),
   allocationId: zod.number(),
@@ -891,6 +937,13 @@ export const UpdateReceivingResponse = zod.object({
 /**
  * @summary List finishing stage records (all stages merged)
  */
+export const ListFinishingRecordsQueryParams = zod.object({
+  startDate: zod.coerce.string().optional(),
+  endDate: zod.coerce.string().optional(),
+  productId: zod.coerce.number().optional(),
+  colorId: zod.coerce.number().optional(),
+});
+
 export const ListFinishingRecordsResponseItem = zod.object({
   id: zod.number(),
   batchNumber: zod.string().optional(),
@@ -976,6 +1029,13 @@ export const GetFinishingBatchInfoResponse = zod.object({
 /**
  * @summary List finished goods inventory
  */
+export const ListFinishedGoodsQueryParams = zod.object({
+  startDate: zod.coerce.string().optional(),
+  endDate: zod.coerce.string().optional(),
+  productId: zod.coerce.number().optional(),
+  colorId: zod.coerce.number().optional(),
+});
+
 export const ListFinishedGoodsResponseItem = zod.object({
   id: zod.number(),
   cuttingBatchId: zod.number().optional(),
@@ -1197,14 +1257,42 @@ export const GetStitcherPerformanceReportResponse = zod.array(
 );
 
 /**
+ * @summary Team-wise performance report
+ */
+export const GetTeamPerformanceReportQueryParams = zod.object({
+  startDate: zod.coerce.string().optional(),
+  endDate: zod.coerce.string().optional(),
+  teamId: zod.coerce.number().optional(),
+});
+
+export const GetTeamPerformanceReportResponseItem = zod.object({
+  teamId: zod.number().optional(),
+  teamName: zod.string(),
+  teamCode: zod.string().optional(),
+  memberCount: zod.number().optional(),
+  totalIssued: zod.number(),
+  totalReceived: zod.number(),
+  totalPending: zod.number().optional(),
+  totalRejected: zod.number().optional(),
+  efficiencyPct: zod.number().optional(),
+});
+export const GetTeamPerformanceReportResponse = zod.array(
+  GetTeamPerformanceReportResponseItem,
+);
+
+/**
  * @summary Daily production report
  */
 export const GetDailyProductionReportQueryParams = zod.object({
   date: zod.coerce.string().optional(),
+  startDate: zod.coerce.string().optional(),
+  endDate: zod.coerce.string().optional(),
 });
 
 export const GetDailyProductionReportResponse = zod.object({
-  date: zod.string(),
+  date: zod.string().optional(),
+  startDate: zod.string().optional(),
+  endDate: zod.string().optional(),
   cutting: zod.number(),
   allocated: zod.number(),
   received: zod.number(),

@@ -196,9 +196,11 @@ export const allocationsTable = pgTable("allocations", {
   cuttingBatchId: integer("cutting_batch_id")
     .notNull()
     .references(() => cuttingBatchesTable.id),
+  allocationType: text("allocation_type").notNull().default("individual"),
   stitcherId: integer("stitcher_id")
-    .notNull()
     .references(() => stitchersTable.id),
+  teamId: integer("team_id")
+    .references(() => teamsTable.id),
   quantityIssued: integer("quantity_issued").notNull(),
   quantityReceived: integer("quantity_received").notNull().default(0),
   quantityRejected: integer("quantity_rejected").notNull().default(0),

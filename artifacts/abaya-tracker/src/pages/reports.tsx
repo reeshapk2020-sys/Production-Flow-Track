@@ -1,14 +1,18 @@
+import { useState } from "react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, FileText } from "lucide-react";
+import { Loader2, FileText, Users, BarChart3 } from "lucide-react";
 import { 
-  useGetStitcherPerformanceReport, useGetStagePendingReport, useGetBatchStatusReport
+  useGetStitcherPerformanceReport, useGetStagePendingReport, useGetBatchStatusReport,
+  useGetTeamPerformanceReport, useGetDailyProductionReport,
+  useListTeams
 } from "@workspace/api-client-react";
 import { format } from "date-fns";
 import { fmtCode } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { FilterBar } from "@/components/filter-bar";
 
 export default function ReportsPage() {
   return (
@@ -17,12 +21,16 @@ export default function ReportsPage() {
         <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 mb-6 inline-block overflow-x-auto max-w-full">
           <TabsList className="bg-transparent h-auto p-0 flex space-x-1">
             <TabsTrigger value="stitcher" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white">Stitcher Performance</TabsTrigger>
+            <TabsTrigger value="team" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-emerald-600 data-[state=active]:text-white">Team Performance</TabsTrigger>
+            <TabsTrigger value="daily" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-blue-600 data-[state=active]:text-white">Daily Production</TabsTrigger>
             <TabsTrigger value="pending" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white">Stage Pending</TabsTrigger>
             <TabsTrigger value="batch" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white">Batch Status</TabsTrigger>
           </TabsList>
         </div>
 
         <TabsContent value="stitcher" className="mt-0 outline-none"><StitcherReport /></TabsContent>
+        <TabsContent value="team" className="mt-0 outline-none"><TeamReport /></TabsContent>
+        <TabsContent value="daily" className="mt-0 outline-none"><DailyProductionReport /></TabsContent>
         <TabsContent value="pending" className="mt-0 outline-none"><PendingReport /></TabsContent>
         <TabsContent value="batch" className="mt-0 outline-none"><BatchReport /></TabsContent>
       </Tabs>
@@ -31,41 +39,199 @@ export default function ReportsPage() {
 }
 
 function StitcherReport() {
-  const { data, isLoading } = useGetStitcherPerformanceReport();
+  const [filters, setFilters] = useState<Record<string, string>>({ startDate: "", endDate: "" });
+
+  const filterParams: Record<string, any> = {};
+  if (filters.startDate) filterParams.startDate = filters.startDate;
+  if (filters.endDate) filterParams.endDate = filters.endDate;
+
+  const { data, isLoading } = useGetStitcherPerformanceReport(filterParams);
+
+  const filterFields = [
+    { name: "startDate", label: "From Date", type: "date" as const },
+    { name: "endDate", label: "To Date", type: "date" as const },
+  ];
 
   return (
-    <ReportCard title="Stitcher Performance & Efficiency">
-      <Table>
-        <TableHeader className="bg-slate-50">
-          <TableRow>
-            <TableHead>Stitcher Name</TableHead>
-            <TableHead className="text-right">Total Issued</TableHead>
-            <TableHead className="text-right">Total Received</TableHead>
-            <TableHead className="text-right">Pending Qty</TableHead>
-            <TableHead className="text-right">Rejected</TableHead>
-            <TableHead className="text-right">Efficiency %</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
-            data?.map((row, i) => (
-              <TableRow key={i}>
-                <TableCell className="font-semibold">{row.stitcherName}</TableCell>
-                <TableCell className="text-right">{row.totalIssued}</TableCell>
-                <TableCell className="text-right text-emerald-600 font-bold">{row.totalReceived}</TableCell>
-                <TableCell className="text-right">{row.totalPending}</TableCell>
-                <TableCell className="text-right text-red-500">{row.totalRejected}</TableCell>
-                <TableCell className="text-right">
-                  <span className={`px-2 py-1 rounded text-sm font-bold ${row.efficiencyPct! > 90 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                    {row.efficiencyPct}%
-                  </span>
-                </TableCell>
-              </TableRow>
-            ))
-          }
-        </TableBody>
-      </Table>
-    </ReportCard>
+    <>
+      <FilterBar fields={filterFields} values={filters} onChange={setFilters} />
+      <ReportCard title="Stitcher Performance & Efficiency">
+        <Table>
+          <TableHeader className="bg-slate-50">
+            <TableRow>
+              <TableHead>Stitcher Name</TableHead>
+              <TableHead className="text-right">Total Issued</TableHead>
+              <TableHead className="text-right">Total Received</TableHead>
+              <TableHead className="text-right">Pending Qty</TableHead>
+              <TableHead className="text-right">Rejected</TableHead>
+              <TableHead className="text-right">Efficiency %</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
+              !data?.length ? <TableRow><TableCell colSpan={6} className="text-center py-12 text-slate-400">No data for selected period</TableCell></TableRow> :
+              data?.map((row: any, i: number) => (
+                <TableRow key={i}>
+                  <TableCell className="font-semibold">{row.stitcherName}</TableCell>
+                  <TableCell className="text-right">{row.totalIssued}</TableCell>
+                  <TableCell className="text-right text-emerald-600 font-bold">{row.totalReceived}</TableCell>
+                  <TableCell className="text-right">{row.totalPending}</TableCell>
+                  <TableCell className="text-right text-red-500">{row.totalRejected}</TableCell>
+                  <TableCell className="text-right">
+                    <span className={`px-2 py-1 rounded text-sm font-bold ${row.efficiencyPct! > 90 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {row.efficiencyPct}%
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))
+            }
+          </TableBody>
+        </Table>
+      </ReportCard>
+    </>
+  );
+}
+
+function TeamReport() {
+  const [filters, setFilters] = useState<Record<string, string>>({ startDate: "", endDate: "", teamId: "" });
+  const { data: teams } = useListTeams();
+
+  const filterParams: Record<string, any> = {};
+  if (filters.startDate) filterParams.startDate = filters.startDate;
+  if (filters.endDate) filterParams.endDate = filters.endDate;
+  if (filters.teamId) filterParams.teamId = Number(filters.teamId);
+
+  const { data, isLoading } = useGetTeamPerformanceReport(filterParams);
+
+  const filterFields = [
+    { name: "startDate", label: "From Date", type: "date" as const },
+    { name: "endDate", label: "To Date", type: "date" as const },
+    { name: "teamId", label: "Team", type: "select" as const, options: teams?.filter((t: any) => t.isActive).map((t: any) => ({ value: t.id, label: `${t.code} - ${t.name}` })) || [] },
+  ];
+
+  return (
+    <>
+      <FilterBar fields={filterFields} values={filters} onChange={setFilters} />
+      <ReportCard title="Team Performance & Efficiency">
+        <Table>
+          <TableHeader className="bg-slate-50">
+            <TableRow>
+              <TableHead>Team</TableHead>
+              <TableHead className="text-right">Members</TableHead>
+              <TableHead className="text-right">Total Issued</TableHead>
+              <TableHead className="text-right">Total Received</TableHead>
+              <TableHead className="text-right">Pending Qty</TableHead>
+              <TableHead className="text-right">Rejected</TableHead>
+              <TableHead className="text-right">Efficiency %</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? <TableRow><TableCell colSpan={7} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
+              !data?.length ? <TableRow><TableCell colSpan={7} className="text-center py-12 text-slate-400">No team allocation data found</TableCell></TableRow> :
+              data?.map((row: any, i: number) => (
+                <TableRow key={i}>
+                  <TableCell>
+                    <div className="font-semibold">{row.teamName}</div>
+                    {row.teamCode && <div className="text-xs text-slate-400">{row.teamCode}</div>}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Badge variant="outline" className="font-mono">{row.memberCount ?? '-'}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right">{row.totalIssued}</TableCell>
+                  <TableCell className="text-right text-emerald-600 font-bold">{row.totalReceived}</TableCell>
+                  <TableCell className="text-right">{row.totalPending}</TableCell>
+                  <TableCell className="text-right text-red-500">{row.totalRejected}</TableCell>
+                  <TableCell className="text-right">
+                    <span className={`px-2 py-1 rounded text-sm font-bold ${(row.efficiencyPct ?? 0) > 90 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {row.efficiencyPct ?? 0}%
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))
+            }
+          </TableBody>
+        </Table>
+      </ReportCard>
+    </>
+  );
+}
+
+function DailyProductionReport() {
+  const [filters, setFilters] = useState<Record<string, string>>({ startDate: "", endDate: "" });
+
+  const filterParams: Record<string, any> = {};
+  if (filters.startDate) filterParams.startDate = filters.startDate;
+  if (filters.endDate) filterParams.endDate = filters.endDate;
+
+  const { data, isLoading } = useGetDailyProductionReport(filterParams);
+
+  const filterFields = [
+    { name: "startDate", label: "From Date", type: "date" as const },
+    { name: "endDate", label: "To Date", type: "date" as const },
+  ];
+
+  const rows = Array.isArray(data) ? data : data ? [data] : [];
+
+  return (
+    <>
+      <FilterBar fields={filterFields} values={filters} onChange={setFilters} />
+      {rows.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-6">
+          {(() => {
+            const totals = rows.reduce((acc: any, r: any) => ({
+              cutting: acc.cutting + (r.cutting || 0),
+              allocated: acc.allocated + (r.allocated || 0),
+              received: acc.received + (r.received || 0),
+              finishing: acc.finishing + (r.finishing || 0),
+              finished: acc.finished + (r.finished || 0),
+            }), { cutting: 0, allocated: 0, received: 0, finishing: 0, finished: 0 });
+            return [
+              { label: "Cut", value: totals.cutting, color: "bg-blue-50 text-blue-700 border-blue-200" },
+              { label: "Allocated", value: totals.allocated, color: "bg-violet-50 text-violet-700 border-violet-200" },
+              { label: "Received", value: totals.received, color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+              { label: "Finishing", value: totals.finishing, color: "bg-amber-50 text-amber-700 border-amber-200" },
+              { label: "Stored", value: totals.finished, color: "bg-teal-50 text-teal-700 border-teal-200" },
+            ].map(card => (
+              <Card key={card.label} className={`${card.color} border rounded-xl`}>
+                <CardContent className="p-4 text-center">
+                  <div className="text-3xl font-display font-bold">{card.value}</div>
+                  <div className="text-xs font-medium mt-1">{card.label}</div>
+                </CardContent>
+              </Card>
+            ));
+          })()}
+        </div>
+      )}
+      <ReportCard title="Date-wise Production Summary">
+        <Table>
+          <TableHeader className="bg-slate-50">
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead className="text-right">Cut</TableHead>
+              <TableHead className="text-right">Allocated</TableHead>
+              <TableHead className="text-right">Received</TableHead>
+              <TableHead className="text-right">Finishing</TableHead>
+              <TableHead className="text-right">Stored</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
+              !rows.length ? <TableRow><TableCell colSpan={6} className="text-center py-12 text-slate-400">Select a date range to view production data</TableCell></TableRow> :
+              rows.map((row: any, i: number) => (
+                <TableRow key={i}>
+                  <TableCell className="font-semibold">{row.date || `${row.startDate} – ${row.endDate}`}</TableCell>
+                  <TableCell className="text-right">{row.cutting}</TableCell>
+                  <TableCell className="text-right">{row.allocated}</TableCell>
+                  <TableCell className="text-right text-emerald-600 font-bold">{row.received}</TableCell>
+                  <TableCell className="text-right">{row.finishing ?? '-'}</TableCell>
+                  <TableCell className="text-right">{row.finished}</TableCell>
+                </TableRow>
+              ))
+            }
+          </TableBody>
+        </Table>
+      </ReportCard>
+    </>
   );
 }
 
@@ -83,7 +249,7 @@ function PendingReport() {
         </TableHeader>
         <TableBody>
           {isLoading ? <TableRow><TableCell colSpan={3} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
-            data?.map((row, i) => (
+            data?.map((row: any, i: number) => (
               <TableRow key={i}>
                 <TableCell className="font-semibold capitalize text-lg">{row.stage}</TableCell>
                 <TableCell className="text-right text-slate-500">{row.batchCount}</TableCell>
@@ -115,7 +281,7 @@ function BatchReport() {
         </TableHeader>
         <TableBody>
           {isLoading ? <TableRow><TableCell colSpan={7} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
-            data?.map((row, i) => (
+            data?.map((row: any, i: number) => (
               <TableRow key={i}>
                 <TableCell className="font-mono text-primary font-medium">{row.batchNumber}</TableCell>
                 <TableCell>{fmtCode(row.productCode, row.productName)}</TableCell>

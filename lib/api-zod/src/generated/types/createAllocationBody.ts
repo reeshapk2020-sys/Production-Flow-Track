@@ -8,7 +8,10 @@
 
 export interface CreateAllocationBody {
   cuttingBatchId: number;
-  stitcherId: number;
+  /** 'individual' or 'team' */
+  allocationType?: string;
+  stitcherId?: number;
+  teamId?: number;
   quantityIssued: number;
   issueDate: string;
   remarks?: string;

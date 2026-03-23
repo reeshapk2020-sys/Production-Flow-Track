@@ -10,7 +10,7 @@ import {
   sizesTable,
   colorsTable,
 } from "@workspace/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and, gte, lte } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit.js";
 import { checkPermission } from "./permissions.js";
@@ -50,8 +50,15 @@ async function getTotalStoredQty(batchId: number): Promise<number> {
 
 // ─── Routes ─────────────────────────────────────────────────────────────────
 
-router.get("/finished-goods", checkPermission("finished-goods", "view"), async (_req, res) => {
-  const rows = await db
+router.get("/finished-goods", checkPermission("finished-goods", "view"), async (req, res) => {
+  const { startDate, endDate, productId, colorId } = req.query;
+  const conditions: any[] = [];
+  if (startDate) conditions.push(gte(finishedGoodsTable.entryDate, new Date(startDate as string)));
+  if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); conditions.push(lte(finishedGoodsTable.entryDate, ed)); }
+  if (productId) conditions.push(eq(cuttingBatchesTable.productId, Number(productId)));
+  if (colorId) conditions.push(eq(cuttingBatchesTable.colorId, Number(colorId)));
+
+  let q = db
     .select({
       id: finishedGoodsTable.id,
       cuttingBatchId: finishedGoodsTable.cuttingBatchId,
@@ -83,8 +90,11 @@ router.get("/finished-goods", checkPermission("finished-goods", "view"), async (
     .leftJoin(mat2, eq(cuttingBatchesTable.material2Id, mat2.id))
     .leftJoin(sizesTable, eq(cuttingBatchesTable.sizeId, sizesTable.id))
     .leftJoin(colorsTable, eq(cuttingBatchesTable.colorId, colorsTable.id))
-    .orderBy(sql`${finishedGoodsTable.createdAt} desc`);
-  res.json(rows.map(r => ({
+    .$dynamic();
+
+  if (conditions.length > 0) q = q.where(and(...conditions));
+  const rows = await q.orderBy(sql`${finishedGoodsTable.createdAt} desc`);
+  res.json(rows.map((r: any) => ({
     ...r,
     itemCode: computeItemCode(r.productCode, r.colorCode, r.materialCode, r.material2Code),
   })));

@@ -621,6 +621,27 @@ paths:
       operationId: listCuttingBatches
       tags: [cutting]
       summary: List all cutting batches
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+        - name: productId
+          in: query
+          schema:
+            type: integer
+        - name: colorId
+          in: query
+          schema:
+            type: integer
+        - name: sizeId
+          in: query
+          schema:
+            type: integer
       responses:
         "200":
           description: List of cutting batches
@@ -696,6 +717,35 @@ paths:
       operationId: listAllocations
       tags: [allocation]
       summary: List all allocations
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+        - name: productId
+          in: query
+          schema:
+            type: integer
+        - name: colorId
+          in: query
+          schema:
+            type: integer
+        - name: sizeId
+          in: query
+          schema:
+            type: integer
+        - name: stitcherId
+          in: query
+          schema:
+            type: integer
+        - name: teamId
+          in: query
+          schema:
+            type: integer
       responses:
         "200":
           description: List of allocations
@@ -771,6 +821,19 @@ paths:
       operationId: listReceivings
       tags: [receiving]
       summary: List all receivings from stitchers
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+        - name: stitcherId
+          in: query
+          schema:
+            type: integer
       responses:
         "200":
           description: List of receivings
@@ -829,6 +892,23 @@ paths:
       operationId: listFinishingRecords
       tags: [finishing]
       summary: List finishing stage records (all stages merged)
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+        - name: productId
+          in: query
+          schema:
+            type: integer
+        - name: colorId
+          in: query
+          schema:
+            type: integer
       responses:
         "200":
           description: List of finishing records
@@ -906,6 +986,23 @@ paths:
       operationId: listFinishedGoods
       tags: [finished-goods]
       summary: List finished goods inventory
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+        - name: productId
+          in: query
+          schema:
+            type: integer
+        - name: colorId
+          in: query
+          schema:
+            type: integer
       responses:
         "200":
           description: Finished goods inventory
@@ -1049,6 +1146,34 @@ paths:
                 items:
                   $ref: "#/components/schemas/StitcherPerformance"
 
+  /reports/team-performance:
+    get:
+      operationId: getTeamPerformanceReport
+      tags: [reports]
+      summary: Team-wise performance report
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+        - name: teamId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Team performance report
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamPerformance"
+
   /reports/daily-production:
     get:
       operationId: getDailyProductionReport
@@ -1056,6 +1181,14 @@ paths:
       summary: Daily production report
       parameters:
         - name: date
+          in: query
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
           in: query
           schema:
             type: string
@@ -1817,11 +1950,26 @@ components:
           type: string
         colorName:
           type: string
+        allocationType:
+          type: string
         stitcherId:
           type: integer
+          nullable: true
         stitcherName:
           type: string
+          nullable: true
+        teamId:
+          type: integer
+          nullable: true
         teamName:
+          type: string
+          nullable: true
+        stitcherTeamName:
+          type: string
+          nullable: true
+        assigneeName:
+          type: string
+        assigneeType:
           type: string
         quantityIssued:
           type: integer
@@ -1844,7 +1992,12 @@ components:
       properties:
         cuttingBatchId:
           type: integer
+        allocationType:
+          type: string
+          description: "'individual' or 'team'"
         stitcherId:
+          type: integer
+        teamId:
           type: integer
         quantityIssued:
           type: integer
@@ -1858,7 +2011,7 @@ components:
         batchMaterialId:
           type: integer
           description: Set material 1 on the batch if missing (required for allocation)
-      required: [cuttingBatchId, stitcherId, quantityIssued, issueDate]
+      required: [cuttingBatchId, quantityIssued, issueDate]
 
     UpdateAllocationBody:
       type: object
@@ -2213,10 +2366,37 @@ components:
           type: number
       required: [stitcherName, totalIssued, totalReceived]
 
+    TeamPerformance:
+      type: object
+      properties:
+        teamId:
+          type: integer
+        teamName:
+          type: string
+        teamCode:
+          type: string
+        memberCount:
+          type: integer
+        totalIssued:
+          type: integer
+        totalReceived:
+          type: integer
+        totalPending:
+          type: integer
+        totalRejected:
+          type: integer
+        efficiencyPct:
+          type: number
+      required: [teamName, totalIssued, totalReceived]
+
     DailyProductionReport:
       type: object
       properties:
         date:
+          type: string
+        startDate:
+          type: string
+        endDate:
           type: string
         cutting:
           type: integer
@@ -2228,7 +2408,7 @@ components:
           type: integer
         finished:
           type: integer
-      required: [date, cutting, allocated, received, finished]
+      required: [cutting, allocated, received, finished]
 
     StagePending:
       type: object

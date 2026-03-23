@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Loader2, Send, Info, Pencil, AlertTriangle } from "lucide-react";
+import { Plus, Loader2, Send, Info, Pencil, AlertTriangle, Users, User } from "lucide-react";
 import {
   useListAllocations, useCreateAllocation, getListAllocationsQueryKey,
   useListCuttingBatches, useListStitchers, useUpdateAllocation,
-  useListProducts, useListMaterials, getListCuttingBatchesQueryKey
+  useListProducts, useListMaterials, getListCuttingBatchesQueryKey,
+  useListTeams, useListColors, useListSizes
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { fmtCode } from "@/lib/utils";
 import { useAppAuth } from "@/lib/auth-context";
+import { FilterBar } from "@/components/filter-bar";
 
 type BatchStatus = string;
 
@@ -39,11 +41,27 @@ function StatusBadge({ status }: { status: BatchStatus }) {
 }
 
 export default function AllocationPage() {
-  const { data, isLoading } = useListAllocations();
+  const [filters, setFilters] = useState<Record<string, string>>({
+    startDate: "", endDate: "", productId: "", colorId: "", sizeId: "", stitcherId: "", teamId: ""
+  });
+
+  const filterParams: Record<string, any> = {};
+  if (filters.startDate) filterParams.startDate = filters.startDate;
+  if (filters.endDate) filterParams.endDate = filters.endDate;
+  if (filters.productId) filterParams.productId = Number(filters.productId);
+  if (filters.colorId) filterParams.colorId = Number(filters.colorId);
+  if (filters.sizeId) filterParams.sizeId = Number(filters.sizeId);
+  if (filters.stitcherId) filterParams.stitcherId = Number(filters.stitcherId);
+  if (filters.teamId) filterParams.teamId = Number(filters.teamId);
+
+  const { data, isLoading } = useListAllocations(filterParams);
   const { data: batches } = useListCuttingBatches();
   const { data: stitchers } = useListStitchers();
+  const { data: teams } = useListTeams();
   const { data: products } = useListProducts();
   const { data: materials } = useListMaterials();
+  const { data: colors } = useListColors();
+  const { data: sizes } = useListSizes();
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -53,6 +71,7 @@ export default function AllocationPage() {
 
   const [open, setOpen] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<any>(null);
+  const [allocType, setAllocType] = useState<"individual" | "team">("individual");
   const [editOpen, setEditOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<any>(null);
 
@@ -63,6 +82,7 @@ export default function AllocationPage() {
         queryClient.invalidateQueries({ queryKey: getListCuttingBatchesQueryKey() });
         setOpen(false);
         setSelectedBatch(null);
+        setAllocType("individual");
         toast({ title: "Allocation created successfully" });
       },
       onError: (e: any) => {
@@ -95,11 +115,18 @@ export default function AllocationPage() {
     const fd = new FormData(e.currentTarget);
     const payload: any = {
       cuttingBatchId: Number(fd.get("cuttingBatchId")),
-      stitcherId: Number(fd.get("stitcherId")),
+      allocationType: allocType,
       quantityIssued: Number(fd.get("quantityIssued")),
       issueDate: fd.get("issueDate") as string,
       remarks: fd.get("remarks") as string,
     };
+    if (allocType === "individual") {
+      payload.stitcherId = Number(fd.get("stitcherId"));
+      if (!payload.stitcherId) { toast({ title: "Please select a stitcher", variant: "destructive" }); return; }
+    } else {
+      payload.teamId = Number(fd.get("teamId"));
+      if (!payload.teamId) { toast({ title: "Please select a team", variant: "destructive" }); return; }
+    }
     if (batchNeedsProduct) {
       const pid = Number(fd.get("batchProductId"));
       if (!pid) { toast({ title: "Product/Design is required for allocation", variant: "destructive" }); return; }
@@ -127,27 +154,39 @@ export default function AllocationPage() {
   };
 
   const availableBatches = batches?.filter(b => (b.availableForAllocation || 0) > 0) || [];
+  const activeTeams = teams?.filter((t: any) => t.isActive) || [];
+
+  const filterFields = [
+    { name: "startDate", label: "From Date", type: "date" as const },
+    { name: "endDate", label: "To Date", type: "date" as const },
+    { name: "productId", label: "Product", type: "select" as const, options: products?.filter((p: any) => p.isActive).map((p: any) => ({ value: p.id, label: `${p.code} - ${p.name}` })) || [] },
+    { name: "colorId", label: "Color", type: "select" as const, options: colors?.filter((c: any) => c.isActive).map((c: any) => ({ value: c.id, label: `${c.code} - ${c.name}` })) || [] },
+    { name: "stitcherId", label: "Stitcher", type: "select" as const, options: stitchers?.filter((s: any) => s.isActive).map((s: any) => ({ value: s.id, label: s.name })) || [] },
+    { name: "teamId", label: "Team", type: "select" as const, options: activeTeams.map((t: any) => ({ value: t.id, label: t.name })) },
+  ];
 
   return (
-    <AppLayout title="Allocation to Stitchers">
+    <AppLayout title="Allocation to Stitchers / Teams">
+      <FilterBar fields={filterFields} values={filters} onChange={setFilters} />
+
       <Card className="shadow-lg border-slate-200 rounded-2xl overflow-hidden">
         <CardHeader className="bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
           <div>
             <CardTitle className="text-xl font-display text-slate-800 flex items-center gap-2">
               <Send className="h-5 w-5 text-primary" />
-              Stitcher Allocations
+              Allocations
             </CardTitle>
-            <p className="text-sm text-slate-500 mt-1">Issue cut pieces to stitchers. Receiving is done in the Receiving module.</p>
+            <p className="text-sm text-slate-500 mt-1">Issue cut pieces to individual stitchers or teams.</p>
           </div>
-          {canCreate && <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSelectedBatch(null); }}>
+          {canCreate && <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setSelectedBatch(null); setAllocType("individual"); } }}>
             <DialogTrigger asChild>
               <Button className="rounded-xl shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5">
                 <Plus className="h-4 w-4 mr-2" /> Issue Batch
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] rounded-2xl p-6 border-0 shadow-2xl">
+            <DialogContent className="sm:max-w-[520px] rounded-2xl p-6 border-0 shadow-2xl">
               <DialogHeader>
-                <DialogTitle className="text-xl font-display">Allocate Pieces to Stitcher</DialogTitle>
+                <DialogTitle className="text-xl font-display">Allocate Pieces</DialogTitle>
               </DialogHeader>
               <form onSubmit={onSubmit} className="grid grid-cols-1 gap-4 pt-4">
 
@@ -218,13 +257,39 @@ export default function AllocationPage() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium block mb-1.5">Assign to Stitcher</label>
-                  <select name="stitcherId" className="form-input-styled bg-white" required>
-                    <option value="">Select Stitcher...</option>
-                    {stitchers?.filter(s => s.isActive).map(s => (
-                      <option key={s.id} value={s.id}>{fmtCode(s.code, s.name)}{s.teamName ? ` (${s.teamName})` : ''}</option>
-                    ))}
-                  </select>
+                  <label className="text-sm font-medium block mb-2">Assign To</label>
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      type="button"
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${allocType === "individual" ? "bg-primary text-white border-primary shadow-sm" : "bg-white text-slate-600 border-slate-200 hover:border-primary/50"}`}
+                      onClick={() => setAllocType("individual")}
+                    >
+                      <User className="h-4 w-4" /> Individual
+                    </button>
+                    <button
+                      type="button"
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${allocType === "team" ? "bg-primary text-white border-primary shadow-sm" : "bg-white text-slate-600 border-slate-200 hover:border-primary/50"}`}
+                      onClick={() => setAllocType("team")}
+                    >
+                      <Users className="h-4 w-4" /> Team
+                    </button>
+                  </div>
+
+                  {allocType === "individual" ? (
+                    <select name="stitcherId" className="form-input-styled bg-white" required>
+                      <option value="">Select Stitcher...</option>
+                      {stitchers?.filter((s: any) => s.isActive).map((s: any) => (
+                        <option key={s.id} value={s.id}>{fmtCode(s.code, s.name)}{s.teamName ? ` (${s.teamName})` : ''}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <select name="teamId" className="form-input-styled bg-white" required>
+                      <option value="">Select Team...</option>
+                      {activeTeams.map((t: any) => (
+                        <option key={t.id} value={t.id}>{fmtCode(t.code, t.name)}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -251,12 +316,7 @@ export default function AllocationPage() {
 
                 <div>
                   <label className="text-sm font-medium block mb-1.5">Remarks / Instructions</label>
-                  <input name="remarks" className="form-input-styled" placeholder="Special instructions for stitcher..." />
-                </div>
-
-                <div className="mt-2 bg-slate-50 rounded-xl p-3 text-xs text-slate-500 flex items-start gap-2">
-                  <Info className="h-3.5 w-3.5 mt-0.5 shrink-0 text-slate-400" />
-                  <span>Receiving, rejection, and pending tracking are done in the <strong>Receiving</strong> module after stitching is complete.</span>
+                  <input name="remarks" className="form-input-styled" placeholder="Special instructions..." />
                 </div>
 
                 <div className="mt-2">
@@ -276,7 +336,7 @@ export default function AllocationPage() {
                 <TableHead className="py-4">Alloc. #</TableHead>
                 <TableHead>Batch / Product</TableHead>
                 <TableHead>Item Code</TableHead>
-                <TableHead>Stitcher</TableHead>
+                <TableHead>Assigned To</TableHead>
                 <TableHead className="text-right">Issued</TableHead>
                 <TableHead className="text-right">Received</TableHead>
                 <TableHead className="text-right">Pending</TableHead>
@@ -291,6 +351,7 @@ export default function AllocationPage() {
               ) : (
                 data?.map(alloc => {
                   const pending = alloc.quantityPending ?? (alloc.quantityIssued - (alloc.quantityReceived || 0) - (alloc.quantityRejected || 0));
+                  const isTeam = alloc.allocationType === "team";
                   return (
                     <TableRow key={alloc.id} className="group hover:bg-slate-50/50">
                       <TableCell className="font-mono text-xs text-slate-500 font-medium">{alloc.allocationNumber}</TableCell>
@@ -304,8 +365,14 @@ export default function AllocationPage() {
                           : <span className="text-xs text-slate-400">—</span>}
                       </TableCell>
                       <TableCell>
-                        <div className="font-semibold text-slate-900 text-sm">{alloc.stitcherName}</div>
-                        {alloc.teamName && <div className="text-xs text-slate-500">{alloc.teamName}</div>}
+                        <div className="flex items-center gap-1.5">
+                          {isTeam ? <Users className="h-3.5 w-3.5 text-violet-500" /> : <User className="h-3.5 w-3.5 text-slate-400" />}
+                          <div>
+                            <div className="font-semibold text-slate-900 text-sm">{alloc.assigneeName || alloc.stitcherName || alloc.teamName || '—'}</div>
+                            {isTeam && <span className="text-xs text-violet-500 font-medium">Team</span>}
+                            {!isTeam && alloc.stitcherTeamName && <div className="text-xs text-slate-500">{alloc.stitcherTeamName}</div>}
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <span className="font-bold text-slate-800">{alloc.quantityIssued}</span>
@@ -320,7 +387,7 @@ export default function AllocationPage() {
                         {pending > 0 ? (
                           <span className="font-bold text-amber-700">{pending}</span>
                         ) : (
-                          <span className="text-emerald-600 font-semibold">0 ✓</span>
+                          <span className="text-emerald-600 font-semibold">0</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -346,14 +413,13 @@ export default function AllocationPage() {
                 })
               )}
               {!isLoading && data?.length === 0 && (
-                <TableRow><TableCell colSpan={canEdit ? 10 : 9} className="text-center py-12 text-slate-500">No allocations yet.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 10 : 9} className="text-center py-12 text-slate-500">No allocations found.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
 
-      {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={(v) => { setEditOpen(v); if (!v) setEditTarget(null); }}>
         <DialogContent className="sm:max-w-[400px] rounded-2xl p-6 border-0 shadow-2xl">
           <DialogHeader>
@@ -363,7 +429,7 @@ export default function AllocationPage() {
             <form onSubmit={onEditSubmit} className="grid grid-cols-1 gap-4 pt-4">
               <div className="bg-slate-50 rounded-xl p-3 text-sm text-slate-600">
                 <div className="font-semibold text-slate-800">{editTarget.batchNumber}</div>
-                <div className="text-xs text-slate-500 mt-0.5">{editTarget.stitcherName} · {editTarget.quantityIssued} pcs issued</div>
+                <div className="text-xs text-slate-500 mt-0.5">{editTarget.assigneeName || editTarget.stitcherName} · {editTarget.quantityIssued} pcs issued</div>
               </div>
               <div>
                 <label className="text-sm font-medium block mb-1.5">Issue Date</label>

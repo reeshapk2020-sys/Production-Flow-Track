@@ -6,8 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type GetDailyProductionReportParams = {
-  date?: string;
+export type GetTeamPerformanceReportParams = {
   startDate?: string;
   endDate?: string;
+  teamId?: number;
 };

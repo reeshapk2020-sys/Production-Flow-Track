@@ -13,7 +13,7 @@ import {
   finishingRecordsTable,
   finishedGoodsTable,
 } from "@workspace/db/schema";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql, and, gte, lte } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit.js";
 import { checkPermission } from "./permissions.js";
@@ -134,8 +134,14 @@ function denyAllocationRole(req: any, res: any, next: any) {
   next();
 }
 
-router.get("/receiving", checkPermission("receiving", "view"), async (_req, res) => {
-  const rows = await db
+router.get("/receiving", checkPermission("receiving", "view"), async (req, res) => {
+  const { startDate, endDate, stitcherId } = req.query;
+  const conditions: any[] = [];
+  if (startDate) conditions.push(gte(receivingsTable.receiveDate, new Date(startDate as string)));
+  if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); conditions.push(lte(receivingsTable.receiveDate, ed)); }
+  if (stitcherId) conditions.push(eq(allocationsTable.stitcherId, Number(stitcherId)));
+
+  let q = db
     .select({
       id: receivingsTable.id,
       allocationId: receivingsTable.allocationId,
@@ -172,8 +178,11 @@ router.get("/receiving", checkPermission("receiving", "view"), async (_req, res)
     .leftJoin(sizesTable, eq(cuttingBatchesTable.sizeId, sizesTable.id))
     .leftJoin(colorsTable, eq(cuttingBatchesTable.colorId, colorsTable.id))
     .leftJoin(stitchersTable, eq(allocationsTable.stitcherId, stitchersTable.id))
-    .orderBy(sql`${receivingsTable.createdAt} desc`);
-  res.json(rows.map(r => ({
+    .$dynamic();
+
+  if (conditions.length > 0) q = q.where(and(...conditions));
+  const rows = await q.orderBy(sql`${receivingsTable.createdAt} desc`);
+  res.json(rows.map((r: any) => ({
     ...r,
     itemCode: computeItemCode(r.productCode, r.colorCode, r.materialCode, r.material2Code),
   })));

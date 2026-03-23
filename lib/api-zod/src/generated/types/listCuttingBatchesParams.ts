@@ -6,8 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type GetDailyProductionReportParams = {
-  date?: string;
+export type ListCuttingBatchesParams = {
   startDate?: string;
   endDate?: string;
+  productId?: number;
+  colorId?: number;
+  sizeId?: number;
 };

@@ -7,13 +7,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Loader2, Inbox, AlertCircle, CheckCircle2, Pencil } from "lucide-react";
 import {
   useListReceivings, useCreateReceiving, getListReceivingsQueryKey,
-  useListAllocations, getListAllocationsQueryKey, useUpdateReceiving
+  useListAllocations, getListAllocationsQueryKey, useUpdateReceiving,
+  useListStitchers
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fmtCode } from "@/lib/utils";
 import { useAppAuth } from "@/lib/auth-context";
+import { FilterBar } from "@/components/filter-bar";
 
 function BatchStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
@@ -34,8 +36,16 @@ function BatchStatusBadge({ status }: { status: string }) {
 }
 
 export default function ReceivingPage() {
-  const { data, isLoading } = useListReceivings();
+  const [filters, setFilters] = useState<Record<string, string>>({ startDate: "", endDate: "", stitcherId: "" });
+
+  const filterParams: Record<string, any> = {};
+  if (filters.startDate) filterParams.startDate = filters.startDate;
+  if (filters.endDate) filterParams.endDate = filters.endDate;
+  if (filters.stitcherId) filterParams.stitcherId = Number(filters.stitcherId);
+
+  const { data, isLoading } = useListReceivings(filterParams);
   const { data: allocations } = useListAllocations();
+  const { data: stitchers } = useListStitchers();
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -139,8 +149,15 @@ export default function ReceivingPage() {
     return p > 0;
   }) || [];
 
+  const receivingFilterFields = [
+    { name: "startDate", label: "From Date", type: "date" as const },
+    { name: "endDate", label: "To Date", type: "date" as const },
+    { name: "stitcherId", label: "Stitcher", type: "select" as const, options: stitchers?.filter((s: any) => s.isActive).map((s: any) => ({ value: s.id, label: s.name })) || [] },
+  ];
+
   return (
     <AppLayout title="Receiving from Stitchers">
+      <FilterBar fields={receivingFilterFields} values={filters} onChange={setFilters} />
       <Card className="shadow-lg border-slate-200 rounded-2xl overflow-hidden">
         <CardHeader className="bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
           <div>

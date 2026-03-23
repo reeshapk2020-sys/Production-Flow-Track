@@ -138,7 +138,12 @@ router.get("/dashboard", checkPermission("reports", "view"), async (_req, res) =
 });
 
 router.get("/reports/stitcher-performance", checkPermission("reports", "view"), async (req, res) => {
-  const { startDate, endDate, stitcherId } = req.query;
+  const { startDate, endDate, stitcherId, teamId } = req.query;
+  const conditions: any[] = [eq(allocationsTable.allocationType, "individual")];
+  if (startDate) conditions.push(gte(allocationsTable.issueDate, new Date(startDate as string)));
+  if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); conditions.push(lte(allocationsTable.issueDate, ed)); }
+  if (stitcherId) conditions.push(eq(stitchersTable.id, Number(stitcherId)));
+  if (teamId) conditions.push(eq(teamsTable.id, Number(teamId)));
 
   const rows = await db
     .select({
@@ -152,7 +157,7 @@ router.get("/reports/stitcher-performance", checkPermission("reports", "view"), 
     })
     .from(stitchersTable)
     .leftJoin(teamsTable, eq(stitchersTable.teamId, teamsTable.id))
-    .leftJoin(allocationsTable, eq(allocationsTable.stitcherId, stitchersTable.id))
+    .leftJoin(allocationsTable, and(eq(allocationsTable.stitcherId, stitchersTable.id), ...conditions))
     .groupBy(stitchersTable.id, stitchersTable.name, teamsTable.name)
     .orderBy(sql`COALESCE(SUM(${allocationsTable.quantityIssued}), 0) desc`);
 
@@ -163,44 +168,74 @@ router.get("/reports/stitcher-performance", checkPermission("reports", "view"), 
   res.json(result);
 });
 
+router.get("/reports/team-performance", checkPermission("reports", "view"), async (req, res) => {
+  const { startDate, endDate, teamId } = req.query;
+  const conditions: any[] = [eq(allocationsTable.allocationType, "team")];
+  if (startDate) conditions.push(gte(allocationsTable.issueDate, new Date(startDate as string)));
+  if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); conditions.push(lte(allocationsTable.issueDate, ed)); }
+  if (teamId) conditions.push(eq(teamsTable.id, Number(teamId)));
+
+  const rows = await db
+    .select({
+      teamId: teamsTable.id,
+      teamName: teamsTable.name,
+      teamCode: teamsTable.code,
+      memberCount: sql<number>`(SELECT COUNT(*) FROM stitchers WHERE stitchers.team_id = ${teamsTable.id} AND stitchers.is_active = true)::int`,
+      totalIssued: sql<number>`COALESCE(SUM(${allocationsTable.quantityIssued}), 0)::int`,
+      totalReceived: sql<number>`COALESCE(SUM(${allocationsTable.quantityReceived}), 0)::int`,
+      totalPending: sql<number>`COALESCE(SUM(${allocationsTable.quantityIssued} - ${allocationsTable.quantityReceived} - ${allocationsTable.quantityRejected}), 0)::int`,
+      totalRejected: sql<number>`COALESCE(SUM(${allocationsTable.quantityRejected}), 0)::int`,
+    })
+    .from(teamsTable)
+    .leftJoin(allocationsTable, and(eq(allocationsTable.teamId, teamsTable.id), ...conditions))
+    .where(eq(teamsTable.isActive, true))
+    .groupBy(teamsTable.id, teamsTable.name, teamsTable.code)
+    .orderBy(sql`COALESCE(SUM(${allocationsTable.quantityIssued}), 0) desc`);
+
+  const result = rows.map((r) => ({
+    ...r,
+    efficiencyPct: r.totalIssued > 0 ? Math.round((r.totalReceived / r.totalIssued) * 100) : 0,
+  }));
+  res.json(result);
+});
+
 router.get("/reports/daily-production", checkPermission("reports", "view"), async (req, res) => {
-  const dateStr = (req.query.date as string) || new Date().toISOString().split("T")[0];
-  const date = new Date(dateStr);
-  const nextDate = new Date(date);
-  nextDate.setDate(nextDate.getDate() + 1);
+  const startStr = (req.query.startDate as string) || (req.query.date as string) || new Date().toISOString().split("T")[0];
+  const endStr = (req.query.endDate as string) || startStr;
+
+  const startDate = new Date(startStr);
+  const endDate = new Date(endStr);
+  endDate.setDate(endDate.getDate() + 1);
 
   const [cutting] = await db
     .select({ qty: sql<number>`COALESCE(SUM(${cuttingBatchesTable.quantityCut}), 0)::int` })
     .from(cuttingBatchesTable)
-    .where(and(gte(cuttingBatchesTable.cuttingDate, date), lte(cuttingBatchesTable.cuttingDate, nextDate)));
+    .where(and(gte(cuttingBatchesTable.cuttingDate, startDate), lte(cuttingBatchesTable.cuttingDate, endDate)));
 
   const [allocated] = await db
     .select({ qty: sql<number>`COALESCE(SUM(${allocationsTable.quantityIssued}), 0)::int` })
     .from(allocationsTable)
-    .where(and(gte(allocationsTable.issueDate, date), lte(allocationsTable.issueDate, nextDate)));
+    .where(and(gte(allocationsTable.issueDate, startDate), lte(allocationsTable.issueDate, endDate)));
 
   const [received] = await db
     .select({ qty: sql<number>`COALESCE(SUM(${receivingsTable.quantityReceived}), 0)::int` })
     .from(receivingsTable)
-    .where(and(gte(receivingsTable.receiveDate, date), lte(receivingsTable.receiveDate, nextDate)));
+    .where(and(gte(receivingsTable.receiveDate, startDate), lte(receivingsTable.receiveDate, endDate)));
 
   const [finishing] = await db
     .select({ qty: sql<number>`COALESCE(SUM(${finishingRecordsTable.outputQuantity}), 0)::int` })
     .from(finishingRecordsTable)
-    .where(
-      and(
-        gte(finishingRecordsTable.processDate, date),
-        lte(finishingRecordsTable.processDate, nextDate)
-      )
-    );
+    .where(and(gte(finishingRecordsTable.processDate, startDate), lte(finishingRecordsTable.processDate, endDate)));
 
   const [finished] = await db
     .select({ qty: sql<number>`COALESCE(SUM(${finishedGoodsTable.quantity}), 0)::int` })
     .from(finishedGoodsTable)
-    .where(and(gte(finishedGoodsTable.entryDate, date), lte(finishedGoodsTable.entryDate, nextDate)));
+    .where(and(gte(finishedGoodsTable.entryDate, startDate), lte(finishedGoodsTable.entryDate, endDate)));
 
   res.json({
-    date: dateStr,
+    startDate: startStr,
+    endDate: endStr,
+    date: startStr,
     cutting: cutting.qty || 0,
     allocated: allocated.qty || 0,
     received: received.qty || 0,

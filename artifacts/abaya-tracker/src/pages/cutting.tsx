@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fmtCode } from "@/lib/utils";
 import { useAppAuth } from "@/lib/auth-context";
+import { FilterBar } from "@/components/filter-bar";
 
 function BatchStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
@@ -36,7 +37,18 @@ function BatchStatusBadge({ status }: { status: string }) {
 }
 
 export default function CuttingPage() {
-  const { data, isLoading } = useListCuttingBatches();
+  const [filters, setFilters] = useState<Record<string, string>>({
+    startDate: "", endDate: "", productId: "", colorId: "", sizeId: ""
+  });
+
+  const filterParams: Record<string, any> = {};
+  if (filters.startDate) filterParams.startDate = filters.startDate;
+  if (filters.endDate) filterParams.endDate = filters.endDate;
+  if (filters.productId) filterParams.productId = Number(filters.productId);
+  if (filters.colorId) filterParams.colorId = Number(filters.colorId);
+  if (filters.sizeId) filterParams.sizeId = Number(filters.sizeId);
+
+  const { data, isLoading } = useListCuttingBatches(filterParams);
   const { data: products } = useListProducts();
   const { data: sizes } = useListSizes();
   const { data: colors } = useListColors();
@@ -150,8 +162,17 @@ export default function CuttingPage() {
   const exceedsTolerance = selectedRoll && qtyUsedNum > Number(selectedRoll.availableQuantity) + TOLERANCE;
   const withinTolerance = selectedRoll && qtyUsedNum > Number(selectedRoll.availableQuantity) && qtyUsedNum <= Number(selectedRoll.availableQuantity) + TOLERANCE;
 
+  const filterFields = [
+    { name: "startDate", label: "From Date", type: "date" as const },
+    { name: "endDate", label: "To Date", type: "date" as const },
+    { name: "productId", label: "Product", type: "select" as const, options: products?.filter((p: any) => p.isActive).map((p: any) => ({ value: p.id, label: `${p.code} - ${p.name}` })) || [] },
+    { name: "colorId", label: "Color", type: "select" as const, options: colors?.filter((c: any) => c.isActive).map((c: any) => ({ value: c.id, label: `${c.code} - ${c.name}` })) || [] },
+    { name: "sizeId", label: "Size", type: "select" as const, options: sizes?.filter((s: any) => s.isActive).map((s: any) => ({ value: s.id, label: s.name })) || [] },
+  ];
+
   return (
     <AppLayout title="Cutting Department">
+      <FilterBar fields={filterFields} values={filters} onChange={setFilters} />
       <Card className="shadow-lg border-slate-200 rounded-2xl overflow-hidden">
         <CardHeader className="bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
           <div>

@@ -23,9 +23,14 @@ export interface Allocation {
   sizeName?: string;
   colorCode?: string;
   colorName?: string;
-  stitcherId?: number;
-  stitcherName?: string;
-  teamName?: string;
+  allocationType?: string;
+  stitcherId?: number | null;
+  stitcherName?: string | null;
+  teamId?: number | null;
+  teamName?: string | null;
+  stitcherTeamName?: string | null;
+  assigneeName?: string;
+  assigneeType?: string;
   quantityIssued: number;
   quantityReceived?: number;
   quantityPending?: number;

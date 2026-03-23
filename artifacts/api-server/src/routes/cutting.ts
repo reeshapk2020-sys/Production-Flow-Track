@@ -11,7 +11,7 @@ import {
   colorsTable,
   allocationsTable,
 } from "@workspace/db/schema";
-import { eq, sql, ilike } from "drizzle-orm";
+import { eq, sql, ilike, and, gte, lte } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit.js";
 import { checkPermission } from "./permissions.js";
@@ -30,8 +30,16 @@ const router: IRouter = Router();
 const mat1 = alias(materialsTable, "mat1");
 const mat2 = alias(materialsTable, "mat2");
 
-router.get("/cutting/batches", checkPermission("cutting", "view"), async (_req, res) => {
-  const rows = await db
+router.get("/cutting/batches", checkPermission("cutting", "view"), async (req, res) => {
+  const { startDate, endDate, productId, colorId, sizeId } = req.query;
+  const conditions: any[] = [];
+  if (startDate) conditions.push(gte(cuttingBatchesTable.cuttingDate, new Date(startDate as string)));
+  if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); conditions.push(lte(cuttingBatchesTable.cuttingDate, ed)); }
+  if (productId) conditions.push(eq(cuttingBatchesTable.productId, Number(productId)));
+  if (colorId) conditions.push(eq(cuttingBatchesTable.colorId, Number(colorId)));
+  if (sizeId) conditions.push(eq(cuttingBatchesTable.sizeId, Number(sizeId)));
+
+  let q = db
     .select({
       id: cuttingBatchesTable.id,
       batchNumber: cuttingBatchesTable.batchNumber,
@@ -67,9 +75,12 @@ router.get("/cutting/batches", checkPermission("cutting", "view"), async (_req, 
     .leftJoin(mat2, eq(cuttingBatchesTable.material2Id, mat2.id))
     .leftJoin(sizesTable, eq(cuttingBatchesTable.sizeId, sizesTable.id))
     .leftJoin(colorsTable, eq(cuttingBatchesTable.colorId, colorsTable.id))
-    .orderBy(sql`${cuttingBatchesTable.createdAt} desc`);
+    .$dynamic();
 
-  const result = rows.map((r) => ({
+  if (conditions.length > 0) q = q.where(and(...conditions));
+  const rows = await q.orderBy(sql`${cuttingBatchesTable.createdAt} desc`);
+
+  const result = rows.map((r: any) => ({
     ...r,
     totalAllocated: r.quantityCut - r.availableForAllocation,
     itemCode: computeItemCode(r.productCode, r.colorCode, r.materialCode, r.material2Code),

@@ -54,8 +54,14 @@ import type {
   GetCurrentAuthUserResponse,
   GetDailyProductionReportParams,
   GetStitcherPerformanceReportParams,
+  GetTeamPerformanceReportParams,
   HealthStatus,
   InventorySummary,
+  ListAllocationsParams,
+  ListCuttingBatchesParams,
+  ListFinishedGoodsParams,
+  ListFinishingRecordsParams,
+  ListReceivingsParams,
   Material,
   Product,
   Receiving,
@@ -67,6 +73,7 @@ import type {
   StockSummary,
   SuccessResponse,
   Team,
+  TeamPerformance,
   TraceSearchResult,
   UpdateAllocationBody,
   UpdateColorBody,
@@ -2688,41 +2695,60 @@ export const useUpdateFabricRoll = <
 /**
  * @summary List all cutting batches
  */
-export const getListCuttingBatchesUrl = () => {
-  return `/api/cutting/batches`;
+export const getListCuttingBatchesUrl = (params?: ListCuttingBatchesParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/cutting/batches?${stringifiedParams}`
+    : `/api/cutting/batches`;
 };
 
 export const listCuttingBatches = async (
+  params?: ListCuttingBatchesParams,
   options?: RequestInit,
 ): Promise<CuttingBatch[]> => {
-  return customFetch<CuttingBatch[]>(getListCuttingBatchesUrl(), {
+  return customFetch<CuttingBatch[]>(getListCuttingBatchesUrl(params), {
     ...options,
     method: "GET",
   });
 };
 
-export const getListCuttingBatchesQueryKey = () => {
-  return [`/api/cutting/batches`] as const;
+export const getListCuttingBatchesQueryKey = (
+  params?: ListCuttingBatchesParams,
+) => {
+  return [`/api/cutting/batches`, ...(params ? [params] : [])] as const;
 };
 
 export const getListCuttingBatchesQueryOptions = <
   TData = Awaited<ReturnType<typeof listCuttingBatches>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listCuttingBatches>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
+>(
+  params?: ListCuttingBatchesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listCuttingBatches>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getListCuttingBatchesQueryKey();
+  const queryKey =
+    queryOptions?.queryKey ?? getListCuttingBatchesQueryKey(params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof listCuttingBatches>>
-  > = ({ signal }) => listCuttingBatches({ signal, ...requestOptions });
+  > = ({ signal }) => listCuttingBatches(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listCuttingBatches>>,
@@ -2743,15 +2769,18 @@ export type ListCuttingBatchesQueryError = ErrorType<unknown>;
 export function useListCuttingBatches<
   TData = Awaited<ReturnType<typeof listCuttingBatches>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listCuttingBatches>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListCuttingBatchesQueryOptions(options);
+>(
+  params?: ListCuttingBatchesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listCuttingBatches>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListCuttingBatchesQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
@@ -3023,41 +3052,57 @@ export const useUpdateCuttingBatch = <
 /**
  * @summary List all allocations
  */
-export const getListAllocationsUrl = () => {
-  return `/api/allocation`;
+export const getListAllocationsUrl = (params?: ListAllocationsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/allocation?${stringifiedParams}`
+    : `/api/allocation`;
 };
 
 export const listAllocations = async (
+  params?: ListAllocationsParams,
   options?: RequestInit,
 ): Promise<Allocation[]> => {
-  return customFetch<Allocation[]>(getListAllocationsUrl(), {
+  return customFetch<Allocation[]>(getListAllocationsUrl(params), {
     ...options,
     method: "GET",
   });
 };
 
-export const getListAllocationsQueryKey = () => {
-  return [`/api/allocation`] as const;
+export const getListAllocationsQueryKey = (params?: ListAllocationsParams) => {
+  return [`/api/allocation`, ...(params ? [params] : [])] as const;
 };
 
 export const getListAllocationsQueryOptions = <
   TData = Awaited<ReturnType<typeof listAllocations>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listAllocations>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
+>(
+  params?: ListAllocationsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listAllocations>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getListAllocationsQueryKey();
+  const queryKey = queryOptions?.queryKey ?? getListAllocationsQueryKey(params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listAllocations>>> = ({
     signal,
-  }) => listAllocations({ signal, ...requestOptions });
+  }) => listAllocations(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listAllocations>>,
@@ -3078,15 +3123,18 @@ export type ListAllocationsQueryError = ErrorType<unknown>;
 export function useListAllocations<
   TData = Awaited<ReturnType<typeof listAllocations>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listAllocations>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListAllocationsQueryOptions(options);
+>(
+  params?: ListAllocationsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listAllocations>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListAllocationsQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
@@ -3358,41 +3406,57 @@ export const useUpdateAllocation = <
 /**
  * @summary List all receivings from stitchers
  */
-export const getListReceivingsUrl = () => {
-  return `/api/receiving`;
+export const getListReceivingsUrl = (params?: ListReceivingsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/receiving?${stringifiedParams}`
+    : `/api/receiving`;
 };
 
 export const listReceivings = async (
+  params?: ListReceivingsParams,
   options?: RequestInit,
 ): Promise<Receiving[]> => {
-  return customFetch<Receiving[]>(getListReceivingsUrl(), {
+  return customFetch<Receiving[]>(getListReceivingsUrl(params), {
     ...options,
     method: "GET",
   });
 };
 
-export const getListReceivingsQueryKey = () => {
-  return [`/api/receiving`] as const;
+export const getListReceivingsQueryKey = (params?: ListReceivingsParams) => {
+  return [`/api/receiving`, ...(params ? [params] : [])] as const;
 };
 
 export const getListReceivingsQueryOptions = <
   TData = Awaited<ReturnType<typeof listReceivings>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listReceivings>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
+>(
+  params?: ListReceivingsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listReceivings>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getListReceivingsQueryKey();
+  const queryKey = queryOptions?.queryKey ?? getListReceivingsQueryKey(params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listReceivings>>> = ({
     signal,
-  }) => listReceivings({ signal, ...requestOptions });
+  }) => listReceivings(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listReceivings>>,
@@ -3413,15 +3477,18 @@ export type ListReceivingsQueryError = ErrorType<unknown>;
 export function useListReceivings<
   TData = Awaited<ReturnType<typeof listReceivings>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listReceivings>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListReceivingsQueryOptions(options);
+>(
+  params?: ListReceivingsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listReceivings>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListReceivingsQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
@@ -3606,41 +3673,63 @@ export const useUpdateReceiving = <
 /**
  * @summary List finishing stage records (all stages merged)
  */
-export const getListFinishingRecordsUrl = () => {
-  return `/api/finishing`;
+export const getListFinishingRecordsUrl = (
+  params?: ListFinishingRecordsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/finishing?${stringifiedParams}`
+    : `/api/finishing`;
 };
 
 export const listFinishingRecords = async (
+  params?: ListFinishingRecordsParams,
   options?: RequestInit,
 ): Promise<FinishingRecord[]> => {
-  return customFetch<FinishingRecord[]>(getListFinishingRecordsUrl(), {
+  return customFetch<FinishingRecord[]>(getListFinishingRecordsUrl(params), {
     ...options,
     method: "GET",
   });
 };
 
-export const getListFinishingRecordsQueryKey = () => {
-  return [`/api/finishing`] as const;
+export const getListFinishingRecordsQueryKey = (
+  params?: ListFinishingRecordsParams,
+) => {
+  return [`/api/finishing`, ...(params ? [params] : [])] as const;
 };
 
 export const getListFinishingRecordsQueryOptions = <
   TData = Awaited<ReturnType<typeof listFinishingRecords>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listFinishingRecords>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
+>(
+  params?: ListFinishingRecordsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listFinishingRecords>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getListFinishingRecordsQueryKey();
+  const queryKey =
+    queryOptions?.queryKey ?? getListFinishingRecordsQueryKey(params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof listFinishingRecords>>
-  > = ({ signal }) => listFinishingRecords({ signal, ...requestOptions });
+  > = ({ signal }) =>
+    listFinishingRecords(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listFinishingRecords>>,
@@ -3661,15 +3750,18 @@ export type ListFinishingRecordsQueryError = ErrorType<unknown>;
 export function useListFinishingRecords<
   TData = Awaited<ReturnType<typeof listFinishingRecords>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listFinishingRecords>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListFinishingRecordsQueryOptions(options);
+>(
+  params?: ListFinishingRecordsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listFinishingRecords>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListFinishingRecordsQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
@@ -3945,41 +4037,60 @@ export function useGetFinishingBatchInfo<
 /**
  * @summary List finished goods inventory
  */
-export const getListFinishedGoodsUrl = () => {
-  return `/api/finished-goods`;
+export const getListFinishedGoodsUrl = (params?: ListFinishedGoodsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/finished-goods?${stringifiedParams}`
+    : `/api/finished-goods`;
 };
 
 export const listFinishedGoods = async (
+  params?: ListFinishedGoodsParams,
   options?: RequestInit,
 ): Promise<FinishedGoodsEntry[]> => {
-  return customFetch<FinishedGoodsEntry[]>(getListFinishedGoodsUrl(), {
+  return customFetch<FinishedGoodsEntry[]>(getListFinishedGoodsUrl(params), {
     ...options,
     method: "GET",
   });
 };
 
-export const getListFinishedGoodsQueryKey = () => {
-  return [`/api/finished-goods`] as const;
+export const getListFinishedGoodsQueryKey = (
+  params?: ListFinishedGoodsParams,
+) => {
+  return [`/api/finished-goods`, ...(params ? [params] : [])] as const;
 };
 
 export const getListFinishedGoodsQueryOptions = <
   TData = Awaited<ReturnType<typeof listFinishedGoods>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listFinishedGoods>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
+>(
+  params?: ListFinishedGoodsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listFinishedGoods>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getListFinishedGoodsQueryKey();
+  const queryKey =
+    queryOptions?.queryKey ?? getListFinishedGoodsQueryKey(params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof listFinishedGoods>>
-  > = ({ signal }) => listFinishedGoods({ signal, ...requestOptions });
+  > = ({ signal }) => listFinishedGoods(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listFinishedGoods>>,
@@ -4000,15 +4111,18 @@ export type ListFinishedGoodsQueryError = ErrorType<unknown>;
 export function useListFinishedGoods<
   TData = Awaited<ReturnType<typeof listFinishedGoods>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listFinishedGoods>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListFinishedGoodsQueryOptions(options);
+>(
+  params?: ListFinishedGoodsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listFinishedGoods>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListFinishedGoodsQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
@@ -4613,6 +4727,112 @@ export function useGetStitcherPerformanceReport<
     params,
     options,
   );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Team-wise performance report
+ */
+export const getGetTeamPerformanceReportUrl = (
+  params?: GetTeamPerformanceReportParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/reports/team-performance?${stringifiedParams}`
+    : `/api/reports/team-performance`;
+};
+
+export const getTeamPerformanceReport = async (
+  params?: GetTeamPerformanceReportParams,
+  options?: RequestInit,
+): Promise<TeamPerformance[]> => {
+  return customFetch<TeamPerformance[]>(
+    getGetTeamPerformanceReportUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetTeamPerformanceReportQueryKey = (
+  params?: GetTeamPerformanceReportParams,
+) => {
+  return [
+    `/api/reports/team-performance`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetTeamPerformanceReportQueryOptions = <
+  TData = Awaited<ReturnType<typeof getTeamPerformanceReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetTeamPerformanceReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTeamPerformanceReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetTeamPerformanceReportQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getTeamPerformanceReport>>
+  > = ({ signal }) =>
+    getTeamPerformanceReport(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getTeamPerformanceReport>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetTeamPerformanceReportQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getTeamPerformanceReport>>
+>;
+export type GetTeamPerformanceReportQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Team-wise performance report
+ */
+
+export function useGetTeamPerformanceReport<
+  TData = Awaited<ReturnType<typeof getTeamPerformanceReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetTeamPerformanceReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTeamPerformanceReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetTeamPerformanceReportQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

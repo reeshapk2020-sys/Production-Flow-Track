@@ -11,24 +11,17 @@ import {
   sizesTable,
   colorsTable,
 } from "@workspace/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and, gte, lte, ilike } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit.js";
 import { checkPermission } from "./permissions.js";
 import { computeItemCode } from "../lib/itemCode.js";
 
-function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  if (!req.isAuthenticated() || req.user?.role !== "admin") {
-    res.status(403).json({ error: "Admin access required." });
-    return;
-  }
-  next();
-}
-
 const router: IRouter = Router();
 
 const mat1 = alias(materialsTable, "mat1");
 const mat2 = alias(materialsTable, "mat2");
+const allocTeam = alias(teamsTable, "alloc_team");
 
 function generateAllocationNumber() {
   const now = new Date();
@@ -55,18 +48,24 @@ const allocSelect = {
   material2Id: cuttingBatchesTable.material2Id,
   material2Code: mat2.code,
   material2Name: mat2.name,
+  sizeId: cuttingBatchesTable.sizeId,
   sizeName: sizesTable.name,
+  colorId: cuttingBatchesTable.colorId,
   colorCode: colorsTable.code,
   colorName: colorsTable.name,
+  allocationType: allocationsTable.allocationType,
   stitcherId: allocationsTable.stitcherId,
   stitcherName: stitchersTable.name,
-  teamName: teamsTable.name,
+  teamId: allocationsTable.teamId,
+  teamName: allocTeam.name,
+  stitcherTeamName: teamsTable.name,
   quantityIssued: allocationsTable.quantityIssued,
   quantityReceived: allocationsTable.quantityReceived,
   quantityRejected: allocationsTable.quantityRejected,
   issueDate: allocationsTable.issueDate,
   remarks: allocationsTable.remarks,
   status: allocationsTable.status,
+  createdAt: allocationsTable.createdAt,
 };
 
 function allocJoins(q: any) {
@@ -79,7 +78,8 @@ function allocJoins(q: any) {
     .leftJoin(sizesTable, eq(cuttingBatchesTable.sizeId, sizesTable.id))
     .leftJoin(colorsTable, eq(cuttingBatchesTable.colorId, colorsTable.id))
     .leftJoin(stitchersTable, eq(allocationsTable.stitcherId, stitchersTable.id))
-    .leftJoin(teamsTable, eq(stitchersTable.teamId, teamsTable.id));
+    .leftJoin(teamsTable, eq(stitchersTable.teamId, teamsTable.id))
+    .leftJoin(allocTeam, eq(allocationsTable.teamId, allocTeam.id));
 }
 
 function withItemCode(r: any) {
@@ -87,19 +87,39 @@ function withItemCode(r: any) {
     ...r,
     quantityPending: r.quantityIssued - r.quantityReceived - r.quantityRejected,
     itemCode: computeItemCode(r.productCode, r.colorCode, r.materialCode, r.material2Code),
+    assigneeName: r.allocationType === "team" ? r.teamName : r.stitcherName,
+    assigneeType: r.allocationType || "individual",
   };
 }
 
-router.get("/allocation", checkPermission("allocation", "view"), async (_req, res) => {
-  const rows = await allocJoins(
-    db.select(allocSelect).from(allocationsTable)
-  ).orderBy(sql`${allocationsTable.createdAt} desc`);
+router.get("/allocation", checkPermission("allocation", "view"), async (req, res) => {
+  const { startDate, endDate, productId, colorId, sizeId, stitcherId, teamId } = req.query;
+  const conditions: any[] = [];
+  if (startDate) conditions.push(gte(allocationsTable.issueDate, new Date(startDate as string)));
+  if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); conditions.push(lte(allocationsTable.issueDate, ed)); }
+  if (productId) conditions.push(eq(cuttingBatchesTable.productId, Number(productId)));
+  if (colorId) conditions.push(eq(cuttingBatchesTable.colorId, Number(colorId)));
+  if (sizeId) conditions.push(eq(cuttingBatchesTable.sizeId, Number(sizeId)));
+  if (stitcherId) conditions.push(eq(allocationsTable.stitcherId, Number(stitcherId)));
+  if (teamId) conditions.push(eq(allocationsTable.teamId, Number(teamId)));
+
+  let q = allocJoins(db.select(allocSelect).from(allocationsTable));
+  if (conditions.length > 0) q = q.where(and(...conditions));
+  const rows = await q.orderBy(sql`${allocationsTable.createdAt} desc`);
   res.json(rows.map(withItemCode));
 });
 
 router.post("/allocation", checkPermission("allocation", "create"), async (req, res) => {
-  const { cuttingBatchId, stitcherId, quantityIssued, issueDate, remarks,
+  const { cuttingBatchId, allocationType, stitcherId, teamId, quantityIssued, issueDate, remarks,
     batchProductId, batchMaterialId } = req.body;
+
+  const type = allocationType || "individual";
+  if (type === "individual" && !stitcherId) {
+    return res.status(400).json({ error: "Stitcher is required for individual allocation." });
+  }
+  if (type === "team" && !teamId) {
+    return res.status(400).json({ error: "Team is required for team allocation." });
+  }
 
   const [batch] = await db
     .select({
@@ -145,7 +165,9 @@ router.post("/allocation", checkPermission("allocation", "create"), async (req, 
     .values({
       allocationNumber,
       cuttingBatchId,
-      stitcherId,
+      allocationType: type,
+      stitcherId: type === "individual" ? stitcherId : null,
+      teamId: type === "team" ? teamId : null,
       quantityIssued,
       issueDate: new Date(issueDate),
       remarks,
@@ -161,12 +183,13 @@ router.post("/allocation", checkPermission("allocation", "create"), async (req, 
     })
     .where(eq(cuttingBatchesTable.id, cuttingBatchId));
 
+  const assignee = type === "team" ? `Team #${teamId}` : `Stitcher #${stitcherId}`;
   await logAudit(
     req,
     "CREATE",
     "allocations",
     String(allocation.id),
-    `Allocated ${quantityIssued} pieces, number: ${allocationNumber}`
+    `Allocated ${quantityIssued} pieces to ${assignee}, number: ${allocationNumber}`
   );
 
   res.status(201).json({ ...allocation, quantityPending: quantityIssued });

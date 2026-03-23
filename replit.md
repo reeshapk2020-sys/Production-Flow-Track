@@ -133,12 +133,35 @@ Custom roles can be created dynamically from the admin Permissions page.
 - `GET /inventory/summary` — pipeline overview (raw materials, cutting WIP, stitchers, finishing stages, finished goods)
 - `GET /inventory/raw-materials` — raw material breakdown grouped by fabric type and color (expandable accordion in UI)
 
+## Allocation
+
+- Supports both **individual** (`allocationType: "individual"`) and **team** (`allocationType: "team"`) allocation
+- `allocations` table has `allocationType` (text), `teamId` (nullable FK), `stitcherId` (nullable FK)
+- Backend computes `assigneeName` field in responses (stitcher name or team name based on allocation type)
+- Frontend toggle between Individual/Team mode in allocation form
+
+## Filters
+
+- **FilterBar component** (`src/components/filter-bar.tsx`): Reusable collapsible filter bar with date range and select dropdowns
+- All production pages (Cutting, Allocation, Receiving, Finishing, Finished Goods) have FilterBar with relevant filters
+- All backend list endpoints support query params: `startDate`, `endDate`, plus entity-specific filters (productId, colorId, sizeId, stitcherId, teamId)
+- Filter state managed locally per page component, passed to API hooks
+
+## Reports
+
+- **Stitcher Performance**: Total issued/received/pending/rejected/efficiency per stitcher, with date range filters
+- **Team Performance**: Same metrics per team (uses `/reports/team-performance` endpoint), with date/team filters
+- **Daily Production**: Date-wise breakdown of cutting/allocated/received/finishing/stored quantities, with summary cards
+- **Stage Pending**: Bottleneck analysis showing batches stuck per production stage
+- **Batch Status**: Full overview of all batches with current stage
+
 ## Key Features
 
 - Full batch traceability (Fabric Roll → Cutting → Allocation → Receiving → Finishing → Finished Goods)
 - **Item Code system**: Composite code computed as `productCode-colorCode-material1Code-material2Code`; set at cutting time and displayed in all downstream modules
 - Real-time inventory tracking at all stages
-- Stitcher performance reports
+- Stitcher and team performance reports with date range filtering
+- Date-wise production reports
 - Dashboard with today's production metrics
 - Audit log for all create/update operations
 - **Dynamic role-based permission system** with per-module granularity (view/create/edit/import)
@@ -148,6 +171,7 @@ Custom roles can be created dynamically from the admin Permissions page.
 - Material master module (create/edit, isActive toggle, duplicate code prevention)
 - Fabric master now supports fabric code (used in item code), with edit dialog
 - Bulk CSV/Excel import for all master data modules and fabric rolls
+- FilterBar on all production pages for date range and entity-specific filtering
 
 ## Commands
 

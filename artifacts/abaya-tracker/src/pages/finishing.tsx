@@ -18,6 +18,8 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fmtCode } from "@/lib/utils";
 import { useAppAuth } from "@/lib/auth-context";
+import { FilterBar } from "@/components/filter-bar";
+import { useListProducts, useListColors } from "@workspace/api-client-react";
 
 export default function FinishingPage() {
   return (
@@ -28,8 +30,18 @@ export default function FinishingPage() {
 }
 
 function FinishingView() {
-  const { data, isLoading } = useListFinishingRecords();
+  const [filters, setFilters] = useState<Record<string, string>>({ startDate: "", endDate: "", productId: "", colorId: "" });
+
+  const filterParams: Record<string, any> = {};
+  if (filters.startDate) filterParams.startDate = filters.startDate;
+  if (filters.endDate) filterParams.endDate = filters.endDate;
+  if (filters.productId) filterParams.productId = Number(filters.productId);
+  if (filters.colorId) filterParams.colorId = Number(filters.colorId);
+
+  const { data, isLoading } = useListFinishingRecords(filterParams);
   const { data: batches } = useListCuttingBatches();
+  const { data: products } = useListProducts();
+  const { data: colors } = useListColors();
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -135,7 +147,16 @@ function FinishingView() {
     });
   };
 
+  const finishingFilterFields = [
+    { name: "startDate", label: "From Date", type: "date" as const },
+    { name: "endDate", label: "To Date", type: "date" as const },
+    { name: "productId", label: "Product", type: "select" as const, options: products?.filter((p: any) => p.isActive).map((p: any) => ({ value: p.id, label: `${p.code} - ${p.name}` })) || [] },
+    { name: "colorId", label: "Color", type: "select" as const, options: colors?.filter((c: any) => c.isActive).map((c: any) => ({ value: c.id, label: `${c.code} - ${c.name}` })) || [] },
+  ];
+
   return (
+    <>
+    <FilterBar fields={finishingFilterFields} values={filters} onChange={setFilters} />
     <Card className="shadow-lg border-slate-200 rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
       <CardHeader className="bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
         <div>
@@ -393,5 +414,6 @@ function FinishingView() {
         </DialogContent>
       </Dialog>
     </Card>
+    </>
   );
 }
