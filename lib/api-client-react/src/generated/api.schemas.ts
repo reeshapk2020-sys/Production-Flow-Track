@@ -222,6 +222,7 @@ export interface FabricRoll {
   fabricId?: number;
   fabricName?: string;
   colorId?: number;
+  colorCode?: string;
   colorName?: string;
   supplier?: string;
   totalQuantity: number;

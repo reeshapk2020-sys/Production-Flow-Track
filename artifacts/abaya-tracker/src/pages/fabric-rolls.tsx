@@ -189,7 +189,7 @@ export default function FabricRollsPage() {
                       <TableCell className="font-mono text-slate-700 font-medium">{roll.rollNumber}</TableCell>
                       <TableCell>
                         <div className="font-semibold text-slate-900">{roll.fabricName}</div>
-                        <div className="text-xs text-slate-500">{roll.colorName}</div>
+                        <div className="text-xs text-slate-500">{roll.colorCode || roll.colorName}</div>
                       </TableCell>
                       <TableCell className="text-slate-600">{roll.supplier || "-"}</TableCell>
                       <TableCell className="text-right">
