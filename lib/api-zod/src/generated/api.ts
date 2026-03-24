@@ -238,6 +238,7 @@ export const ListProductsResponseItem = zod.object({
   categoryId: zod.number().optional(),
   categoryName: zod.string().optional(),
   description: zod.string().optional(),
+  pointsPerPiece: zod.number().nullish(),
   isActive: zod.boolean().optional(),
 });
 export const ListProductsResponse = zod.array(ListProductsResponseItem);
@@ -250,6 +251,34 @@ export const CreateProductBody = zod.object({
   name: zod.string(),
   categoryId: zod.number().optional(),
   description: zod.string().optional(),
+  pointsPerPiece: zod.number().nullish(),
+});
+
+/**
+ * @summary Update a product/design
+ */
+export const UpdateProductParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateProductBody = zod.object({
+  code: zod.string().optional(),
+  name: zod.string(),
+  categoryId: zod.number().optional(),
+  description: zod.string().optional(),
+  pointsPerPiece: zod.number().nullish(),
+  isActive: zod.boolean().optional(),
+});
+
+export const UpdateProductResponse = zod.object({
+  id: zod.number(),
+  code: zod.string().optional(),
+  name: zod.string(),
+  categoryId: zod.number().optional(),
+  categoryName: zod.string().optional(),
+  description: zod.string().optional(),
+  pointsPerPiece: zod.number().nullish(),
+  isActive: zod.boolean().optional(),
 });
 
 /**
@@ -1590,6 +1619,56 @@ export const GetTeamPerformanceReportResponseItem = zod.object({
 });
 export const GetTeamPerformanceReportResponse = zod.array(
   GetTeamPerformanceReportResponseItem,
+);
+
+/**
+ * @summary Stitcher-wise points report based on completed production
+ */
+export const GetStitcherPointsReportQueryParams = zod.object({
+  startDate: zod.coerce.string().optional(),
+  endDate: zod.coerce.string().optional(),
+  stitcherId: zod.coerce.number().optional(),
+});
+
+export const GetStitcherPointsReportResponseItem = zod.object({
+  stitcherId: zod.number().optional(),
+  stitcherName: zod.string().optional(),
+  teamId: zod.number().optional(),
+  teamName: zod.string().optional(),
+  teamCode: zod.string().optional(),
+  productCode: zod.string().optional(),
+  productName: zod.string().optional(),
+  pointsPerPiece: zod.number().optional(),
+  completedQty: zod.number(),
+  totalPoints: zod.number(),
+});
+export const GetStitcherPointsReportResponse = zod.array(
+  GetStitcherPointsReportResponseItem,
+);
+
+/**
+ * @summary Team-wise points report based on completed production
+ */
+export const GetTeamPointsReportQueryParams = zod.object({
+  startDate: zod.coerce.string().optional(),
+  endDate: zod.coerce.string().optional(),
+  teamId: zod.coerce.number().optional(),
+});
+
+export const GetTeamPointsReportResponseItem = zod.object({
+  stitcherId: zod.number().optional(),
+  stitcherName: zod.string().optional(),
+  teamId: zod.number().optional(),
+  teamName: zod.string().optional(),
+  teamCode: zod.string().optional(),
+  productCode: zod.string().optional(),
+  productName: zod.string().optional(),
+  pointsPerPiece: zod.number().optional(),
+  completedQty: zod.number(),
+  totalPoints: zod.number(),
+});
+export const GetTeamPointsReportResponse = zod.array(
+  GetTeamPointsReportResponseItem,
 );
 
 /**

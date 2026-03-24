@@ -338,4 +338,89 @@ router.get("/reports/audit-log", checkPermission("reports", "view"), async (req,
   res.json(rows);
 });
 
+router.get("/reports/stitcher-points", checkPermission("reports", "view"), async (req, res) => {
+  const { startDate, endDate, stitcherId } = req.query;
+  const conditions: any[] = [];
+  if (startDate) conditions.push(gte(receivingsTable.receiveDate, new Date(startDate as string)));
+  if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); conditions.push(lte(receivingsTable.receiveDate, ed)); }
+  if (stitcherId) conditions.push(eq(allocationsTable.stitcherId, Number(stitcherId)));
+
+  const rows = await db
+    .select({
+      stitcherId: stitchersTable.id,
+      stitcherName: stitchersTable.name,
+      teamName: teamsTable.name,
+      productCode: productsTable.code,
+      productName: productsTable.name,
+      pointsPerPiece: productsTable.pointsPerPiece,
+      completedQty: sql<number>`COALESCE(SUM(${receivingsTable.quantityReceived}), 0)::int`,
+    })
+    .from(receivingsTable)
+    .innerJoin(allocationsTable, eq(receivingsTable.allocationId, allocationsTable.id))
+    .innerJoin(cuttingBatchesTable, eq(allocationsTable.cuttingBatchId, cuttingBatchesTable.id))
+    .innerJoin(productsTable, eq(cuttingBatchesTable.productId, productsTable.id))
+    .innerJoin(stitchersTable, eq(allocationsTable.stitcherId, stitchersTable.id))
+    .leftJoin(teamsTable, eq(stitchersTable.teamId, teamsTable.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .groupBy(stitchersTable.id, stitchersTable.name, teamsTable.name, productsTable.id, productsTable.code, productsTable.name, productsTable.pointsPerPiece)
+    .orderBy(stitchersTable.name, productsTable.code);
+
+  const result = rows.map(r => {
+    const pts = r.pointsPerPiece ? Number(r.pointsPerPiece) : 0;
+    return {
+      stitcherId: r.stitcherId,
+      stitcherName: r.stitcherName,
+      teamName: r.teamName,
+      productCode: r.productCode,
+      productName: r.productName,
+      pointsPerPiece: pts,
+      completedQty: r.completedQty,
+      totalPoints: Math.round(r.completedQty * pts * 100) / 100,
+    };
+  });
+  res.json(result);
+});
+
+router.get("/reports/team-points", checkPermission("reports", "view"), async (req, res) => {
+  const { startDate, endDate, teamId } = req.query;
+  const conditions: any[] = [eq(allocationsTable.allocationType, "team")];
+  if (startDate) conditions.push(gte(receivingsTable.receiveDate, new Date(startDate as string)));
+  if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); conditions.push(lte(receivingsTable.receiveDate, ed)); }
+  if (teamId) conditions.push(eq(allocationsTable.teamId, Number(teamId)));
+
+  const rows = await db
+    .select({
+      teamId: teamsTable.id,
+      teamName: teamsTable.name,
+      teamCode: teamsTable.code,
+      productCode: productsTable.code,
+      productName: productsTable.name,
+      pointsPerPiece: productsTable.pointsPerPiece,
+      completedQty: sql<number>`COALESCE(SUM(${receivingsTable.quantityReceived}), 0)::int`,
+    })
+    .from(receivingsTable)
+    .innerJoin(allocationsTable, eq(receivingsTable.allocationId, allocationsTable.id))
+    .innerJoin(cuttingBatchesTable, eq(allocationsTable.cuttingBatchId, cuttingBatchesTable.id))
+    .innerJoin(productsTable, eq(cuttingBatchesTable.productId, productsTable.id))
+    .innerJoin(teamsTable, eq(allocationsTable.teamId, teamsTable.id))
+    .where(and(...conditions))
+    .groupBy(teamsTable.id, teamsTable.name, teamsTable.code, productsTable.id, productsTable.code, productsTable.name, productsTable.pointsPerPiece)
+    .orderBy(teamsTable.name, productsTable.code);
+
+  const result = rows.map(r => {
+    const pts = r.pointsPerPiece ? Number(r.pointsPerPiece) : 0;
+    return {
+      teamId: r.teamId,
+      teamName: r.teamName,
+      teamCode: r.teamCode,
+      productCode: r.productCode,
+      productName: r.productName,
+      pointsPerPiece: pts,
+      completedQty: r.completedQty,
+      totalPoints: Math.round(r.completedQty * pts * 100) / 100,
+    };
+  });
+  res.json(result);
+});
+
 export default router;

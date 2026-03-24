@@ -65,7 +65,9 @@ import type {
   GetDispatchReportByItemParams,
   GetDispatchReportSummaryParams,
   GetStitcherPerformanceReportParams,
+  GetStitcherPointsReportParams,
   GetTeamPerformanceReportParams,
+  GetTeamPointsReportParams,
   HealthStatus,
   ImportOpeningFinishedGoodsBody,
   ImportResult,
@@ -85,6 +87,7 @@ import type {
   OrderDetail,
   OutsourceAllocation,
   OutsourceTransfer,
+  PointsReportEntry,
   Product,
   PurchaseOrder,
   PurchaseOrderDetail,
@@ -111,6 +114,7 @@ import type {
   UpdateFinishingRecordBody,
   UpdateMaterialBody,
   UpdateOrderBody,
+  UpdateProductBody,
   UpdatePurchaseOrderBody,
   UpdateReceivingBody,
   UpdateStitcherBody,
@@ -1660,6 +1664,93 @@ export const useCreateProduct = <
   TContext
 > => {
   return useMutation(getCreateProductMutationOptions(options));
+};
+
+/**
+ * @summary Update a product/design
+ */
+export const getUpdateProductUrl = (id: number) => {
+  return `/api/master/products/${id}`;
+};
+
+export const updateProduct = async (
+  id: number,
+  updateProductBody: UpdateProductBody,
+  options?: RequestInit,
+): Promise<Product> => {
+  return customFetch<Product>(getUpdateProductUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateProductBody),
+  });
+};
+
+export const getUpdateProductMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateProduct>>,
+    TError,
+    { id: number; data: BodyType<UpdateProductBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateProduct>>,
+  TError,
+  { id: number; data: BodyType<UpdateProductBody> },
+  TContext
+> => {
+  const mutationKey = ["updateProduct"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateProduct>>,
+    { id: number; data: BodyType<UpdateProductBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateProduct(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateProductMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateProduct>>
+>;
+export type UpdateProductMutationBody = BodyType<UpdateProductBody>;
+export type UpdateProductMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a product/design
+ */
+export const useUpdateProduct = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateProduct>>,
+    TError,
+    { id: number; data: BodyType<UpdateProductBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateProduct>>,
+  TError,
+  { id: number; data: BodyType<UpdateProductBody> },
+  TContext
+> => {
+  return useMutation(getUpdateProductMutationOptions(options));
 };
 
 /**
@@ -5822,6 +5913,209 @@ export function useGetTeamPerformanceReport<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetTeamPerformanceReportQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Stitcher-wise points report based on completed production
+ */
+export const getGetStitcherPointsReportUrl = (
+  params?: GetStitcherPointsReportParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/reports/stitcher-points?${stringifiedParams}`
+    : `/api/reports/stitcher-points`;
+};
+
+export const getStitcherPointsReport = async (
+  params?: GetStitcherPointsReportParams,
+  options?: RequestInit,
+): Promise<PointsReportEntry[]> => {
+  return customFetch<PointsReportEntry[]>(
+    getGetStitcherPointsReportUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetStitcherPointsReportQueryKey = (
+  params?: GetStitcherPointsReportParams,
+) => {
+  return [`/api/reports/stitcher-points`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetStitcherPointsReportQueryOptions = <
+  TData = Awaited<ReturnType<typeof getStitcherPointsReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetStitcherPointsReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getStitcherPointsReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetStitcherPointsReportQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getStitcherPointsReport>>
+  > = ({ signal }) =>
+    getStitcherPointsReport(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getStitcherPointsReport>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetStitcherPointsReportQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getStitcherPointsReport>>
+>;
+export type GetStitcherPointsReportQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Stitcher-wise points report based on completed production
+ */
+
+export function useGetStitcherPointsReport<
+  TData = Awaited<ReturnType<typeof getStitcherPointsReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetStitcherPointsReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getStitcherPointsReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetStitcherPointsReportQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Team-wise points report based on completed production
+ */
+export const getGetTeamPointsReportUrl = (
+  params?: GetTeamPointsReportParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/reports/team-points?${stringifiedParams}`
+    : `/api/reports/team-points`;
+};
+
+export const getTeamPointsReport = async (
+  params?: GetTeamPointsReportParams,
+  options?: RequestInit,
+): Promise<PointsReportEntry[]> => {
+  return customFetch<PointsReportEntry[]>(getGetTeamPointsReportUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetTeamPointsReportQueryKey = (
+  params?: GetTeamPointsReportParams,
+) => {
+  return [`/api/reports/team-points`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetTeamPointsReportQueryOptions = <
+  TData = Awaited<ReturnType<typeof getTeamPointsReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetTeamPointsReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTeamPointsReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetTeamPointsReportQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getTeamPointsReport>>
+  > = ({ signal }) =>
+    getTeamPointsReport(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getTeamPointsReport>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetTeamPointsReportQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getTeamPointsReport>>
+>;
+export type GetTeamPointsReportQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Team-wise points report based on completed production
+ */
+
+export function useGetTeamPointsReport<
+  TData = Awaited<ReturnType<typeof getTeamPointsReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetTeamPointsReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTeamPointsReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetTeamPointsReportQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

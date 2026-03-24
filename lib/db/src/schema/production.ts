@@ -110,6 +110,7 @@ export const productsTable = pgTable("products", {
   name: text("name").notNull(),
   categoryId: integer("category_id").references(() => categoriesTable.id),
   description: text("description"),
+  pointsPerPiece: numeric("points_per_piece", { precision: 10, scale: 2 }),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

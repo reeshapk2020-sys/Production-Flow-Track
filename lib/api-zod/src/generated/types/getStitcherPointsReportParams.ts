@@ -6,10 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface CreateProductBody {
-  code?: string;
-  name: string;
-  categoryId?: number;
-  description?: string;
-  pointsPerPiece?: number | null;
-}
+export type GetStitcherPointsReportParams = {
+  startDate?: string;
+  endDate?: string;
+  stitcherId?: number;
+};

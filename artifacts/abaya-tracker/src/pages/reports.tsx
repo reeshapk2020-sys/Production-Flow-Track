@@ -7,6 +7,7 @@ import { Loader2, FileText, Users, BarChart3 } from "lucide-react";
 import { 
   useGetStitcherPerformanceReport, useGetStagePendingReport, useGetBatchStatusReport,
   useGetTeamPerformanceReport, useGetDailyProductionReport,
+  useGetStitcherPointsReport, useGetTeamPointsReport,
   useListTeams, useListOutsourceTransfers
 } from "@workspace/api-client-react";
 import { format } from "date-fns";
@@ -24,6 +25,8 @@ export default function ReportsPage() {
             <TabsTrigger value="team" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-emerald-600 data-[state=active]:text-white">Team Performance</TabsTrigger>
             <TabsTrigger value="daily" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-blue-600 data-[state=active]:text-white">Daily Production</TabsTrigger>
             <TabsTrigger value="outsource" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-violet-600 data-[state=active]:text-white">Outsource Summary</TabsTrigger>
+            <TabsTrigger value="stitcher-points" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-amber-600 data-[state=active]:text-white">Stitcher Points</TabsTrigger>
+            <TabsTrigger value="team-points" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-amber-600 data-[state=active]:text-white">Team Points</TabsTrigger>
             <TabsTrigger value="pending" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white">Stage Pending</TabsTrigger>
             <TabsTrigger value="batch" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white">Batch Status</TabsTrigger>
           </TabsList>
@@ -31,6 +34,8 @@ export default function ReportsPage() {
 
         <TabsContent value="stitcher" className="mt-0 outline-none"><StitcherReport /></TabsContent>
         <TabsContent value="team" className="mt-0 outline-none"><TeamReport /></TabsContent>
+        <TabsContent value="stitcher-points" className="mt-0 outline-none"><StitcherPointsReport /></TabsContent>
+        <TabsContent value="team-points" className="mt-0 outline-none"><TeamPointsReport /></TabsContent>
         <TabsContent value="daily" className="mt-0 outline-none"><DailyProductionReport /></TabsContent>
         <TabsContent value="outsource" className="mt-0 outline-none"><OutsourceSummaryReport /></TabsContent>
         <TabsContent value="pending" className="mt-0 outline-none"><PendingReport /></TabsContent>
@@ -513,6 +518,201 @@ function OutsourceSummaryReport() {
         </TableBody>
       </Table>
     </ReportCard>
+    </>
+  );
+}
+
+function StitcherPointsReport() {
+  const [filters, setFilters] = useState<Record<string, string>>({ startDate: "", endDate: "" });
+  const filterParams: Record<string, any> = {};
+  if (filters.startDate) filterParams.startDate = filters.startDate;
+  if (filters.endDate) filterParams.endDate = filters.endDate;
+
+  const { data, isLoading } = useGetStitcherPointsReport(filterParams);
+  const rows = (data || []) as any[];
+  const grandTotal = rows.reduce((s: number, r: any) => s + (r.totalPoints || 0), 0);
+
+  const stitcherSummary = new Map<string, { name: string; teamName: string; totalQty: number; totalPts: number }>();
+  for (const r of rows) {
+    const key = r.stitcherName || "Unknown";
+    const ex = stitcherSummary.get(key) || { name: key, teamName: r.teamName || "", totalQty: 0, totalPts: 0 };
+    ex.totalQty += r.completedQty || 0;
+    ex.totalPts += r.totalPoints || 0;
+    stitcherSummary.set(key, ex);
+  }
+
+  return (
+    <>
+      <FilterBar fields={[
+        { name: "startDate", label: "From Date", type: "date" as const },
+        { name: "endDate", label: "To Date", type: "date" as const },
+      ]} values={filters} onChange={setFilters} />
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <Card className="p-4 text-center"><div className="text-xs text-slate-500">Total Points (Period)</div><div className="text-2xl font-bold text-amber-600">{Math.round(grandTotal * 100) / 100}</div></Card>
+        <Card className="p-4 text-center"><div className="text-xs text-slate-500">Stitchers with Points</div><div className="text-2xl font-bold">{stitcherSummary.size}</div></Card>
+      </div>
+      <ReportCard title="Stitcher Points — Product Breakdown">
+        <Table>
+          <TableHeader className="bg-slate-50">
+            <TableRow>
+              <TableHead>Stitcher</TableHead>
+              <TableHead>Team</TableHead>
+              <TableHead>Product Code</TableHead>
+              <TableHead>Product Name</TableHead>
+              <TableHead className="text-right">Completed Qty</TableHead>
+              <TableHead className="text-right">Points/Pc</TableHead>
+              <TableHead className="text-right">Total Points</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? <TableRow><TableCell colSpan={7} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
+              !rows.length ? <TableRow><TableCell colSpan={7} className="text-center py-12 text-slate-400">No data for selected period</TableCell></TableRow> :
+              rows.map((r: any, i: number) => (
+                <TableRow key={i}>
+                  <TableCell className="font-semibold">{r.stitcherName}</TableCell>
+                  <TableCell className="text-slate-500">{r.teamName || "—"}</TableCell>
+                  <TableCell className="font-mono text-xs">{r.productCode}</TableCell>
+                  <TableCell>{r.productName}</TableCell>
+                  <TableCell className="text-right">{r.completedQty}</TableCell>
+                  <TableCell className="text-right font-mono">{r.pointsPerPiece || 0}</TableCell>
+                  <TableCell className="text-right font-bold text-amber-600">{r.totalPoints}</TableCell>
+                </TableRow>
+              ))
+            }
+            {rows.length > 0 && (
+              <TableRow className="bg-amber-50 font-bold border-t-2">
+                <TableCell colSpan={6} className="text-right">Grand Total</TableCell>
+                <TableCell className="text-right text-amber-700 text-lg">{Math.round(grandTotal * 100) / 100}</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </ReportCard>
+
+      {stitcherSummary.size > 0 && (
+        <ReportCard title="Stitcher Points — Summary">
+          <Table>
+            <TableHeader className="bg-slate-50">
+              <TableRow>
+                <TableHead>Stitcher</TableHead>
+                <TableHead>Team</TableHead>
+                <TableHead className="text-right">Total Completed</TableHead>
+                <TableHead className="text-right">Total Points</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from(stitcherSummary.values()).sort((a, b) => b.totalPts - a.totalPts).map((s, i) => (
+                <TableRow key={i}>
+                  <TableCell className="font-semibold">{s.name}</TableCell>
+                  <TableCell className="text-slate-500">{s.teamName || "—"}</TableCell>
+                  <TableCell className="text-right">{s.totalQty}</TableCell>
+                  <TableCell className="text-right font-bold text-amber-600">{Math.round(s.totalPts * 100) / 100}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </ReportCard>
+      )}
+    </>
+  );
+}
+
+function TeamPointsReport() {
+  const [filters, setFilters] = useState<Record<string, string>>({ startDate: "", endDate: "", teamId: "" });
+  const { data: teams } = useListTeams();
+  const filterParams: Record<string, any> = {};
+  if (filters.startDate) filterParams.startDate = filters.startDate;
+  if (filters.endDate) filterParams.endDate = filters.endDate;
+  if (filters.teamId) filterParams.teamId = Number(filters.teamId);
+
+  const { data, isLoading } = useGetTeamPointsReport(filterParams);
+  const rows = (data || []) as any[];
+  const grandTotal = rows.reduce((s: number, r: any) => s + (r.totalPoints || 0), 0);
+
+  const teamSummary = new Map<string, { name: string; code: string; totalQty: number; totalPts: number }>();
+  for (const r of rows) {
+    const key = r.teamName || "Unknown";
+    const ex = teamSummary.get(key) || { name: key, code: r.teamCode || "", totalQty: 0, totalPts: 0 };
+    ex.totalQty += r.completedQty || 0;
+    ex.totalPts += r.totalPoints || 0;
+    teamSummary.set(key, ex);
+  }
+
+  return (
+    <>
+      <FilterBar fields={[
+        { name: "startDate", label: "From Date", type: "date" as const },
+        { name: "endDate", label: "To Date", type: "date" as const },
+        { name: "teamId", label: "Team", type: "select" as const, options: teams?.filter((t: any) => t.isActive).map((t: any) => ({ value: t.id, label: `${t.code || ""} - ${t.name}` })) || [] },
+      ]} values={filters} onChange={setFilters} />
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <Card className="p-4 text-center"><div className="text-xs text-slate-500">Total Points (Period)</div><div className="text-2xl font-bold text-amber-600">{Math.round(grandTotal * 100) / 100}</div></Card>
+        <Card className="p-4 text-center"><div className="text-xs text-slate-500">Teams with Points</div><div className="text-2xl font-bold">{teamSummary.size}</div></Card>
+      </div>
+      <ReportCard title="Team Points — Product Breakdown">
+        <Table>
+          <TableHeader className="bg-slate-50">
+            <TableRow>
+              <TableHead>Team</TableHead>
+              <TableHead>Product Code</TableHead>
+              <TableHead>Product Name</TableHead>
+              <TableHead className="text-right">Completed Qty</TableHead>
+              <TableHead className="text-right">Points/Pc</TableHead>
+              <TableHead className="text-right">Total Points</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
+              !rows.length ? <TableRow><TableCell colSpan={6} className="text-center py-12 text-slate-400">No team points data found</TableCell></TableRow> :
+              rows.map((r: any, i: number) => (
+                <TableRow key={i}>
+                  <TableCell>
+                    <div className="font-semibold">{r.teamName}</div>
+                    {r.teamCode && <div className="text-xs text-slate-400">{r.teamCode}</div>}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">{r.productCode}</TableCell>
+                  <TableCell>{r.productName}</TableCell>
+                  <TableCell className="text-right">{r.completedQty}</TableCell>
+                  <TableCell className="text-right font-mono">{r.pointsPerPiece || 0}</TableCell>
+                  <TableCell className="text-right font-bold text-amber-600">{r.totalPoints}</TableCell>
+                </TableRow>
+              ))
+            }
+            {rows.length > 0 && (
+              <TableRow className="bg-amber-50 font-bold border-t-2">
+                <TableCell colSpan={5} className="text-right">Grand Total</TableCell>
+                <TableCell className="text-right text-amber-700 text-lg">{Math.round(grandTotal * 100) / 100}</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </ReportCard>
+
+      {teamSummary.size > 0 && (
+        <ReportCard title="Team Points — Summary">
+          <Table>
+            <TableHeader className="bg-slate-50">
+              <TableRow>
+                <TableHead>Team</TableHead>
+                <TableHead className="text-right">Total Completed</TableHead>
+                <TableHead className="text-right">Total Points</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from(teamSummary.values()).sort((a, b) => b.totalPts - a.totalPts).map((s, i) => (
+                <TableRow key={i}>
+                  <TableCell>
+                    <div className="font-semibold">{s.name}</div>
+                    {s.code && <div className="text-xs text-slate-400">{s.code}</div>}
+                  </TableCell>
+                  <TableCell className="text-right">{s.totalQty}</TableCell>
+                  <TableCell className="text-right font-bold text-amber-600">{Math.round(s.totalPts * 100) / 100}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </ReportCard>
+      )}
     </>
   );
 }

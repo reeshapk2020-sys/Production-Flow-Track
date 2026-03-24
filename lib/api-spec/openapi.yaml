@@ -377,6 +377,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/Product"
 
+  /master/products/{id}:
+    put:
+      operationId: updateProduct
+      tags: [master]
+      summary: Update a product/design
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProductBody"
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+
   /master/stitchers:
     get:
       operationId: listStitchers
@@ -1433,6 +1458,62 @@ paths:
                 items:
                   $ref: "#/components/schemas/TeamPerformance"
 
+  /reports/stitcher-points:
+    get:
+      operationId: getStitcherPointsReport
+      tags: [reports]
+      summary: Stitcher-wise points report based on completed production
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+        - name: stitcherId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Stitcher points report
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PointsReportEntry"
+
+  /reports/team-points:
+    get:
+      operationId: getTeamPointsReport
+      tags: [reports]
+      summary: Team-wise points report based on completed production
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+        - name: teamId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Team points report
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PointsReportEntry"
+
   /reports/daily-production:
     get:
       operationId: getDailyProductionReport
@@ -2172,6 +2253,9 @@ components:
           type: string
         description:
           type: string
+        pointsPerPiece:
+          type: number
+          nullable: true
         isActive:
           type: boolean
       required: [id, name]
@@ -2187,6 +2271,27 @@ components:
           type: integer
         description:
           type: string
+        pointsPerPiece:
+          type: number
+          nullable: true
+      required: [name]
+
+    UpdateProductBody:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        categoryId:
+          type: integer
+        description:
+          type: string
+        pointsPerPiece:
+          type: number
+          nullable: true
+        isActive:
+          type: boolean
       required: [name]
 
     Stitcher:
@@ -3382,6 +3487,31 @@ components:
         efficiencyPct:
           type: number
       required: [teamName, totalIssued, totalReceived]
+
+    PointsReportEntry:
+      type: object
+      properties:
+        stitcherId:
+          type: integer
+        stitcherName:
+          type: string
+        teamId:
+          type: integer
+        teamName:
+          type: string
+        teamCode:
+          type: string
+        productCode:
+          type: string
+        productName:
+          type: string
+        pointsPerPiece:
+          type: number
+        completedQty:
+          type: integer
+        totalPoints:
+          type: number
+      required: [completedQty, totalPoints]
 
     DailyProductionReport:
       type: object

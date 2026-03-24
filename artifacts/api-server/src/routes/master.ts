@@ -157,16 +157,17 @@ router.get("/master/products", async (_req, res) => {
       categoryId: productsTable.categoryId,
       categoryName: categoriesTable.name,
       description: productsTable.description,
+      pointsPerPiece: productsTable.pointsPerPiece,
       isActive: productsTable.isActive,
     })
     .from(productsTable)
     .leftJoin(categoriesTable, eq(productsTable.categoryId, categoriesTable.id))
     .orderBy(productsTable.name);
-  res.json(rows);
+  res.json(rows.map(r => ({ ...r, pointsPerPiece: r.pointsPerPiece ? Number(r.pointsPerPiece) : null })));
 });
 
 router.post("/master/products", async (req, res) => {
-  const { code, name, categoryId, description } = req.body;
+  const { code, name, categoryId, description, pointsPerPiece } = req.body;
   const trimmedCode = code ? String(code).trim() : "";
   if (trimmedCode) {
     const [dup] = await db
@@ -179,10 +180,48 @@ router.post("/master/products", async (req, res) => {
   }
   const [row] = await db
     .insert(productsTable)
-    .values({ code: trimmedCode || null, name, categoryId, description })
+    .values({
+      code: trimmedCode || null,
+      name,
+      categoryId,
+      description,
+      pointsPerPiece: pointsPerPiece != null ? String(pointsPerPiece) : null,
+    })
     .returning();
   await logAudit(req, "CREATE", "products", String(row.id), `Created product: ${name} (${trimmedCode})`);
-  res.status(201).json(row);
+  res.status(201).json({ ...row, pointsPerPiece: row.pointsPerPiece ? Number(row.pointsPerPiece) : null });
+});
+
+router.put("/master/products/:id", requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { name, code, categoryId, description, pointsPerPiece, isActive } = req.body;
+  if (!name || !String(name).trim()) {
+    return res.status(400).json({ error: "Product name is required." });
+  }
+  const trimmedCode = code ? String(code).trim().toUpperCase() : "";
+  if (trimmedCode) {
+    const [dup] = await db
+      .select({ id: productsTable.id })
+      .from(productsTable)
+      .where(and(ilike(productsTable.code, trimmedCode), ne(productsTable.id, id)));
+    if (dup) {
+      return res.status(409).json({ error: `Product code "${trimmedCode}" already exists.` });
+    }
+  }
+  const [row] = await db
+    .update(productsTable)
+    .set({
+      name: String(name).trim(),
+      code: trimmedCode || null,
+      categoryId,
+      description,
+      pointsPerPiece: pointsPerPiece != null ? String(pointsPerPiece) : null,
+      isActive: isActive !== undefined ? isActive : undefined,
+    })
+    .where(eq(productsTable.id, id))
+    .returning();
+  await logAudit(req, "UPDATE", "products", String(row.id), `Updated product: ${row.name}`);
+  res.json({ ...row, pointsPerPiece: row.pointsPerPiece ? Number(row.pointsPerPiece) : null });
 });
 
 // TEAMS

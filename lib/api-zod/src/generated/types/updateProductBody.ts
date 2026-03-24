@@ -6,12 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface Product {
-  id: number;
+export interface UpdateProductBody {
   code?: string;
   name: string;
   categoryId?: number;
-  categoryName?: string;
   description?: string;
   pointsPerPiece?: number | null;
   isActive?: boolean;

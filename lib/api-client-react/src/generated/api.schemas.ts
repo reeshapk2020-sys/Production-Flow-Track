@@ -124,6 +124,7 @@ export interface Product {
   categoryId?: number;
   categoryName?: string;
   description?: string;
+  pointsPerPiece?: number | null;
   isActive?: boolean;
 }
 
@@ -132,6 +133,16 @@ export interface CreateProductBody {
   name: string;
   categoryId?: number;
   description?: string;
+  pointsPerPiece?: number | null;
+}
+
+export interface UpdateProductBody {
+  code?: string;
+  name: string;
+  categoryId?: number;
+  description?: string;
+  pointsPerPiece?: number | null;
+  isActive?: boolean;
 }
 
 export interface Stitcher {
@@ -760,6 +771,19 @@ export interface TeamPerformance {
   efficiencyPct?: number;
 }
 
+export interface PointsReportEntry {
+  stitcherId?: number;
+  stitcherName?: string;
+  teamId?: number;
+  teamName?: string;
+  teamCode?: string;
+  productCode?: string;
+  productName?: string;
+  pointsPerPiece?: number;
+  completedQty: number;
+  totalPoints: number;
+}
+
 export interface DailyProductionReport {
   date?: string;
   startDate?: string;
@@ -1066,6 +1090,18 @@ export type GetStitcherPerformanceReportParams = {
 };
 
 export type GetTeamPerformanceReportParams = {
+  startDate?: string;
+  endDate?: string;
+  teamId?: number;
+};
+
+export type GetStitcherPointsReportParams = {
+  startDate?: string;
+  endDate?: string;
+  stitcherId?: number;
+};
+
+export type GetTeamPointsReportParams = {
   startDate?: string;
   endDate?: string;
   teamId?: number;

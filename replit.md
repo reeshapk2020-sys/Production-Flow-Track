@@ -177,7 +177,9 @@ Custom roles can be created dynamically from the admin Permissions page.
 ## Reports
 
 - **Stitcher Performance**: Total issued/received/pending/rejected/efficiency per stitcher, with date range filters. Excludes outsource-required allocations from efficiency calculations.
+- **Stitcher Points**: Product-wise points breakdown per stitcher, using completed (received) quantity × product pointsPerPiece. Summary card + product breakdown table + stitcher totals. Date range filters.
 - **Team Performance**: Same metrics per team (uses `/reports/team-performance` endpoint), with date/team filters. Excludes outsource-required allocations from efficiency calculations.
+- **Team Points**: Product-wise points breakdown per team, same formula. Date range + team filters.
 - **Daily Production**: Per-day row breakdown of cutting/allocated/received/finishing/stored quantities using SQL date series, with summary cards showing totals across range
 - **Outsource Summary**: Aggregated outsource stats (total sent/returned/damaged/pending), breakdown by category, by date (date-wise summary sorted newest first), by vendor (sorted by sent volume), and full transfer detail table
 - **Stage Pending**: Bottleneck analysis showing batches stuck per production stage

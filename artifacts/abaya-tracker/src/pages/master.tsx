@@ -12,7 +12,7 @@ import {
   useListColors, useCreateColor, useUpdateColor, getListColorsQueryKey,
   useListSizes, useCreateSize, getListSizesQueryKey,
   useListFabrics, useCreateFabric, useUpdateFabric, getListFabricsQueryKey,
-  useListProducts, useCreateProduct, getListProductsQueryKey,
+  useListProducts, useCreateProduct, useUpdateProduct, getListProductsQueryKey,
   useListTeams, useCreateTeam, useUpdateTeam, getListTeamsQueryKey,
   useListStitchers, useCreateStitcher, useUpdateStitcher, getListStitchersQueryKey,
   useListMaterials, useCreateMaterial, useUpdateMaterial, getListMaterialsQueryKey,
@@ -564,6 +564,7 @@ function ProductsTab({ isAdmin }: { isAdmin: boolean }) {
   const [open, setOpen] = useState(false);
   const [newCode, setNewCode] = useState("");
   const [importOpen, setImportOpen] = useState(false);
+  const [editProduct, setEditProduct] = useState<any>(null);
 
   const existingCodes = (data ?? []).map((p) => ({ id: p.id, code: p.code ?? null }));
   const createCodeDup =
@@ -577,15 +578,39 @@ function ProductsTab({ isAdmin }: { isAdmin: boolean }) {
     }
   });
 
+  const { mutate: updateMutate, isPending: isUpdating } = useUpdateProduct({
+    mutation: {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListProductsQueryKey() }); setEditProduct(null); toast({ title: "Product updated" }); },
+      onError: (err: any) => { toast({ title: "Error", description: err?.response?.data?.error ?? "Failed to update product.", variant: "destructive" }); },
+    }
+  });
+
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (createCodeDup) return;
     const fd = new FormData(e.currentTarget);
+    const ppp = fd.get("pointsPerPiece") as string;
     mutate({ data: {
       name: fd.get("name") as string,
       code: newCode.trim().toUpperCase(),
       categoryId: Number(fd.get("categoryId")),
-      description: fd.get("description") as string
+      description: fd.get("description") as string,
+      pointsPerPiece: ppp ? Number(ppp) : null,
+    } });
+  };
+
+  const onEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editProduct) return;
+    const fd = new FormData(e.currentTarget);
+    const ppp = fd.get("pointsPerPiece") as string;
+    updateMutate({ id: editProduct.id, data: {
+      name: fd.get("name") as string,
+      code: (fd.get("code") as string || "").trim().toUpperCase(),
+      categoryId: Number(fd.get("categoryId")),
+      description: fd.get("description") as string,
+      pointsPerPiece: ppp ? Number(ppp) : null,
+      isActive: editProduct.isActive,
     } });
   };
 
@@ -626,24 +651,29 @@ function ProductsTab({ isAdmin }: { isAdmin: boolean }) {
             {categories?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
+        <div><label className="text-sm font-medium block mb-1.5">Points Per Piece</label><input name="pointsPerPiece" type="number" step="0.01" min="0" className="form-input-styled" placeholder="e.g. 7" /></div>
         <div><label className="text-sm font-medium block mb-1.5">Description</label><input name="description" className="form-input-styled" /></div>
         <Button type="submit" disabled={isPending || createCodeDup} className="w-full h-11 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed">Save</Button>
       </form>
       <div className="mt-6 border rounded-xl overflow-hidden bg-white">
         <Table>
-          <TableHeader className="bg-slate-50"><TableRow><TableHead>Code</TableHead><TableHead>Design Name</TableHead><TableHead>Category</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+          <TableHeader className="bg-slate-50"><TableRow><TableHead>Code</TableHead><TableHead>Design Name</TableHead><TableHead>Category</TableHead><TableHead className="text-right">Points/Pc</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={4} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
               data?.map(p => (
                 <TableRow key={p.id}>
                   <TableCell className="font-mono text-slate-500 text-xs">{p.code}</TableCell>
                   <TableCell className="font-semibold">{p.name}</TableCell>
                   <TableCell>{p.categoryName}</TableCell>
+                  <TableCell className="text-right font-mono">{(p as any).pointsPerPiece ?? "—"}</TableCell>
                   <TableCell>
                     <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${p.isActive ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${p.isActive ? "bg-emerald-500" : "bg-red-500"}`} />
                       {p.isActive ? "Active" : "Inactive"}
                     </span>
+                  </TableCell>
+                  <TableCell>
+                    {isAdmin && <Button variant="ghost" size="sm" onClick={() => setEditProduct(p)}><Pencil className="h-3.5 w-3.5" /></Button>}
                   </TableCell>
                 </TableRow>
               ))
@@ -653,6 +683,32 @@ function ProductsTab({ isAdmin }: { isAdmin: boolean }) {
       </div>
     </MasterCard>
     <ImportDialog open={importOpen} onOpenChange={setImportOpen} moduleName="Products" moduleKey="products" onSuccess={() => queryClient.invalidateQueries({ queryKey: getListProductsQueryKey() })} />
+
+    <Dialog open={!!editProduct} onOpenChange={(v) => { if (!v) setEditProduct(null); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader><DialogTitle>Edit Product</DialogTitle></DialogHeader>
+        {editProduct && (
+          <form onSubmit={onEditSubmit} className="space-y-4">
+            <div><label className="text-sm font-medium block mb-1.5">Product Name</label><input name="name" className="form-input-styled" required defaultValue={editProduct.name} /></div>
+            <div><label className="text-sm font-medium block mb-1.5">Design Code</label><input name="code" className="form-input-styled font-mono uppercase" defaultValue={editProduct.code || ""} /></div>
+            <div>
+              <label className="text-sm font-medium block mb-1.5">Category</label>
+              <select name="categoryId" className="form-input-styled bg-white" required defaultValue={editProduct.categoryId || ""}>
+                <option value="">Select Category...</option>
+                {categories?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div><label className="text-sm font-medium block mb-1.5">Points Per Piece</label><input name="pointsPerPiece" type="number" step="0.01" min="0" className="form-input-styled" defaultValue={(editProduct as any).pointsPerPiece ?? ""} placeholder="e.g. 7" /></div>
+            <div><label className="text-sm font-medium block mb-1.5">Description</label><input name="description" className="form-input-styled" defaultValue={editProduct.description || ""} /></div>
+            <div className="flex items-center gap-2">
+              <input type="checkbox" id="editProductActive" checked={editProduct.isActive} onChange={(e) => setEditProduct({ ...editProduct, isActive: e.target.checked })} />
+              <label htmlFor="editProductActive" className="text-sm">Active</label>
+            </div>
+            <Button type="submit" disabled={isUpdating} className="w-full h-11 rounded-xl">Update</Button>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
     </>
   );
 }
