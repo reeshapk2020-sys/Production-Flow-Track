@@ -446,7 +446,7 @@ export default function CuttingPage() {
                       <div className="font-semibold text-slate-900">{fmtCode(batch.productCode, batch.productName)}</div>
                       <div className="text-xs text-slate-500 flex gap-2 mt-0.5">
                         {batch.sizeName && <span className="bg-slate-100 px-1.5 rounded">{batch.sizeName}</span>}
-                        {batch.colorName && <span className="bg-slate-100 px-1.5 rounded">{fmtCode(batch.colorCode, batch.colorName)}</span>}
+                        {(batch.colorCode || batch.colorName) && <span className="bg-slate-100 px-1.5 rounded">{batch.colorCode || batch.colorName}</span>}
                       </div>
                     </TableCell>
                     <TableCell>
