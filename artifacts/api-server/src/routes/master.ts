@@ -1,4 +1,4 @@
-import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
+import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import {
   categoriesTable,
@@ -13,31 +13,24 @@ import {
 } from "@workspace/db/schema";
 import { eq, sql, ilike, ne, and } from "drizzle-orm";
 import { logAudit } from "../lib/audit.js";
+import { checkPermission } from "./permissions.js";
 
 const router: IRouter = Router();
 
-function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  if (!req.isAuthenticated() || req.user?.role !== "admin") {
-    res.status(403).json({ error: "Admin access required." });
-    return;
-  }
-  next();
-}
-
 // CATEGORIES
-router.get("/master/categories", async (_req, res) => {
+router.get("/master/categories", checkPermission("master-data", "view"), async (_req, res) => {
   const rows = await db.select().from(categoriesTable).orderBy(categoriesTable.name);
   res.json(rows);
 });
 
-router.post("/master/categories", async (req, res) => {
+router.post("/master/categories", checkPermission("master-data", "create"), async (req, res) => {
   const { name, description } = req.body;
   const [row] = await db.insert(categoriesTable).values({ name, description }).returning();
   await logAudit(req, "CREATE", "categories", String(row.id), `Created category: ${name}`);
   res.status(201).json(row);
 });
 
-router.put("/master/categories/:id", requireAdmin, async (req, res) => {
+router.put("/master/categories/:id", checkPermission("master-data", "edit"), async (req, res) => {
   const id = parseInt(req.params.id);
   const { name, description } = req.body;
   const [row] = await db
@@ -48,19 +41,19 @@ router.put("/master/categories/:id", requireAdmin, async (req, res) => {
   res.json(row);
 });
 
-router.delete("/master/categories/:id", requireAdmin, async (req, res) => {
+router.delete("/master/categories/:id", checkPermission("master-data", "edit"), async (req, res) => {
   const id = parseInt(req.params.id);
   await db.delete(categoriesTable).where(eq(categoriesTable.id, id));
   res.json({ success: true, message: "Deleted" });
 });
 
 // SIZES
-router.get("/master/sizes", async (_req, res) => {
+router.get("/master/sizes", checkPermission("master-data", "view"), async (_req, res) => {
   const rows = await db.select().from(sizesTable).orderBy(sizesTable.sortOrder, sizesTable.name);
   res.json(rows);
 });
 
-router.post("/master/sizes", async (req, res) => {
+router.post("/master/sizes", checkPermission("master-data", "create"), async (req, res) => {
   const { name, sortOrder } = req.body;
   const [row] = await db.insert(sizesTable).values({ name, sortOrder }).returning();
   await logAudit(req, "CREATE", "sizes", String(row.id), `Created size: ${name}`);
@@ -68,12 +61,12 @@ router.post("/master/sizes", async (req, res) => {
 });
 
 // COLORS
-router.get("/master/colors", async (_req, res) => {
+router.get("/master/colors", checkPermission("master-data", "view"), async (_req, res) => {
   const rows = await db.select().from(colorsTable).orderBy(colorsTable.name);
   res.json(rows);
 });
 
-router.post("/master/colors", async (req, res) => {
+router.post("/master/colors", checkPermission("master-data", "create"), async (req, res) => {
   const { name, code } = req.body;
   if (!code || !String(code).trim()) {
     return res.status(400).json({ error: "Color code is required." });
@@ -94,7 +87,7 @@ router.post("/master/colors", async (req, res) => {
   res.status(201).json(row);
 });
 
-router.put("/master/colors/:id", requireAdmin, async (req, res) => {
+router.put("/master/colors/:id", checkPermission("master-data", "edit"), async (req, res) => {
   const id = parseInt(req.params.id);
   const { name, code } = req.body;
   if (!code || !String(code).trim()) {
@@ -119,12 +112,12 @@ router.put("/master/colors/:id", requireAdmin, async (req, res) => {
 });
 
 // FABRICS
-router.get("/master/fabrics", async (_req, res) => {
+router.get("/master/fabrics", checkPermission("master-data", "view"), async (_req, res) => {
   const rows = await db.select().from(fabricsTable).orderBy(fabricsTable.name);
   res.json(rows);
 });
 
-router.post("/master/fabrics", async (req, res) => {
+router.post("/master/fabrics", checkPermission("master-data", "create"), async (req, res) => {
   const { code, name, description, unit } = req.body;
   const trimmedCode = code ? String(code).trim().toUpperCase() : null;
   const [row] = await db.insert(fabricsTable).values({ code: trimmedCode, name, description, unit }).returning();
@@ -132,8 +125,7 @@ router.post("/master/fabrics", async (req, res) => {
   res.status(201).json(row);
 });
 
-router.put("/master/fabrics/:id", async (req, res) => {
-  if (requireAdmin(req, res)) return;
+router.put("/master/fabrics/:id", checkPermission("master-data", "edit"), async (req, res) => {
   const id = Number(req.params.id);
   const { code, name, description, unit, isActive } = req.body;
   const trimmedCode = code ? String(code).trim().toUpperCase() : null;
@@ -148,7 +140,7 @@ router.put("/master/fabrics/:id", async (req, res) => {
 });
 
 // PRODUCTS
-router.get("/master/products", async (_req, res) => {
+router.get("/master/products", checkPermission("master-data", "view"), async (_req, res) => {
   const rows = await db
     .select({
       id: productsTable.id,
@@ -166,7 +158,7 @@ router.get("/master/products", async (_req, res) => {
   res.json(rows.map(r => ({ ...r, pointsPerPiece: r.pointsPerPiece ? Number(r.pointsPerPiece) : null })));
 });
 
-router.post("/master/products", async (req, res) => {
+router.post("/master/products", checkPermission("master-data", "create"), async (req, res) => {
   const { code, name, categoryId, description, pointsPerPiece } = req.body;
   const trimmedCode = code ? String(code).trim() : "";
   if (trimmedCode) {
@@ -192,7 +184,7 @@ router.post("/master/products", async (req, res) => {
   res.status(201).json({ ...row, pointsPerPiece: row.pointsPerPiece ? Number(row.pointsPerPiece) : null });
 });
 
-router.put("/master/products/:id", requireAdmin, async (req, res) => {
+router.put("/master/products/:id", checkPermission("master-data", "edit"), async (req, res) => {
   const id = parseInt(req.params.id);
   const { name, code, categoryId, description, pointsPerPiece, isActive } = req.body;
   if (!name || !String(name).trim()) {
@@ -225,7 +217,7 @@ router.put("/master/products/:id", requireAdmin, async (req, res) => {
 });
 
 // TEAMS
-router.get("/master/teams", async (_req, res) => {
+router.get("/master/teams", checkPermission("master-data", "view"), async (_req, res) => {
   const rows = await db
     .select({
       id: teamsTable.id,
@@ -239,7 +231,7 @@ router.get("/master/teams", async (_req, res) => {
   res.json(rows);
 });
 
-router.post("/master/teams", async (req, res) => {
+router.post("/master/teams", checkPermission("master-data", "create"), async (req, res) => {
   const { name, code, supervisorName } = req.body;
   if (!name || !String(name).trim()) {
     return res.status(400).json({ error: "Team name is required." });
@@ -252,7 +244,7 @@ router.post("/master/teams", async (req, res) => {
   res.status(201).json(row);
 });
 
-router.put("/master/teams/:id", requireAdmin, async (req, res) => {
+router.put("/master/teams/:id", checkPermission("master-data", "edit"), async (req, res) => {
   const id = parseInt(req.params.id);
   const { name, code, supervisorName, isActive } = req.body;
   if (!name || !String(name).trim()) {
@@ -274,7 +266,7 @@ router.put("/master/teams/:id", requireAdmin, async (req, res) => {
 });
 
 // STITCHERS
-router.get("/master/stitchers", async (_req, res) => {
+router.get("/master/stitchers", checkPermission("master-data", "view"), async (_req, res) => {
   const rows = await db
     .select({
       id: stitchersTable.id,
@@ -298,7 +290,7 @@ router.get("/master/stitchers", async (_req, res) => {
   res.json(result);
 });
 
-router.post("/master/stitchers", async (req, res) => {
+router.post("/master/stitchers", checkPermission("master-data", "create"), async (req, res) => {
   const { name, code, phone, teamId } = req.body;
   if (!name || !String(name).trim()) {
     return res.status(400).json({ error: "Stitcher name is required." });
@@ -311,7 +303,7 @@ router.post("/master/stitchers", async (req, res) => {
   res.status(201).json({ ...row, totalIssued: 0, totalReceived: 0, pendingQuantity: 0 });
 });
 
-router.put("/master/stitchers/:id", requireAdmin, async (req, res) => {
+router.put("/master/stitchers/:id", checkPermission("master-data", "edit"), async (req, res) => {
   const id = parseInt(req.params.id);
   const { name, code, phone, teamId, isActive } = req.body;
   if (!name || !String(name).trim()) {
@@ -334,12 +326,12 @@ router.put("/master/stitchers/:id", requireAdmin, async (req, res) => {
 });
 
 // MATERIALS
-router.get("/master/materials", async (_req, res) => {
+router.get("/master/materials", checkPermission("master-data", "view"), async (_req, res) => {
   const rows = await db.select().from(materialsTable).orderBy(materialsTable.code);
   res.json(rows);
 });
 
-router.post("/master/materials", requireAdmin, async (req, res) => {
+router.post("/master/materials", checkPermission("master-data", "create"), async (req, res) => {
   const { code, name, description } = req.body;
   if (!code || !String(code).trim()) {
     return res.status(400).json({ error: "Material code is required." });
@@ -363,7 +355,7 @@ router.post("/master/materials", requireAdmin, async (req, res) => {
   res.status(201).json(row);
 });
 
-router.put("/master/materials/:id", requireAdmin, async (req, res) => {
+router.put("/master/materials/:id", checkPermission("master-data", "edit"), async (req, res) => {
   const id = parseInt(req.params.id);
   const { code, name, description, isActive } = req.body;
   if (!code || !String(code).trim()) {
@@ -396,12 +388,12 @@ router.put("/master/materials/:id", requireAdmin, async (req, res) => {
 });
 
 // USERS
-router.get("/master/users", async (_req, res) => {
+router.get("/master/users", checkPermission("master-data", "view"), async (_req, res) => {
   const rows = await db.select().from(appUsersTable).orderBy(appUsersTable.username);
   res.json(rows);
 });
 
-router.post("/master/users", async (req, res) => {
+router.post("/master/users", checkPermission("master-data", "create"), async (req, res) => {
   const { replitUserId, username, displayName, role } = req.body;
   const [row] = await db
     .insert(appUsersTable)
@@ -410,7 +402,7 @@ router.post("/master/users", async (req, res) => {
   res.status(201).json(row);
 });
 
-router.put("/master/users/:id", requireAdmin, async (req, res) => {
+router.put("/master/users/:id", checkPermission("master-data", "edit"), async (req, res) => {
   const id = parseInt(req.params.id);
   const { role, isActive } = req.body;
   const [row] = await db

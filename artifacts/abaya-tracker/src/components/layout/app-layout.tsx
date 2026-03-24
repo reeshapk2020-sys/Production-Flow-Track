@@ -25,7 +25,7 @@ const NAV_ITEMS = [
   { path: "/orders", label: "Orders", icon: ShoppingCart, roles: ["admin", "cutting"] },
   { path: "/dispatch", label: "Dispatch", icon: Truck, roles: ["admin", "store"] },
   { path: "/traceability", label: "Traceability", icon: GitBranch, roles: ["all"] },
-  { path: "/master", label: "Master Data", icon: Database, roles: ["admin"] },
+  { path: "/master", label: "Master Data", icon: Database, roles: ["admin"] , module: "master-data" },
   { path: "/users", label: "User Management", icon: Users, roles: ["admin"] },
   { path: "/permissions", label: "Role Permissions", icon: KeyRound, roles: ["admin"] },
   { path: "/audit", label: "Audit Log", icon: Shield, roles: ["admin"] },
@@ -57,6 +57,7 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
     "/purchase-orders": "purchase-orders",
     "/orders": "orders",
     "/dispatch": "dispatch",
+    "/master": "master-data",
   };
 
   const userRole = user?.role || "reporting";

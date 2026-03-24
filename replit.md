@@ -130,7 +130,8 @@ Custom roles can be created dynamically from the admin Permissions page.
 - **Frontend**: `can(module, action)` helper in auth context — controls sidebar visibility, route access, and button visibility
 - **Frontend**: `getRoleLabel(role)` — returns human-readable role name (from map or auto-formatted)
 - **Admin page**: `/permissions` — grid UI for admin to toggle permissions per role + create/delete custom roles
-- **Modules**: products, colors, sizes, materials, teams, stitchers, fabric-rolls, cutting, allocation, outsource, receiving, finishing, finished-goods, opening-finished-goods, dispatch, reports, inventory
+- **Modules**: products, colors, sizes, materials, teams, stitchers, fabric-rolls, cutting, allocation, outsource, receiving, finishing, finished-goods, opening-finished-goods, dispatch, reports, inventory, master-data
+- **Master Data access**: Controlled by `master-data` module permissions (view/create/edit/import). Non-admin roles can see/use Master Data if granted master-data.view permission. Frontend conditionally shows Add/Edit/Import buttons based on create/edit/import permissions.
 - **Actions**: view, create, edit, import
 - Admin role always has all permissions (enforced in code, cannot be changed via UI)
 - Default permissions seeded for all roles matching original hardcoded access patterns
@@ -172,7 +173,7 @@ Custom roles can be created dynamically from the admin Permissions page.
 - **Receiving constraint**: For outsource allocations, receiving qty is capped by returned-from-outsource quantity (not total issued); the receiving form shows "From Outsource" count and an info banner for outsource allocations
 - **Allocation response enrichment**: Outsource allocations include `outsourceSent`, `outsourceReturned`, `outsourceDamaged` fields in GET /allocation response
 - **Allocation status**: `recalculateAllocationTotals()` uses outsource-returned qty as effective ceiling for outsource allocations when computing status
-- **Traceability**: Timeline includes outsource sent/returned events between allocation and receiving steps
+- **Traceability**: Timeline includes outsource sent/returned events between allocation and receiving steps. Timestamps use `createdAt` (full datetime with time precision) from each table for accurate timeline display, rather than date-only stage fields.
 
 ## Reports
 

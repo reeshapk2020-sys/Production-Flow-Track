@@ -52,7 +52,7 @@ const PATH_TO_MODULE: Record<string, string> = {
   "/purchase-orders": "purchase-orders",
   "/orders": "orders",
   "/dispatch": "dispatch",
-  "/master": "__admin__",
+  "/master": "master-data",
   "/users": "__admin__",
   "/permissions": "__admin__",
   "/audit": "__admin__",

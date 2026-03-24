@@ -23,8 +23,11 @@ import { useAppAuth } from "@/lib/auth-context";
 import { fmtCode } from "@/lib/utils";
 
 export default function MasterDataPage() {
-  const { user } = useAppAuth();
+  const { user, can } = useAppAuth();
   const isAdmin = user?.role === "admin";
+  const canCreate = isAdmin || can("master-data", "create");
+  const canEdit = isAdmin || can("master-data", "edit");
+  const canImport = isAdmin || can("master-data", "import");
 
   return (
     <AppLayout title="Master Data">
@@ -42,14 +45,14 @@ export default function MasterDataPage() {
           </TabsList>
         </div>
 
-        <TabsContent value="categories" className="mt-0 outline-none"><CategoriesTab isAdmin={isAdmin} /></TabsContent>
-        <TabsContent value="colors" className="mt-0 outline-none"><ColorsTab isAdmin={isAdmin} /></TabsContent>
-        <TabsContent value="sizes" className="mt-0 outline-none"><SizesTab isAdmin={isAdmin} /></TabsContent>
-        <TabsContent value="fabrics" className="mt-0 outline-none"><FabricsTab isAdmin={isAdmin} /></TabsContent>
-        <TabsContent value="products" className="mt-0 outline-none"><ProductsTab isAdmin={isAdmin} /></TabsContent>
-        <TabsContent value="teams" className="mt-0 outline-none"><TeamsTab isAdmin={isAdmin} /></TabsContent>
-        <TabsContent value="stitchers" className="mt-0 outline-none"><StitchersTab isAdmin={isAdmin} /></TabsContent>
-        <TabsContent value="materials" className="mt-0 outline-none"><MaterialsTab isAdmin={isAdmin} /></TabsContent>
+        <TabsContent value="categories" className="mt-0 outline-none"><CategoriesTab canCreate={canCreate} canEdit={canEdit} canImport={canImport} /></TabsContent>
+        <TabsContent value="colors" className="mt-0 outline-none"><ColorsTab canCreate={canCreate} canEdit={canEdit} canImport={canImport} /></TabsContent>
+        <TabsContent value="sizes" className="mt-0 outline-none"><SizesTab canCreate={canCreate} canEdit={canEdit} canImport={canImport} /></TabsContent>
+        <TabsContent value="fabrics" className="mt-0 outline-none"><FabricsTab canCreate={canCreate} canEdit={canEdit} canImport={canImport} /></TabsContent>
+        <TabsContent value="products" className="mt-0 outline-none"><ProductsTab canCreate={canCreate} canEdit={canEdit} canImport={canImport} /></TabsContent>
+        <TabsContent value="teams" className="mt-0 outline-none"><TeamsTab canCreate={canCreate} canEdit={canEdit} canImport={canImport} /></TabsContent>
+        <TabsContent value="stitchers" className="mt-0 outline-none"><StitchersTab canCreate={canCreate} canEdit={canEdit} canImport={canImport} /></TabsContent>
+        <TabsContent value="materials" className="mt-0 outline-none"><MaterialsTab canCreate={canCreate} canEdit={canEdit} canImport={canImport} /></TabsContent>
       </Tabs>
     </AppLayout>
   );
@@ -63,7 +66,9 @@ function AdminOnlyBadge() {
   );
 }
 
-function CategoriesTab({ isAdmin }: { isAdmin: boolean }) {
+type MasterTabProps = { canCreate: boolean; canEdit: boolean; canImport: boolean };
+
+function CategoriesTab({ canCreate, canEdit }: MasterTabProps) {
   const { data, isLoading } = useListCategories();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -86,7 +91,7 @@ function CategoriesTab({ isAdmin }: { isAdmin: boolean }) {
   };
 
   return (
-    <MasterCard title="Product Categories" onAdd={() => setOpen(true)} addLabel="Add Category" open={open} onOpenChange={setOpen}>
+    <MasterCard title="Product Categories" onAdd={() => setOpen(true)} addLabel="Add Category" open={open} onOpenChange={setOpen} hideAdd={!canCreate}>
       <form onSubmit={onSubmit} className="space-y-4 pt-4">
         <div>
           <label className="text-sm font-medium mb-1.5 block">Name</label>
@@ -170,7 +175,7 @@ function ColorCodeInput({
   );
 }
 
-function ColorsTab({ isAdmin }: { isAdmin: boolean }) {
+function ColorsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
   const { data, isLoading } = useListColors();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -253,7 +258,8 @@ function ColorsTab({ isAdmin }: { isAdmin: boolean }) {
         addLabel="Add Color"
         open={createOpen}
         onOpenChange={(v: boolean) => { setCreateOpen(v); if (!v) { setNewCode(""); setNewName(""); } }}
-        importButton={isAdmin && <ImportBtn onClick={() => setImportOpen(true)} />}
+        importButton={canImport && <ImportBtn onClick={() => setImportOpen(true)} />}
+        hideAdd={!canCreate}
       >
         <form onSubmit={onCreateSubmit} className="space-y-4 pt-4">
           <ColorCodeInput value={newCode} onChange={setNewCode} existingCodes={existingCodes} />
@@ -280,12 +286,12 @@ function ColorsTab({ isAdmin }: { isAdmin: boolean }) {
               <TableRow>
                 <TableHead className="w-24">Code</TableHead>
                 <TableHead>Name</TableHead>
-                {isAdmin && <TableHead className="w-16 text-right">Edit</TableHead>}
+                {canEdit && <TableHead className="w-16 text-right">Edit</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={isAdmin ? 3 : 2} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 3 : 2} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
               ) : (
                 data?.map((c) => (
                   <TableRow key={c.id}>
@@ -295,7 +301,7 @@ function ColorsTab({ isAdmin }: { isAdmin: boolean }) {
                       </span>
                     </TableCell>
                     <TableCell className="font-semibold text-slate-800">{c.name}</TableCell>
-                    {isAdmin && (
+                    {canEdit && (
                       <TableCell className="text-right">
                         <Button
                           size="sm" variant="ghost"
@@ -310,14 +316,14 @@ function ColorsTab({ isAdmin }: { isAdmin: boolean }) {
                 ))
               )}
               {!isLoading && data?.length === 0 && (
-                <TableRow><TableCell colSpan={isAdmin ? 3 : 2} className="text-center py-8 text-slate-500">No colors yet.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 3 : 2} className="text-center py-8 text-slate-500">No colors yet.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
         </div>
       </MasterCard>
 
-      {isAdmin && (
+      {canEdit && (
         <Dialog open={!!editColor} onOpenChange={(v) => { if (!v) setEditColor(null); }}>
           <DialogContent className="sm:max-w-[380px] rounded-2xl p-6 border-0 shadow-2xl">
             <DialogHeader>
@@ -353,7 +359,7 @@ function ColorsTab({ isAdmin }: { isAdmin: boolean }) {
   );
 }
 
-function SizesTab({ isAdmin }: { isAdmin: boolean }) {
+function SizesTab({ canCreate, canImport }: MasterTabProps) {
   const { data, isLoading } = useListSizes();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -370,7 +376,7 @@ function SizesTab({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <>
-    <MasterCard title="Sizes" onAdd={() => setOpen(true)} addLabel="Add Size" open={open} onOpenChange={setOpen} importButton={isAdmin && <ImportBtn onClick={() => setImportOpen(true)} />}>
+    <MasterCard title="Sizes" onAdd={() => setOpen(true)} addLabel="Add Size" open={open} onOpenChange={setOpen} importButton={canImport && <ImportBtn onClick={() => setImportOpen(true)} />} hideAdd={!canCreate}>
       <form onSubmit={onSubmit} className="space-y-4 pt-4">
         <div><label className="text-sm font-medium block mb-1.5">Size Name</label><input name="name" className="form-input-styled" required /></div>
         <div><label className="text-sm font-medium block mb-1.5">Sort Order</label><input type="number" name="sortOrder" className="form-input-styled" defaultValue="0" /></div>
@@ -394,7 +400,7 @@ function SizesTab({ isAdmin }: { isAdmin: boolean }) {
   );
 }
 
-function FabricsTab({ isAdmin }: { isAdmin: boolean }) {
+function FabricsTab({ canCreate, canEdit }: MasterTabProps) {
   const { data, isLoading } = useListFabrics();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -455,7 +461,7 @@ function FabricsTab({ isAdmin }: { isAdmin: boolean }) {
   };
 
   return (
-    <MasterCard title="Fabrics" onAdd={() => setCreateOpen(true)} addLabel="Add Fabric" open={createOpen} onOpenChange={setCreateOpen}>
+    <MasterCard title="Fabrics" onAdd={() => setCreateOpen(true)} addLabel="Add Fabric" open={createOpen} onOpenChange={setCreateOpen} hideAdd={!canCreate}>
       <form onSubmit={onCreateSubmit} className="space-y-4 pt-4">
         <div>
           <label className="text-sm font-medium block mb-1.5">Fabric Code</label>
@@ -479,11 +485,11 @@ function FabricsTab({ isAdmin }: { isAdmin: boolean }) {
               <TableHead>Unit</TableHead>
               <TableHead>Description</TableHead>
               <TableHead>Status</TableHead>
-              {isAdmin && <TableHead className="w-12"></TableHead>}
+              {canEdit && <TableHead className="w-12"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={isAdmin ? 6 : 5} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={canEdit ? 6 : 5} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
               data?.map(f => (
                 <TableRow key={f.id} className="group">
                   <TableCell className="font-mono text-slate-500 text-xs">{f.code ?? "—"}</TableCell>
@@ -496,7 +502,7 @@ function FabricsTab({ isAdmin }: { isAdmin: boolean }) {
                       {f.isActive !== false ? "Active" : "Inactive"}
                     </span>
                   </TableCell>
-                  {isAdmin && (
+                  {canEdit && (
                     <TableCell>
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => openEdit(f)}>
                         <Pencil className="h-3.5 w-3.5 text-slate-500" />
@@ -556,7 +562,7 @@ function ImportBtn({ onClick }: { onClick: () => void }) {
   );
 }
 
-function ProductsTab({ isAdmin }: { isAdmin: boolean }) {
+function ProductsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
   const { data, isLoading } = useListProducts();
   const { data: categories } = useListCategories();
   const queryClient = useQueryClient();
@@ -622,7 +628,8 @@ function ProductsTab({ isAdmin }: { isAdmin: boolean }) {
       addLabel="Add Product"
       open={open}
       onOpenChange={(v: boolean) => { setOpen(v); if (!v) setNewCode(""); }}
-      importButton={isAdmin && <ImportBtn onClick={() => setImportOpen(true)} />}
+      importButton={canImport && <ImportBtn onClick={() => setImportOpen(true)} />}
+      hideAdd={!canCreate}
     >
       <form onSubmit={onSubmit} className="space-y-4 pt-4">
         <div><label className="text-sm font-medium block mb-1.5">Product Name/Design</label><input name="name" className="form-input-styled" required /></div>
@@ -673,7 +680,7 @@ function ProductsTab({ isAdmin }: { isAdmin: boolean }) {
                     </span>
                   </TableCell>
                   <TableCell>
-                    {isAdmin && <Button variant="ghost" size="sm" onClick={() => setEditProduct(p)}><Pencil className="h-3.5 w-3.5" /></Button>}
+                    {canEdit && <Button variant="ghost" size="sm" onClick={() => setEditProduct(p)}><Pencil className="h-3.5 w-3.5" /></Button>}
                   </TableCell>
                 </TableRow>
               ))
@@ -713,7 +720,7 @@ function ProductsTab({ isAdmin }: { isAdmin: boolean }) {
   );
 }
 
-function TeamsTab({ isAdmin }: { isAdmin: boolean }) {
+function TeamsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
   const { data, isLoading } = useListTeams();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -762,7 +769,7 @@ function TeamsTab({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <>
-      <MasterCard title="Teams" onAdd={() => setCreateOpen(true)} addLabel="Add Team" open={createOpen} onOpenChange={setCreateOpen} importButton={isAdmin && <ImportBtn onClick={() => setImportOpen(true)} />}>
+      <MasterCard title="Teams" onAdd={() => setCreateOpen(true)} addLabel="Add Team" open={createOpen} onOpenChange={setCreateOpen} importButton={canImport && <ImportBtn onClick={() => setImportOpen(true)} />} hideAdd={!canCreate}>
         <form onSubmit={onCreateSubmit} className="space-y-4 pt-4">
           <div>
             <label className="text-sm font-medium block mb-1.5">Team Name <span className="text-red-500">*</span></label>
@@ -789,12 +796,12 @@ function TeamsTab({ isAdmin }: { isAdmin: boolean }) {
                 <TableHead>Team Name</TableHead>
                 <TableHead>Supervisor</TableHead>
                 <TableHead>Status</TableHead>
-                {isAdmin && <TableHead className="w-16 text-right">Edit</TableHead>}
+                {canEdit && <TableHead className="w-16 text-right">Edit</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={isAdmin ? 5 : 4} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 5 : 4} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
               ) : data?.map(t => (
                 <TableRow key={t.id}>
                   <TableCell>
@@ -810,7 +817,7 @@ function TeamsTab({ isAdmin }: { isAdmin: boolean }) {
                       {t.isActive !== false ? "Active" : "Inactive"}
                     </span>
                   </TableCell>
-                  {isAdmin && (
+                  {canEdit && (
                     <TableCell className="text-right">
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-slate-400 hover:text-primary" onClick={() => setEditTeam(t)}>
                         <Pencil className="h-3.5 w-3.5" />
@@ -820,15 +827,15 @@ function TeamsTab({ isAdmin }: { isAdmin: boolean }) {
                 </TableRow>
               ))}
               {!isLoading && data?.length === 0 && (
-                <TableRow><TableCell colSpan={isAdmin ? 5 : 4} className="text-center py-8 text-slate-500">No teams yet.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 5 : 4} className="text-center py-8 text-slate-500">No teams yet.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
-          {!isAdmin && <div className="px-4 py-2 bg-amber-50 border-t border-amber-100 flex items-center gap-2"><AdminOnlyBadge /><span className="text-xs text-amber-700">Editing requires admin access.</span></div>}
+          {!canEdit && <div className="px-4 py-2 bg-amber-50 border-t border-amber-100 flex items-center gap-2"><AdminOnlyBadge /><span className="text-xs text-amber-700">Editing requires permission.</span></div>}
         </div>
       </MasterCard>
 
-      {isAdmin && editTeam && (
+      {canEdit && editTeam && (
         <Dialog open={!!editTeam} onOpenChange={(v) => { if (!v) setEditTeam(null); }}>
           <DialogContent className="sm:max-w-[420px] rounded-2xl p-6 border-0 shadow-2xl">
             <DialogHeader>
@@ -866,7 +873,7 @@ function TeamsTab({ isAdmin }: { isAdmin: boolean }) {
   );
 }
 
-function StitchersTab({ isAdmin }: { isAdmin: boolean }) {
+function StitchersTab({ canCreate, canEdit, canImport }: MasterTabProps) {
   const { data, isLoading } = useListStitchers();
   const { data: teams } = useListTeams();
   const queryClient = useQueryClient();
@@ -922,7 +929,7 @@ function StitchersTab({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <>
-      <MasterCard title="Stitchers" onAdd={() => setCreateOpen(true)} addLabel="Add Stitcher" open={createOpen} onOpenChange={setCreateOpen} importButton={isAdmin && <ImportBtn onClick={() => setImportOpen(true)} />}>
+      <MasterCard title="Stitchers" onAdd={() => setCreateOpen(true)} addLabel="Add Stitcher" open={createOpen} onOpenChange={setCreateOpen} importButton={canImport && <ImportBtn onClick={() => setImportOpen(true)} />} hideAdd={!canCreate}>
         <form onSubmit={onCreateSubmit} className="space-y-4 pt-4">
           <div>
             <label className="text-sm font-medium block mb-1.5">Full Name <span className="text-red-500">*</span></label>
@@ -961,12 +968,12 @@ function StitchersTab({ isAdmin }: { isAdmin: boolean }) {
                 <TableHead>Team</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Status</TableHead>
-                {isAdmin && <TableHead className="w-16 text-right">Edit</TableHead>}
+                {canEdit && <TableHead className="w-16 text-right">Edit</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={isAdmin ? 6 : 5} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 6 : 5} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
               ) : data?.map(s => (
                 <TableRow key={s.id} className={s.isActive === false ? "opacity-60" : ""}>
                   <TableCell>
@@ -983,7 +990,7 @@ function StitchersTab({ isAdmin }: { isAdmin: boolean }) {
                       {s.isActive !== false ? "Active" : "Inactive"}
                     </span>
                   </TableCell>
-                  {isAdmin && (
+                  {canEdit && (
                     <TableCell className="text-right">
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-slate-400 hover:text-primary" onClick={() => setEditStitcher(s)}>
                         <Pencil className="h-3.5 w-3.5" />
@@ -993,15 +1000,15 @@ function StitchersTab({ isAdmin }: { isAdmin: boolean }) {
                 </TableRow>
               ))}
               {!isLoading && data?.length === 0 && (
-                <TableRow><TableCell colSpan={isAdmin ? 6 : 5} className="text-center py-8 text-slate-500">No stitchers yet.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 6 : 5} className="text-center py-8 text-slate-500">No stitchers yet.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
-          {!isAdmin && <div className="px-4 py-2 bg-amber-50 border-t border-amber-100 flex items-center gap-2"><AdminOnlyBadge /><span className="text-xs text-amber-700">Editing requires admin access.</span></div>}
+          {!canEdit && <div className="px-4 py-2 bg-amber-50 border-t border-amber-100 flex items-center gap-2"><AdminOnlyBadge /><span className="text-xs text-amber-700">Editing requires permission.</span></div>}
         </div>
       </MasterCard>
 
-      {isAdmin && editStitcher && (
+      {canEdit && editStitcher && (
         <Dialog open={!!editStitcher} onOpenChange={(v) => { if (!v) setEditStitcher(null); }}>
           <DialogContent className="sm:max-w-[420px] rounded-2xl p-6 border-0 shadow-2xl">
             <DialogHeader>
@@ -1050,7 +1057,7 @@ function StitchersTab({ isAdmin }: { isAdmin: boolean }) {
   );
 }
 
-function MaterialsTab({ isAdmin }: { isAdmin: boolean }) {
+function MaterialsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
   const { data, isLoading } = useListMaterials();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -1138,7 +1145,8 @@ function MaterialsTab({ isAdmin }: { isAdmin: boolean }) {
         addLabel="Add Material"
         open={createOpen}
         onOpenChange={(v: boolean) => { setCreateOpen(v); if (!v) { setNewCode(""); setNewName(""); setNewDesc(""); } }}
-        importButton={isAdmin && <ImportBtn onClick={() => setImportOpen(true)} />}
+        importButton={canImport && <ImportBtn onClick={() => setImportOpen(true)} />}
+        hideAdd={!canCreate}
       >
         <form onSubmit={onCreateSubmit} className="space-y-4 pt-4">
           <div>
@@ -1184,13 +1192,13 @@ function MaterialsTab({ isAdmin }: { isAdmin: boolean }) {
                 <TableHead>Name</TableHead>
                 <TableHead className="hidden sm:table-cell">Description</TableHead>
                 <TableHead className="w-24">Status</TableHead>
-                {isAdmin && <TableHead className="w-16 text-right">Edit</TableHead>}
+                {canEdit && <TableHead className="w-16 text-right">Edit</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={isAdmin ? 5 : 4} className="text-center py-8">
+                  <TableCell colSpan={canEdit ? 5 : 4} className="text-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                   </TableCell>
                 </TableRow>
@@ -1210,7 +1218,7 @@ function MaterialsTab({ isAdmin }: { isAdmin: boolean }) {
                         : <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">Inactive</span>
                       }
                     </TableCell>
-                    {isAdmin && (
+                    {canEdit && (
                       <TableCell className="text-right">
                         <Button
                           size="sm" variant="ghost"
@@ -1226,7 +1234,7 @@ function MaterialsTab({ isAdmin }: { isAdmin: boolean }) {
               )}
               {!isLoading && data?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={isAdmin ? 5 : 4} className="text-center py-8 text-slate-500">No materials yet.</TableCell>
+                  <TableCell colSpan={canEdit ? 5 : 4} className="text-center py-8 text-slate-500">No materials yet.</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -1234,7 +1242,7 @@ function MaterialsTab({ isAdmin }: { isAdmin: boolean }) {
         </div>
       </MasterCard>
 
-      {isAdmin && (
+      {canEdit && (
         <Dialog open={!!editMat} onOpenChange={(v) => { if (!v) setEditMat(null); }}>
           <DialogContent className="sm:max-w-[400px] rounded-2xl p-6 border-0 shadow-2xl">
             <DialogHeader>
@@ -1292,13 +1300,14 @@ function MaterialsTab({ isAdmin }: { isAdmin: boolean }) {
   );
 }
 
-function MasterCard({ title, children, onAdd, addLabel, open, onOpenChange, importButton }: any) {
+function MasterCard({ title, children, onAdd, addLabel, open, onOpenChange, importButton, hideAdd }: any) {
   return (
     <Card className="shadow-lg border-slate-200 rounded-2xl overflow-hidden">
       <CardHeader className="bg-slate-50/50 border-b border-slate-100 flex flex-row items-center justify-between py-5 px-6">
         <CardTitle className="text-xl font-display text-slate-800">{title}</CardTitle>
         <div className="flex items-center gap-2">
           {importButton}
+          {!hideAdd && (
           <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogTrigger asChild>
               <Button onClick={onAdd} className="rounded-xl shadow-md shadow-primary/20 bg-primary hover:bg-primary/90 transition-all hover:-translate-y-0.5">
@@ -1312,10 +1321,11 @@ function MasterCard({ title, children, onAdd, addLabel, open, onOpenChange, impo
             {children[0]}
           </DialogContent>
           </Dialog>
+          )}
         </div>
       </CardHeader>
       <CardContent className="p-6 bg-white">
-        {children[1]}
+        {hideAdd ? (Array.isArray(children) ? children[1] : children) : children[1]}
       </CardContent>
     </Card>
   );

@@ -42,6 +42,7 @@ router.get("/traceability/batch/:batchNumber", checkPermission("reports", "view"
       quantityCut: cuttingBatchesTable.quantityCut,
       cutter: cuttingBatchesTable.cutter,
       cuttingDate: cuttingBatchesTable.cuttingDate,
+      createdAt: cuttingBatchesTable.createdAt,
       status: cuttingBatchesTable.status,
       fabricCode: fabricsTable.code,
       fabricName: fabricsTable.name,
@@ -86,6 +87,7 @@ router.get("/traceability/batch/:batchNumber", checkPermission("reports", "view"
       quantityReceived: allocationsTable.quantityReceived,
       quantityRejected: allocationsTable.quantityRejected,
       issueDate: allocationsTable.issueDate,
+      createdAt: allocationsTable.createdAt,
       status: allocationsTable.status,
       workType: allocationsTable.workType,
       outsourceCategory: allocationsTable.outsourceCategory,
@@ -134,7 +136,7 @@ router.get("/traceability/batch/:batchNumber", checkPermission("reports", "view"
     eventType: "cutting",
     quantity: batch.quantityCut,
     actor: batch.cutter || "Unknown",
-    date: batch.cuttingDate,
+    date: batch.createdAt || batch.cuttingDate,
     details: `Fabric rolls: ${fabricUsages.map((f) => f.rollNumber).join(", ")}`,
     status: "completed",
   });
@@ -146,7 +148,7 @@ router.get("/traceability/batch/:batchNumber", checkPermission("reports", "view"
       eventType: "allocation",
       quantity: alloc.quantityIssued,
       actor: alloc.stitcherName || "Unknown",
-      date: alloc.issueDate,
+      date: alloc.createdAt || alloc.issueDate,
       details: `Allocation #${alloc.allocationNumber} to ${alloc.stitcherName}${alloc.workType === "outsource_required" ? ` (Outsource: ${(alloc.outsourceCategory || "").replace(/_/g, " ")})` : ""}`,
       status: alloc.status,
     });
@@ -160,7 +162,7 @@ router.get("/traceability/batch/:batchNumber", checkPermission("reports", "view"
       eventType: "outsource_sent",
       quantity: t.quantitySent,
       actor: t.vendorName || "Unknown Vendor",
-      date: t.sendDate,
+      date: t.createdAt || t.sendDate,
       details: `Sent ${t.quantitySent} pcs for ${categoryLabel} to ${t.vendorName || "vendor"}`,
       status: t.status,
     });
@@ -170,7 +172,7 @@ router.get("/traceability/batch/:batchNumber", checkPermission("reports", "view"
         eventType: "outsource_returned",
         quantity: t.quantityReturned,
         actor: t.vendorName || "Unknown Vendor",
-        date: t.returnDate || t.sendDate,
+        date: t.createdAt || t.returnDate || t.sendDate,
         details: `Returned ${t.quantityReturned} good, ${t.quantityDamaged || 0} damaged from ${t.vendorName || "vendor"}`,
         status: "completed",
       });
@@ -184,7 +186,7 @@ router.get("/traceability/batch/:batchNumber", checkPermission("reports", "view"
       eventType: "receiving",
       quantity: rec.quantityReceived,
       actor: rec.receivedBy || "Unknown",
-      date: rec.receiveDate,
+      date: rec.createdAt || rec.receiveDate,
       details: `Received ${rec.quantityReceived}, Rejected: ${rec.quantityRejected}, Damaged: ${rec.quantityDamaged}`,
       status: "completed",
     });
@@ -197,7 +199,7 @@ router.get("/traceability/batch/:batchNumber", checkPermission("reports", "view"
       eventType: "finishing",
       quantity: fr.outputQuantity,
       actor: fr.operator || "Unknown",
-      date: fr.processDate,
+      date: fr.createdAt || fr.processDate,
       details: `In: ${fr.inputQuantity}, Out: ${fr.outputQuantity}, Defective: ${fr.defectiveQuantity}`,
       status: "completed",
     });
@@ -210,7 +212,7 @@ router.get("/traceability/batch/:batchNumber", checkPermission("reports", "view"
       eventType: "finished",
       quantity: fg.quantity,
       actor: fg.enteredBy || "Unknown",
-      date: fg.entryDate,
+      date: fg.createdAt || fg.entryDate,
       details: `Added to finished goods store`,
       status: "completed",
     });
