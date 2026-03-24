@@ -148,13 +148,20 @@ export default function AllocationPage() {
     e.preventDefault();
     if (!editTarget) return;
     const fd = new FormData(e.currentTarget);
-    updateAllocation({
-      id: editTarget.id,
-      data: {
-        issueDate: fd.get("issueDate") as string,
-        remarks: fd.get("remarks") as string || undefined,
-      }
-    });
+    const locked = !!(editTarget as any).isLocked;
+    const payload: Record<string, any> = {
+      issueDate: fd.get("issueDate") as string,
+      remarks: fd.get("remarks") as string || undefined,
+    };
+    const stId = fd.get("stitcherId");
+    const tmId = fd.get("teamId");
+    if (stId !== null) payload.stitcherId = stId ? Number(stId) : null;
+    if (tmId !== null) payload.teamId = tmId ? Number(tmId) : null;
+    if (!locked) {
+      const qi = fd.get("quantityIssued");
+      if (qi) payload.quantityIssued = Number(qi);
+    }
+    updateAllocation({ id: editTarget.id, data: payload });
   };
 
   const availableBatches = batches?.filter(b => (b.availableForAllocation || 0) > 0) || [];
@@ -489,6 +496,32 @@ export default function AllocationPage() {
                   Receiving or outsource records exist. Quantity issued cannot be changed.
                 </div>
               )}
+              {editTarget.allocationType === "individual" && (
+                <div>
+                  <label className="text-sm font-medium block mb-1.5">Stitcher</label>
+                  <select name="stitcherId" className="form-input-styled" defaultValue={editTarget.stitcherId || ""}>
+                    <option value="">— Select —</option>
+                    {stitchers?.filter((s: any) => s.isActive).map((s: any) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {editTarget.allocationType === "team" && (
+                <div>
+                  <label className="text-sm font-medium block mb-1.5">Team</label>
+                  <select name="teamId" className="form-input-styled" defaultValue={editTarget.teamId || ""}>
+                    <option value="">— Select —</option>
+                    {teams?.filter((t: any) => t.isActive).map((t: any) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div>
+                <label className="text-sm font-medium block mb-1.5">Quantity Issued</label>
+                <input type="number" name="quantityIssued" className="form-input-styled" min="1" defaultValue={editTarget.quantityIssued || ""} disabled={!!(editTarget as any).isLocked} />
+              </div>
               <div>
                 <label className="text-sm font-medium block mb-1.5">Issue Date</label>
                 <input type="date" name="issueDate" className="form-input-styled" required defaultValue={editTarget.issueDate?.split('T')[0] || ""} />

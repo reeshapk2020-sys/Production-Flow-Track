@@ -76,15 +76,17 @@ export default function FabricRollsPage() {
     e.preventDefault();
     if (!editTarget) return;
     const fd = new FormData(e.currentTarget);
-    updateRoll({
-      id: editTarget.id,
-      data: {
-        rollNumber: fd.get("rollNumber") as string,
-        supplier: fd.get("supplier") as string || undefined,
-        receivedDate: fd.get("receivedDate") as string,
-        remarks: fd.get("remarks") as string || undefined,
-      }
-    });
+    const payload: Record<string, any> = {
+      rollNumber: fd.get("rollNumber") as string,
+      supplier: fd.get("supplier") as string || undefined,
+      receivedDate: fd.get("receivedDate") as string,
+      remarks: fd.get("remarks") as string || undefined,
+    };
+    if (!(editTarget as any).isLocked) {
+      const cid = fd.get("colorId");
+      if (cid) payload.colorId = Number(cid);
+    }
+    updateRoll({ id: editTarget.id, data: payload });
   };
 
   return (
@@ -245,6 +247,15 @@ export default function FabricRollsPage() {
               <div className="col-span-2">
                 <label className="text-sm font-medium block mb-1.5">Roll Number</label>
                 <input name="rollNumber" className="form-input-styled font-mono" required defaultValue={editTarget.rollNumber} />
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-medium block mb-1.5">Color</label>
+                <select name="colorId" className="form-input-styled" defaultValue={editTarget.colorId || ""} disabled={!!(editTarget as any).isLocked}>
+                  <option value="">— Select Color —</option>
+                  {colors?.filter((c: any) => c.isActive).map((c: any) => (
+                    <option key={c.id} value={c.id}>{c.code} - {c.name}</option>
+                  ))}
+                </select>
               </div>
               <div className="col-span-2 sm:col-span-1">
                 <label className="text-sm font-medium block mb-1.5">Supplier</label>

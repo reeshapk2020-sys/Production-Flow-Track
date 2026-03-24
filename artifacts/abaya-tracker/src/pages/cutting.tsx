@@ -155,18 +155,42 @@ export default function CuttingPage() {
     mutate({ data });
   };
 
+  const [editProductionFor, setEditProductionFor] = useState("reesha_stock");
+
   const onEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!editTarget) return;
     const fd = new FormData(e.currentTarget);
-    updateBatch({
-      id: editTarget.id,
-      data: {
-        cutter: fd.get("cutter") as string || undefined,
-        cuttingDate: fd.get("cuttingDate") as string,
-        remarks: fd.get("remarks") as string || undefined,
-      }
-    });
+    const locked = !!(editTarget as any).isLocked;
+    const payload: Record<string, any> = {
+      cutter: fd.get("cutter") as string || undefined,
+      cuttingDate: fd.get("cuttingDate") as string,
+      remarks: fd.get("remarks") as string || undefined,
+    };
+    if (!locked) {
+      const pid = fd.get("productId");
+      const cid = fd.get("colorId");
+      const sid = fd.get("sizeId");
+      const mid = fd.get("materialId");
+      const m2id = fd.get("material2Id");
+      const qc = fd.get("quantityCut");
+      if (pid) payload.productId = Number(pid);
+      if (cid) payload.colorId = Number(cid);
+      if (sid) payload.sizeId = Number(sid);
+      if (mid) payload.materialId = Number(mid);
+      if (m2id) payload.material2Id = Number(m2id) || null;
+      if (qc) payload.quantityCut = Number(qc);
+    }
+    payload.productionFor = fd.get("productionFor") as string || "reesha_stock";
+    const epf = payload.productionFor;
+    if (epf === "purchase_order") {
+      const poVal = fd.get("poId");
+      if (poVal) payload.poId = Number(poVal);
+    } else if (epf === "order") {
+      const ordVal = fd.get("orderId");
+      if (ordVal) payload.orderId = Number(ordVal);
+    }
+    updateBatch({ id: editTarget.id, data: payload });
   };
 
   const availableRolls = rolls?.filter((r) => r.availableQuantity > 0) || [];
@@ -481,7 +505,7 @@ export default function CuttingPage() {
                           size="sm"
                           variant="ghost"
                           className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => { setEditTarget(batch); setEditOpen(true); }}
+                          onClick={() => { setEditTarget(batch); setEditProductionFor(batch.productionFor || "reesha_stock"); setEditOpen(true); }}
                         >
                           <Pencil className="h-3.5 w-3.5 text-slate-500" />
                         </Button>
@@ -500,7 +524,7 @@ export default function CuttingPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={(v) => { setEditOpen(v); if (!v) setEditTarget(null); }}>
-        <DialogContent className="sm:max-w-[420px] rounded-2xl p-6 border-0 shadow-2xl">
+        <DialogContent className="sm:max-w-[520px] rounded-2xl p-6 border-0 shadow-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-display">Edit Cutting Batch</DialogTitle>
           </DialogHeader>
@@ -513,6 +537,55 @@ export default function CuttingPage() {
                 </div>
               )}
               <div className="col-span-2 sm:col-span-1">
+                <label className="text-sm font-medium block mb-1.5">Product</label>
+                <select name="productId" className="form-input-styled" defaultValue={editTarget.productId || ""} disabled={!!(editTarget as any).isLocked}>
+                  <option value="">— Select —</option>
+                  {products?.filter((p: any) => p.isActive).map((p: any) => (
+                    <option key={p.id} value={p.id}>{p.code} - {p.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-sm font-medium block mb-1.5">Color</label>
+                <select name="colorId" className="form-input-styled" defaultValue={editTarget.colorId || ""} disabled={!!(editTarget as any).isLocked}>
+                  <option value="">— Select —</option>
+                  {colors?.filter((c: any) => c.isActive).map((c: any) => (
+                    <option key={c.id} value={c.id}>{c.code} - {c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-sm font-medium block mb-1.5">Size</label>
+                <select name="sizeId" className="form-input-styled" defaultValue={editTarget.sizeId || ""} disabled={!!(editTarget as any).isLocked}>
+                  <option value="">— Select —</option>
+                  {sizes?.filter((s: any) => s.isActive).map((s: any) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-sm font-medium block mb-1.5">Quantity Cut</label>
+                <input type="number" name="quantityCut" className="form-input-styled" min="1" defaultValue={editTarget.quantityCut || ""} disabled={!!(editTarget as any).isLocked} />
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-sm font-medium block mb-1.5">Material 1</label>
+                <select name="materialId" className="form-input-styled" defaultValue={editTarget.materialId || ""} disabled={!!(editTarget as any).isLocked}>
+                  <option value="">— Select —</option>
+                  {materials?.filter((m: any) => m.isActive).map((m: any) => (
+                    <option key={m.id} value={m.id}>{m.code} - {m.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-sm font-medium block mb-1.5">Material 2</label>
+                <select name="material2Id" className="form-input-styled" defaultValue={editTarget.material2Id || ""} disabled={!!(editTarget as any).isLocked}>
+                  <option value="">None</option>
+                  {materials?.filter((m: any) => m.isActive).map((m: any) => (
+                    <option key={m.id} value={m.id}>{m.code} - {m.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-span-2 sm:col-span-1">
                 <label className="text-sm font-medium block mb-1.5">Cutter Name</label>
                 <input name="cutter" className="form-input-styled" defaultValue={editTarget.cutter || ""} placeholder="Name..." />
               </div>
@@ -520,6 +593,36 @@ export default function CuttingPage() {
                 <label className="text-sm font-medium block mb-1.5">Cutting Date</label>
                 <input type="date" name="cuttingDate" className="form-input-styled" required defaultValue={editTarget.cuttingDate?.split('T')[0] || ""} />
               </div>
+              <div className="col-span-2">
+                <label className="text-sm font-medium block mb-1.5">Production For</label>
+                <select name="productionFor" className="form-input-styled" defaultValue={editTarget.productionFor || "reesha_stock"} onChange={(e) => setEditProductionFor(e.target.value)}>
+                  <option value="reesha_stock">Reesha Stock</option>
+                  <option value="purchase_order">Purchase Order</option>
+                  <option value="order">Customer Order</option>
+                </select>
+              </div>
+              {editProductionFor === "purchase_order" && (
+                <div className="col-span-2">
+                  <label className="text-sm font-medium block mb-1.5">Purchase Order</label>
+                  <select name="poId" className="form-input-styled" defaultValue={editTarget.poId || ""}>
+                    <option value="">— Select —</option>
+                    {purchaseOrders?.map((po: any) => (
+                      <option key={po.id} value={po.id}>{po.poNumber}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {editProductionFor === "order" && (
+                <div className="col-span-2">
+                  <label className="text-sm font-medium block mb-1.5">Customer Order</label>
+                  <select name="orderId" className="form-input-styled" defaultValue={editTarget.orderId || ""}>
+                    <option value="">— Select —</option>
+                    {orders?.map((o: any) => (
+                      <option key={o.id} value={o.id}>{o.orderNumber}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="col-span-2">
                 <label className="text-sm font-medium block mb-1.5">Remarks</label>
                 <input name="remarks" className="form-input-styled" defaultValue={editTarget.remarks || ""} placeholder="Notes..." />

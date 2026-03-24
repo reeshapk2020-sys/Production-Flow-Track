@@ -138,14 +138,19 @@ function FinishingView() {
     e.preventDefault();
     if (!editTarget) return;
     const fd = new FormData(e.currentTarget);
-    updateRecord({
-      id: editTarget.id,
-      data: {
-        operator: fd.get("operator") as string || undefined,
-        processDate: fd.get("processDate") as string,
-        remarks: fd.get("remarks") as string || undefined,
-      }
-    });
+    const locked = !!(editTarget as any).isLocked;
+    const payload: Record<string, any> = {
+      operator: fd.get("operator") as string || undefined,
+      processDate: fd.get("processDate") as string,
+      remarks: fd.get("remarks") as string || undefined,
+    };
+    if (!locked) {
+      const oq = fd.get("outputQuantity");
+      const dq = fd.get("defectiveQuantity");
+      if (oq !== null && oq !== "") payload.outputQuantity = Number(oq);
+      if (dq !== null && dq !== "") payload.defectiveQuantity = Number(dq);
+    }
+    updateRecord({ id: editTarget.id, data: payload });
   };
 
   const finishingFilterFields = [
@@ -400,6 +405,14 @@ function FinishingView() {
                   Finished goods exist for this batch. Quantities cannot be changed.
                 </div>
               )}
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-sm font-medium block mb-1.5">Output Quantity</label>
+                <input type="number" name="outputQuantity" className="form-input-styled" min="0" defaultValue={editTarget.outputQuantity ?? ""} disabled={!!(editTarget as any).isLocked} />
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-sm font-medium block mb-1.5">Defective Quantity</label>
+                <input type="number" name="defectiveQuantity" className="form-input-styled" min="0" defaultValue={editTarget.defectiveQuantity ?? ""} disabled={!!(editTarget as any).isLocked} />
+              </div>
               <div className="col-span-2 sm:col-span-1">
                 <label className="text-sm font-medium block mb-1.5">Operator / Team</label>
                 <input name="operator" className="form-input-styled" defaultValue={editTarget.operator || ""} placeholder="Name..." />
