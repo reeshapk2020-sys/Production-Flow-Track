@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Loader2, Layers, Pencil, Upload } from "lucide-react";
+import { Plus, Loader2, Layers, Pencil, Upload, AlertCircle } from "lucide-react";
 import { ImportDialog } from "@/components/import-dialog";
 import { 
   useListFabricRolls, useCreateFabricRoll, getListFabricRollsQueryKey,
@@ -236,6 +236,12 @@ export default function FabricRollsPage() {
           </DialogHeader>
           {editTarget && (
             <form onSubmit={onEditSubmit} className="grid grid-cols-2 gap-4 pt-4">
+              {(editTarget as any).isLocked && (
+                <div className="col-span-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  This roll is used in cutting batches. Color cannot be changed via API.
+                </div>
+              )}
               <div className="col-span-2">
                 <label className="text-sm font-medium block mb-1.5">Roll Number</label>
                 <input name="rollNumber" className="form-input-styled font-mono" required defaultValue={editTarget.rollNumber} />

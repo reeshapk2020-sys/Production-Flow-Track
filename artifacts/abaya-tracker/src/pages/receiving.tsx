@@ -130,6 +130,10 @@ export default function ReceivingPage() {
         quantityDamaged: Number(fd.get("quantityDamaged")) || 0,
         receiveDate: fd.get("receiveDate") as string,
         remarks: fd.get("remarks") as string,
+        hasStain: !!fd.get("hasStain"),
+        hasDamage: !!fd.get("hasDamage"),
+        needsWash: !!fd.get("needsWash"),
+        needsRework: !!fd.get("needsRework"),
       }
     });
   };
@@ -143,6 +147,10 @@ export default function ReceivingPage() {
       data: {
         receiveDate: fd.get("receiveDate") as string,
         remarks: fd.get("remarks") as string || undefined,
+        hasStain: !!fd.get("hasStain"),
+        hasDamage: !!fd.get("hasDamage"),
+        needsWash: !!fd.get("needsWash"),
+        needsRework: !!fd.get("needsRework"),
       }
     });
   };
@@ -303,6 +311,26 @@ export default function ReceivingPage() {
                   </div>
                 )}
 
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+                  <label className="col-span-2 text-sm font-medium text-slate-700">Quality Checks</label>
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="checkbox" name="hasStain" className="rounded border-slate-300 text-red-500 focus:ring-red-500" />
+                    <span className="text-slate-600">Has Stain</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="checkbox" name="hasDamage" className="rounded border-slate-300 text-orange-500 focus:ring-orange-500" />
+                    <span className="text-slate-600">Has Damage</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="checkbox" name="needsWash" className="rounded border-slate-300 text-blue-500 focus:ring-blue-500" />
+                    <span className="text-slate-600">Needs Wash</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="checkbox" name="needsRework" className="rounded border-slate-300 text-amber-500 focus:ring-amber-500" />
+                    <span className="text-slate-600">Needs Rework</span>
+                  </label>
+                </div>
+
                 <div>
                   <label className="text-sm font-medium block mb-1.5">Remarks / Quality Notes</label>
                   <input name="remarks" className="form-input-styled" placeholder="Notes on quality or stitching issues..." />
@@ -332,13 +360,14 @@ export default function ReceivingPage() {
                 <TableHead className="text-right">Issued</TableHead>
                 <TableHead className="text-right">Good Rcvd</TableHead>
                 <TableHead className="text-right">Rej / Dmg</TableHead>
+                <TableHead>Quality</TableHead>
                 <TableHead>Receive Date</TableHead>
                 {canEdit && <TableHead className="w-16"></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={canEdit ? 8 : 7} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 9 : 8} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
               ) : (
                 data?.map(rec => (
                   <TableRow key={rec.id} className="group hover:bg-slate-50/50">
@@ -375,6 +404,15 @@ export default function ReceivingPage() {
                         <span className="text-slate-300 text-sm">—</span>
                       )}
                     </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {(rec as any).hasStain && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-600 border border-red-200">Stain</span>}
+                        {(rec as any).hasDamage && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-600 border border-orange-200">Damage</span>}
+                        {(rec as any).needsWash && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-200">Wash</span>}
+                        {(rec as any).needsRework && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-600 border border-amber-200">Rework</span>}
+                        {!(rec as any).hasStain && !(rec as any).hasDamage && !(rec as any).needsWash && !(rec as any).needsRework && <span className="text-xs text-slate-300">OK</span>}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-slate-600 text-sm">
                       {rec.receiveDate ? format(new Date(rec.receiveDate), 'MMM d, yyyy') : '-'}
                     </TableCell>
@@ -394,7 +432,7 @@ export default function ReceivingPage() {
                 ))
               )}
               {!isLoading && data?.length === 0 && (
-                <TableRow><TableCell colSpan={canEdit ? 8 : 7} className="text-center py-12 text-slate-500">No receivings logged yet.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 9 : 8} className="text-center py-12 text-slate-500">No receivings logged yet.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -413,9 +451,34 @@ export default function ReceivingPage() {
                 <div className="font-semibold text-slate-800">{editTarget.batchNumber}</div>
                 <div className="text-xs text-slate-500 mt-0.5">{editTarget.stitcherName} · {editTarget.quantityReceived} pcs received</div>
               </div>
+              {(editTarget as any).isLocked && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  Finishing records exist for this batch. Quantities cannot be changed.
+                </div>
+              )}
               <div>
                 <label className="text-sm font-medium block mb-1.5">Receive Date</label>
                 <input type="date" name="receiveDate" className="form-input-styled" required defaultValue={editTarget.receiveDate?.split('T')[0] || ""} />
+              </div>
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+                <label className="col-span-2 text-sm font-medium text-slate-700">Quality Checks</label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="checkbox" name="hasStain" className="rounded border-slate-300 text-red-500 focus:ring-red-500" defaultChecked={!!(editTarget as any).hasStain} />
+                  <span className="text-slate-600">Has Stain</span>
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="checkbox" name="hasDamage" className="rounded border-slate-300 text-orange-500 focus:ring-orange-500" defaultChecked={!!(editTarget as any).hasDamage} />
+                  <span className="text-slate-600">Has Damage</span>
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="checkbox" name="needsWash" className="rounded border-slate-300 text-blue-500 focus:ring-blue-500" defaultChecked={!!(editTarget as any).needsWash} />
+                  <span className="text-slate-600">Needs Wash</span>
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="checkbox" name="needsRework" className="rounded border-slate-300 text-amber-500 focus:ring-amber-500" defaultChecked={!!(editTarget as any).needsRework} />
+                  <span className="text-slate-600">Needs Rework</span>
+                </label>
               </div>
               <div>
                 <label className="text-sm font-medium block mb-1.5">Remarks</label>

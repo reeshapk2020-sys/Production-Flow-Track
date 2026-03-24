@@ -483,6 +483,12 @@ export default function AllocationPage() {
                 <div className="font-semibold text-slate-800">{editTarget.batchNumber}</div>
                 <div className="text-xs text-slate-500 mt-0.5">{editTarget.assigneeName || editTarget.stitcherName} · {editTarget.quantityIssued} pcs issued</div>
               </div>
+              {(editTarget as any).isLocked && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                  Receiving or outsource records exist. Quantity issued cannot be changed.
+                </div>
+              )}
               <div>
                 <label className="text-sm font-medium block mb-1.5">Issue Date</label>
                 <input type="date" name="issueDate" className="form-input-styled" required defaultValue={editTarget.issueDate?.split('T')[0] || ""} />

@@ -9,4 +9,7 @@
 export interface UpdateAllocationBody {
   issueDate?: string;
   remarks?: string;
+  stitcherId?: number | null;
+  teamId?: number | null;
+  quantityIssued?: number;
 }

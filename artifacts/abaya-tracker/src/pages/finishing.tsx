@@ -394,6 +394,12 @@ function FinishingView() {
                 <div className="font-semibold text-slate-800">{editTarget.batchNumber}</div>
                 <div className="text-xs text-slate-500 mt-0.5">Input: {editTarget.inputQuantity} · Output: {editTarget.outputQuantity}</div>
               </div>
+              {(editTarget as any).isLocked && (
+                <div className="col-span-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  Finished goods exist for this batch. Quantities cannot be changed.
+                </div>
+              )}
               <div className="col-span-2 sm:col-span-1">
                 <label className="text-sm font-medium block mb-1.5">Operator / Team</label>
                 <input name="operator" className="form-input-styled" defaultValue={editTarget.operator || ""} placeholder="Name..." />

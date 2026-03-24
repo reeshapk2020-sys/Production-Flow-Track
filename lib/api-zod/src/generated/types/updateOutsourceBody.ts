@@ -6,10 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface UpdateFabricRollBody {
-  rollNumber?: string;
-  colorId?: number;
-  supplier?: string;
-  receivedDate?: string;
-  remarks?: string;
+export interface UpdateOutsourceBody {
+  vendorName?: string | null;
+  remarks?: string | null;
 }

@@ -90,10 +90,19 @@ router.get("/cutting/batches", checkPermission("cutting", "view"), async (req, r
   if (conditions.length > 0) q = q.where(and(...conditions));
   const rows = await q.orderBy(sql`${cuttingBatchesTable.createdAt} desc`);
 
+  const batchIds = rows.map((r: any) => r.id);
+  const allocCounts = batchIds.length > 0 ? await db
+    .select({ batchId: allocationsTable.cuttingBatchId, cnt: sql<number>`count(*)`.as("cnt") })
+    .from(allocationsTable)
+    .where(sql`${allocationsTable.cuttingBatchId} IN (${sql.join(batchIds.map((id: number) => sql`${id}`), sql`, `)})`)
+    .groupBy(allocationsTable.cuttingBatchId) : [];
+  const lockedSet = new Set(allocCounts.map((a: any) => a.batchId));
+
   const result = rows.map((r: any) => ({
     ...r,
     totalAllocated: r.quantityCut - r.availableForAllocation,
     itemCode: computeItemCode(r.productCode, r.colorCode, r.materialCode, r.material2Code),
+    isLocked: lockedSet.has(r.id),
   }));
   res.json(result);
 });
@@ -305,8 +314,21 @@ router.get("/cutting/batches/:id", checkPermission("cutting", "view"), async (re
 
 router.put("/cutting/batches/:id", checkPermission("cutting", "edit"), async (req, res) => {
   const id = parseInt(req.params.id);
-  const { cutter, cuttingDate, remarks, productId, materialId, material2Id, productionFor, poId, orderId } = req.body;
+  const { cutter, cuttingDate, remarks, productId, materialId, material2Id, productionFor, poId, orderId, colorId, sizeId, quantityCut } = req.body;
+
+  const [hasAlloc] = await db.select({ id: allocationsTable.id }).from(allocationsTable).where(eq(allocationsTable.cuttingBatchId, id)).limit(1);
+  const isLocked = !!hasAlloc;
+
+  if (isLocked) {
+    if (colorId !== undefined) return res.status(400).json({ error: "Cannot change color: allocations exist for this batch." });
+    if (sizeId !== undefined) return res.status(400).json({ error: "Cannot change size: allocations exist for this batch." });
+    if (quantityCut !== undefined) return res.status(400).json({ error: "Cannot change quantity: allocations exist for this batch." });
+  }
+
   const updates: Record<string, any> = {};
+  if (!isLocked && colorId !== undefined) updates.colorId = colorId;
+  if (!isLocked && sizeId !== undefined) updates.sizeId = sizeId;
+  if (!isLocked && quantityCut !== undefined) updates.quantityCut = quantityCut;
   if (cutter !== undefined) updates.cutter = cutter;
   if (cuttingDate) updates.cuttingDate = new Date(cuttingDate);
   if (remarks !== undefined) updates.remarks = remarks;
@@ -350,7 +372,7 @@ router.put("/cutting/batches/:id", checkPermission("cutting", "edit"), async (re
     .returning();
   if (!row) return res.status(404).json({ error: "Cutting batch not found." });
   await logAudit(req, "UPDATE", "cutting_batches", String(id), `Updated cutting batch #${id}`);
-  res.json(row);
+  res.json({ ...row, isLocked });
 });
 
 export default router;

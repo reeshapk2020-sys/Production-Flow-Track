@@ -248,6 +248,7 @@ export interface CreateFabricRollBody {
 
 export interface UpdateFabricRollBody {
   rollNumber?: string;
+  colorId?: number;
   supplier?: string;
   receivedDate?: string;
   remarks?: string;
@@ -376,6 +377,9 @@ export interface UpdateCuttingBatchBody {
   productId?: number;
   materialId?: number;
   material2Id?: number;
+  colorId?: number;
+  sizeId?: number;
+  quantityCut?: number;
   productionFor?: string | null;
   poId?: number | null;
   orderId?: number | null;
@@ -489,6 +493,9 @@ export interface CreateAllocationBody {
 export interface UpdateAllocationBody {
   issueDate?: string;
   remarks?: string;
+  stitcherId?: number | null;
+  teamId?: number | null;
+  quantityIssued?: number;
 }
 
 export interface OutsourceTransfer {
@@ -551,6 +558,11 @@ export interface ReturnFromOutsourceBody {
   remarks?: string;
 }
 
+export interface UpdateOutsourceBody {
+  vendorName?: string | null;
+  remarks?: string | null;
+}
+
 export interface Receiving {
   id: number;
   allocationId: number;
@@ -568,6 +580,11 @@ export interface Receiving {
   receiveDate: string;
   remarks?: string;
   receivedBy?: string;
+  hasStain?: boolean;
+  hasDamage?: boolean;
+  needsWash?: boolean;
+  needsRework?: boolean;
+  isLocked?: boolean;
   productionFor?: string | null;
   poNumber?: string | null;
   orderNumber?: string | null;
@@ -580,11 +597,19 @@ export interface CreateReceivingBody {
   quantityDamaged?: number;
   receiveDate: string;
   remarks?: string;
+  hasStain?: boolean;
+  hasDamage?: boolean;
+  needsWash?: boolean;
+  needsRework?: boolean;
 }
 
 export interface UpdateReceivingBody {
   receiveDate?: string;
   remarks?: string;
+  hasStain?: boolean;
+  hasDamage?: boolean;
+  needsWash?: boolean;
+  needsRework?: boolean;
 }
 
 export type FinishingRecordStage =
@@ -631,6 +656,8 @@ export interface UpdateFinishingRecordBody {
   operator?: string;
   processDate?: string;
   remarks?: string;
+  outputQuantity?: number;
+  defectiveQuantity?: number;
 }
 
 export interface FinishingBatchInfo {
@@ -1008,6 +1035,39 @@ export interface DispatchByItemReport {
   productName?: string | null;
   totalQuantity: number;
   totalRecords: number;
+}
+
+export type DispatchImportBodyRowsItemDestinationType =
+  (typeof DispatchImportBodyRowsItemDestinationType)[keyof typeof DispatchImportBodyRowsItemDestinationType];
+
+export const DispatchImportBodyRowsItemDestinationType = {
+  reesha: "reesha",
+  purchase_order: "purchase_order",
+  order: "order",
+} as const;
+
+export type DispatchImportBodyRowsItem = {
+  dispatchDate: string;
+  itemCode: string;
+  productCode?: string;
+  productName?: string;
+  sizeName?: string;
+  colorName?: string;
+  quantity: number;
+  destinationType?: DispatchImportBodyRowsItemDestinationType;
+  poId?: number;
+  orderId?: number;
+  customerName?: string;
+  remarks?: string;
+};
+
+export interface DispatchImportBody {
+  rows: DispatchImportBodyRowsItem[];
+}
+
+export interface DispatchImportResult {
+  imported: number;
+  records: DispatchEntry[];
 }
 
 export type DispatchBySourceResponseSummary = {

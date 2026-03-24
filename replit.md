@@ -198,6 +198,9 @@ Custom roles can be created dynamically from the admin Permissions page.
 - **Dynamic role-based permission system** with per-module granularity (view/create/edit/import)
 - Secure login via Replit Auth + staff login
 - Permission-controlled edit access on all 6 operational modules (safe fields only — dates, operator names, remarks; quantities and foreign keys are never editable to protect inventory integrity)
+- **Edit Lock System**: All list endpoints return `isLocked` boolean; edit dialogs show amber lock banners when downstream records exist (e.g., cutting used in allocation, allocation has receiving/outsource). Locked fields are disabled in the UI.
+- **Receiving Quality Checks**: `hasStain`, `hasDamage`, `needsWash`, `needsRework` boolean fields on receivings; checkboxes in create/edit forms; color-coded badges in list table
+- **Dispatch Import**: XLSX import with client-side parsing, validation, row preview, and template download
 - Teams and Stitchers master data with code/isActive fields, edit dialogs
 - Material master module (create/edit, isActive toggle, duplicate code prevention)
 - Fabric master now supports fabric code (used in item code), with edit dialog

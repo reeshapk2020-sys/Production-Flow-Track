@@ -496,6 +496,7 @@ export const UpdateFabricRollParams = zod.object({
 
 export const UpdateFabricRollBody = zod.object({
   rollNumber: zod.string().optional(),
+  colorId: zod.number().optional(),
   supplier: zod.string().optional(),
   receivedDate: zod.string().optional(),
   remarks: zod.string().optional(),
@@ -720,6 +721,9 @@ export const UpdateCuttingBatchBody = zod.object({
   productId: zod.number().optional(),
   materialId: zod.number().optional(),
   material2Id: zod.number().optional(),
+  colorId: zod.number().optional(),
+  sizeId: zod.number().optional(),
+  quantityCut: zod.number().optional(),
   productionFor: zod.string().nullish(),
   poId: zod.number().nullish(),
   orderId: zod.number().nullish(),
@@ -913,6 +917,9 @@ export const UpdateAllocationParams = zod.object({
 export const UpdateAllocationBody = zod.object({
   issueDate: zod.string().optional(),
   remarks: zod.string().optional(),
+  stitcherId: zod.number().nullish(),
+  teamId: zod.number().nullish(),
+  quantityIssued: zod.number().optional(),
 });
 
 export const UpdateAllocationResponse = zod.object({
@@ -984,6 +991,11 @@ export const ListReceivingsResponseItem = zod.object({
   receiveDate: zod.string(),
   remarks: zod.string().optional(),
   receivedBy: zod.string().optional(),
+  hasStain: zod.boolean().optional(),
+  hasDamage: zod.boolean().optional(),
+  needsWash: zod.boolean().optional(),
+  needsRework: zod.boolean().optional(),
+  isLocked: zod.boolean().optional(),
   productionFor: zod.string().nullish(),
   poNumber: zod.string().nullish(),
   orderNumber: zod.string().nullish(),
@@ -1000,6 +1012,10 @@ export const CreateReceivingBody = zod.object({
   quantityDamaged: zod.number().optional(),
   receiveDate: zod.string(),
   remarks: zod.string().optional(),
+  hasStain: zod.boolean().optional(),
+  hasDamage: zod.boolean().optional(),
+  needsWash: zod.boolean().optional(),
+  needsRework: zod.boolean().optional(),
 });
 
 /**
@@ -1012,6 +1028,10 @@ export const UpdateReceivingParams = zod.object({
 export const UpdateReceivingBody = zod.object({
   receiveDate: zod.string().optional(),
   remarks: zod.string().optional(),
+  hasStain: zod.boolean().optional(),
+  hasDamage: zod.boolean().optional(),
+  needsWash: zod.boolean().optional(),
+  needsRework: zod.boolean().optional(),
 });
 
 export const UpdateReceivingResponse = zod.object({
@@ -1031,6 +1051,11 @@ export const UpdateReceivingResponse = zod.object({
   receiveDate: zod.string(),
   remarks: zod.string().optional(),
   receivedBy: zod.string().optional(),
+  hasStain: zod.boolean().optional(),
+  hasDamage: zod.boolean().optional(),
+  needsWash: zod.boolean().optional(),
+  needsRework: zod.boolean().optional(),
+  isLocked: zod.boolean().optional(),
   productionFor: zod.string().nullish(),
   poNumber: zod.string().nullish(),
   orderNumber: zod.string().nullish(),
@@ -1110,6 +1135,43 @@ export const SendToOutsourceBody = zod.object({
   vendorName: zod.string().optional(),
   sendDate: zod.string().optional(),
   remarks: zod.string().optional(),
+});
+
+/**
+ * @summary Update outsource transfer (vendor/remarks)
+ */
+export const UpdateOutsourceTransferParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateOutsourceTransferBody = zod.object({
+  vendorName: zod.string().nullish(),
+  remarks: zod.string().nullish(),
+});
+
+export const UpdateOutsourceTransferResponse = zod.object({
+  id: zod.number(),
+  allocationId: zod.number(),
+  allocationNumber: zod.string().optional(),
+  batchNumber: zod.string().optional(),
+  productName: zod.string().optional(),
+  productCode: zod.string().optional(),
+  colorName: zod.string().optional(),
+  colorCode: zod.string().optional(),
+  sizeName: zod.string().optional(),
+  outsourceCategory: zod.string().optional(),
+  quantitySent: zod.number(),
+  quantityReturned: zod.number().optional(),
+  quantityDamaged: zod.number().optional(),
+  quantityPending: zod.number().optional(),
+  vendorName: zod.string().nullish(),
+  sendDate: zod.string().optional(),
+  returnDate: zod.string().nullish(),
+  status: zod.string().optional(),
+  remarks: zod.string().nullish(),
+  assigneeName: zod.string().optional(),
+  allocationType: zod.string().optional(),
+  createdAt: zod.string().optional(),
 });
 
 /**
@@ -1205,6 +1267,8 @@ export const UpdateFinishingRecordBody = zod.object({
   operator: zod.string().optional(),
   processDate: zod.string().optional(),
   remarks: zod.string().optional(),
+  outputQuantity: zod.number().optional(),
+  defectiveQuantity: zod.number().optional(),
 });
 
 export const UpdateFinishingRecordResponse = zod.object({
@@ -2107,6 +2171,30 @@ export const DeleteDispatchParams = zod.object({
 export const DeleteDispatchResponse = zod.object({
   success: zod.boolean(),
   message: zod.string().optional(),
+});
+
+/**
+ * @summary Bulk import dispatches
+ */
+export const ImportDispatchesBody = zod.object({
+  rows: zod.array(
+    zod.object({
+      dispatchDate: zod.string(),
+      itemCode: zod.string(),
+      productCode: zod.string().optional(),
+      productName: zod.string().optional(),
+      sizeName: zod.string().optional(),
+      colorName: zod.string().optional(),
+      quantity: zod.number(),
+      destinationType: zod
+        .enum(["reesha", "purchase_order", "order"])
+        .optional(),
+      poId: zod.number().optional(),
+      orderId: zod.number().optional(),
+      customerName: zod.string().optional(),
+      remarks: zod.string().optional(),
+    }),
+  ),
 });
 
 /**

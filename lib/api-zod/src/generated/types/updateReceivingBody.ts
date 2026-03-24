@@ -9,4 +9,8 @@
 export interface UpdateReceivingBody {
   receiveDate?: string;
   remarks?: string;
+  hasStain?: boolean;
+  hasDamage?: boolean;
+  needsWash?: boolean;
+  needsRework?: boolean;
 }

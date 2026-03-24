@@ -4,10 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Loader2, ArrowUpRight, ArrowDownLeft, List, SendHorizontal, RotateCcw } from "lucide-react";
+import { Loader2, ArrowUpRight, ArrowDownLeft, List, SendHorizontal, RotateCcw, Pencil, AlertCircle } from "lucide-react";
 import {
   useListOutsourceTransfers, useListOutsourceAllocations,
-  useSendToOutsource, useReturnFromOutsource,
+  useSendToOutsource, useReturnFromOutsource, useUpdateOutsourceTransfer,
   getListOutsourceTransfersQueryKey, getListOutsourceAllocationsQueryKey,
   getListAllocationsQueryKey,
 } from "@workspace/api-client-react";
@@ -60,11 +60,14 @@ export default function OutsourcePage() {
   const { toast } = useToast();
   const { can } = useAppAuth();
   const canCreate = can("outsource", "create");
+  const canEdit = can("outsource", "edit");
 
   const [sendOpen, setSendOpen] = useState(false);
   const [returnOpen, setReturnOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [selectedAlloc, setSelectedAlloc] = useState<any>(null);
   const [selectedTransfer, setSelectedTransfer] = useState<any>(null);
+  const [editTarget, setEditTarget] = useState<any>(null);
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: getListOutsourceTransfersQueryKey() });
@@ -99,6 +102,33 @@ export default function OutsourcePage() {
       },
     },
   });
+
+  const { mutate: updateMutate, isPending: updatePending } = useUpdateOutsourceTransfer({
+    mutation: {
+      onSuccess: () => {
+        invalidateAll();
+        setEditOpen(false);
+        setEditTarget(null);
+        toast({ title: "Transfer updated" });
+      },
+      onError: (e: any) => {
+        toast({ title: "Error", description: e?.response?.data?.error || "Update failed", variant: "destructive" });
+      },
+    },
+  });
+
+  const onEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editTarget) return;
+    const fd = new FormData(e.currentTarget);
+    updateMutate({
+      id: editTarget.id,
+      data: {
+        vendorName: fd.get("vendorName") as string || undefined,
+        remarks: fd.get("remarks") as string || undefined,
+      },
+    });
+  };
 
   const onSendSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -484,6 +514,7 @@ export default function OutsourcePage() {
                   <TableHead>Status</TableHead>
                   <TableHead>Send Date</TableHead>
                   <TableHead>Return Date</TableHead>
+                  {canEdit && <TableHead className="w-16"></TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -505,16 +536,63 @@ export default function OutsourcePage() {
                     <TableCell><TransferStatusBadge status={t.status || "sent"} /></TableCell>
                     <TableCell className="text-slate-600 text-sm">{t.sendDate ? format(new Date(t.sendDate), "MMM d, yyyy") : "-"}</TableCell>
                     <TableCell className="text-slate-600 text-sm">{t.returnDate ? format(new Date(t.returnDate), "MMM d, yyyy") : "-"}</TableCell>
+                    {canEdit && (
+                      <TableCell>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => { setEditTarget({ ...t, isLocked: ((t.quantityReturned || 0) > 0 || (t.quantityDamaged || 0) > 0) }); setEditOpen(true); }}>
+                          <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
                 {!transfersLoading && (!transfers || transfers.length === 0) && (
-                  <TableRow><TableCell colSpan={11} className="text-center py-12 text-slate-500">No outsource transfers found.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={canEdit ? 12 : 11} className="text-center py-12 text-slate-500">No outsource transfers found.</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
           </CardContent>
         </Card>
       )}
+      <Dialog open={editOpen} onOpenChange={(v) => { setEditOpen(v); if (!v) setEditTarget(null); }}>
+        <DialogContent className="sm:max-w-[400px] rounded-2xl p-6 border-0 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-display">Edit Outsource Transfer</DialogTitle>
+          </DialogHeader>
+          {editTarget && (
+            <form onSubmit={onEditSubmit} className="grid grid-cols-1 gap-4 pt-4">
+              <div className="bg-slate-50 rounded-xl p-3 text-sm text-slate-600">
+                <div className="font-semibold text-slate-800">#{editTarget.id} — {editTarget.batchNumber}</div>
+                <div className="text-xs text-slate-500 mt-0.5">{editTarget.quantitySent} pcs sent · {editTarget.outsourceCategory?.replace(/_/g, " ")}</div>
+              </div>
+              {(editTarget as any).isLocked && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  Returns recorded for this transfer. Vendor name cannot be changed.
+                </div>
+              )}
+              <div>
+                <label className="text-sm font-medium block mb-1.5">Vendor Name</label>
+                <input
+                  name="vendorName"
+                  className="form-input-styled"
+                  defaultValue={editTarget.vendorName || ""}
+                  placeholder="Vendor / workshop name..."
+                  disabled={!!(editTarget as any).isLocked}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1.5">Remarks</label>
+                <input name="remarks" className="form-input-styled" defaultValue={editTarget.remarks || ""} placeholder="Notes..." />
+              </div>
+              <div className="mt-2">
+                <Button type="submit" disabled={updatePending} className="w-full h-11 rounded-xl">
+                  {updatePending ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

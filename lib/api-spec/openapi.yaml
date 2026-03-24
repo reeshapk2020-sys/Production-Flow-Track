@@ -1006,6 +1006,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/OutsourceTransfer"
 
+  /outsource/{id}:
+    put:
+      operationId: updateOutsourceTransfer
+      tags: [outsource]
+      summary: Update outsource transfer (vendor/remarks)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOutsourceBody"
+      responses:
+        "200":
+          description: Updated outsource transfer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutsourceTransfer"
+
   /outsource/return:
     post:
       operationId: returnFromOutsource
@@ -1886,6 +1911,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
+  /dispatch/import:
+    post:
+      operationId: importDispatches
+      tags: [dispatch]
+      summary: Bulk import dispatches
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DispatchImportBody"
+      responses:
+        "201":
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DispatchImportResult"
+
   /dispatch/available-stock:
     get:
       operationId: getDispatchAvailableStock
@@ -2491,6 +2535,8 @@ components:
       properties:
         rollNumber:
           type: string
+        colorId:
+          type: integer
         supplier:
           type: string
         receivedDate:
@@ -2665,6 +2711,12 @@ components:
         materialId:
           type: integer
         material2Id:
+          type: integer
+        colorId:
+          type: integer
+        sizeId:
+          type: integer
+        quantityCut:
           type: integer
         productionFor:
           type: string
@@ -2977,6 +3029,14 @@ components:
           type: string
         remarks:
           type: string
+        stitcherId:
+          type: integer
+          nullable: true
+        teamId:
+          type: integer
+          nullable: true
+        quantityIssued:
+          type: integer
 
     # OUTSOURCE
     OutsourceTransfer:
@@ -3099,6 +3159,16 @@ components:
           type: string
       required: [outsourceTransferId, quantityReturned]
 
+    UpdateOutsourceBody:
+      type: object
+      properties:
+        vendorName:
+          type: string
+          nullable: true
+        remarks:
+          type: string
+          nullable: true
+
     # RECEIVING
     Receiving:
       type: object
@@ -3135,6 +3205,16 @@ components:
           type: string
         receivedBy:
           type: string
+        hasStain:
+          type: boolean
+        hasDamage:
+          type: boolean
+        needsWash:
+          type: boolean
+        needsRework:
+          type: boolean
+        isLocked:
+          type: boolean
         productionFor:
           type: string
           nullable: true
@@ -3161,6 +3241,14 @@ components:
           type: string
         remarks:
           type: string
+        hasStain:
+          type: boolean
+        hasDamage:
+          type: boolean
+        needsWash:
+          type: boolean
+        needsRework:
+          type: boolean
       required: [allocationId, quantityReceived, receiveDate]
 
     UpdateReceivingBody:
@@ -3170,6 +3258,14 @@ components:
           type: string
         remarks:
           type: string
+        hasStain:
+          type: boolean
+        hasDamage:
+          type: boolean
+        needsWash:
+          type: boolean
+        needsRework:
+          type: boolean
 
     # FINISHING
     FinishingRecord:
@@ -3238,6 +3334,10 @@ components:
           type: string
         remarks:
           type: string
+        outputQuantity:
+          type: integer
+        defectiveQuantity:
+          type: integer
 
     FinishingBatchInfo:
       type: object
@@ -3914,6 +4014,53 @@ components:
         totalRecords:
           type: integer
       required: [itemCode, totalQuantity, totalRecords]
+
+    DispatchImportBody:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            type: object
+            properties:
+              dispatchDate:
+                type: string
+              itemCode:
+                type: string
+              productCode:
+                type: string
+              productName:
+                type: string
+              sizeName:
+                type: string
+              colorName:
+                type: string
+              quantity:
+                type: integer
+              destinationType:
+                type: string
+                enum: [reesha, purchase_order, order]
+              poId:
+                type: integer
+              orderId:
+                type: integer
+              customerName:
+                type: string
+              remarks:
+                type: string
+            required: [dispatchDate, itemCode, quantity]
+      required: [rows]
+
+    DispatchImportResult:
+      type: object
+      properties:
+        imported:
+          type: integer
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/DispatchEntry"
+      required: [imported, records]
 
     DispatchBySourceResponse:
       type: object

@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import {
   Plus, Loader2, Truck, Pencil, Trash2, Search, Download, Package,
-  CheckCircle2, Clock, Send,
+  CheckCircle2, Clock, Send, Upload, AlertCircle, FileSpreadsheet,
 } from "lucide-react";
 import {
   useListDispatches,
@@ -22,6 +22,7 @@ import {
   useGetDispatchReportSummary,
   useListPurchaseOrders,
   useListOrders,
+  useImportDispatches,
   getListDispatchesQueryKey,
   getGetDispatchAvailableStockQueryKey,
   getGetDispatchReportSummaryQueryKey,
@@ -54,6 +55,7 @@ export default function DispatchPage() {
   const canEdit = can("dispatch", "edit");
 
   const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<any>(null);
 
   const invalidate = () => {
@@ -145,6 +147,11 @@ export default function DispatchPage() {
           {canCreate && (
             <Button onClick={() => setAddOpen(true)} className="rounded-xl gap-2 shadow-md">
               <Plus className="h-4 w-4" /> New Dispatch
+            </Button>
+          )}
+          {canCreate && (
+            <Button variant="outline" onClick={() => setImportOpen(true)} className="rounded-xl gap-2">
+              <Upload className="h-4 w-4" /> Import
             </Button>
           )}
           <Button variant="outline" className="rounded-xl gap-2" onClick={exportToExcel} disabled={!dispatches?.length}>
@@ -261,6 +268,7 @@ export default function DispatchPage() {
 
       {addOpen && <AddDispatchDialog onClose={() => setAddOpen(false)} onSuccess={invalidate} />}
       {editTarget && <EditDispatchDialog dispatch={editTarget} onClose={() => setEditTarget(null)} onSuccess={invalidate} canEdit={canEdit} />}
+      {importOpen && <ImportDispatchDialog onClose={() => setImportOpen(false)} onSuccess={invalidate} />}
     </AppLayout>
   );
 }
@@ -543,6 +551,141 @@ function EditDispatchDialog({ dispatch, onClose, onSuccess, canEdit }: { dispatc
               </Button>
             )}
           </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ImportDispatchDialog({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const { toast } = useToast();
+  const importMutation = useImportDispatches();
+  const [parsedRows, setParsedRows] = useState<any[]>([]);
+  const [errors, setErrors] = useState<string[]>([]);
+  const [fileName, setFileName] = useState("");
+
+  const templateHeaders = [
+    "dispatchDate", "itemCode", "productCode", "productName",
+    "sizeName", "colorName", "quantity", "destinationType",
+    "customerName", "remarks",
+  ];
+
+  const downloadTemplate = () => {
+    const ws = XLSX.utils.aoa_to_sheet([templateHeaders, [
+      format(new Date(), "yyyy-MM-dd"), "ABC-RED-SIL-001", "ABC", "Sample Product",
+      "L", "Red", 10, "reesha", "", "",
+    ]]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Dispatch Import");
+    XLSX.writeFile(wb, "dispatch_import_template.xlsx");
+  };
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+    setErrors([]);
+    setParsedRows([]);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const wb = XLSX.read(evt.target?.result, { type: "binary" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const json: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+        if (json.length === 0) { setErrors(["File is empty"]); return; }
+        if (json.length > 500) { setErrors([`Too many rows (${json.length}). Maximum 500.`]); return; }
+
+        const errs: string[] = [];
+        const rows = json.map((row, i) => {
+          const r: any = {
+            dispatchDate: String(row.dispatchDate || "").trim(),
+            itemCode: String(row.itemCode || "").trim(),
+            quantity: parseInt(String(row.quantity), 10) || 0,
+          };
+          if (!r.dispatchDate) errs.push(`Row ${i + 2}: Missing dispatchDate`);
+          if (!r.itemCode) errs.push(`Row ${i + 2}: Missing itemCode`);
+          if (r.quantity <= 0) errs.push(`Row ${i + 2}: Invalid quantity`);
+
+          if (row.productCode) r.productCode = String(row.productCode).trim();
+          if (row.productName) r.productName = String(row.productName).trim();
+          if (row.sizeName) r.sizeName = String(row.sizeName).trim();
+          if (row.colorName) r.colorName = String(row.colorName).trim();
+          if (row.destinationType) r.destinationType = String(row.destinationType).trim();
+          if (row.customerName) r.customerName = String(row.customerName).trim();
+          if (row.remarks) r.remarks = String(row.remarks).trim();
+          return r;
+        });
+
+        if (errs.length > 0) { setErrors(errs.slice(0, 20)); return; }
+        setParsedRows(rows);
+      } catch {
+        setErrors(["Failed to parse file. Ensure it is a valid Excel/CSV file."]);
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const handleImport = () => {
+    if (parsedRows.length === 0) return;
+    importMutation.mutate(
+      { data: { rows: parsedRows } },
+      {
+        onSuccess: (res: any) => {
+          toast({ title: `Imported ${res.imported} dispatches` });
+          onSuccess();
+          onClose();
+        },
+        onError: (err: any) => {
+          toast({ title: "Import Error", description: err?.response?.data?.error || "Import failed", variant: "destructive" });
+        },
+      }
+    );
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><FileSpreadsheet className="h-5 w-5" /> Import Dispatches</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-800 space-y-2">
+            <p>Upload an Excel or CSV file with dispatch records. Required columns: <strong>dispatchDate</strong>, <strong>itemCode</strong>, <strong>quantity</strong>.</p>
+            <Button variant="outline" size="sm" className="rounded-lg gap-2" onClick={downloadTemplate}>
+              <Download className="h-3.5 w-3.5" /> Download Template
+            </Button>
+          </div>
+
+          <div>
+            <Label>Select File</Label>
+            <Input type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} className="rounded-xl" />
+            {fileName && <p className="text-xs text-muted-foreground mt-1">{fileName}</p>}
+          </div>
+
+          {errors.length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 space-y-1">
+              <div className="flex items-center gap-2 font-medium"><AlertCircle className="h-4 w-4" /> Validation Errors</div>
+              {errors.map((e, i) => <p key={i} className="text-xs">{e}</p>)}
+            </div>
+          )}
+
+          {parsedRows.length > 0 && errors.length === 0 && (
+            <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-800">
+              <CheckCircle2 className="h-4 w-4 inline mr-1" />
+              {parsedRows.length} rows parsed. Total quantity: {parsedRows.reduce((s: number, r: any) => s + r.quantity, 0)}.
+            </div>
+          )}
+
+          <Button
+            className="w-full rounded-xl"
+            onClick={handleImport}
+            disabled={importMutation.isPending || parsedRows.length === 0 || errors.length > 0}
+          >
+            {importMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+            Import {parsedRows.length} Dispatches
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

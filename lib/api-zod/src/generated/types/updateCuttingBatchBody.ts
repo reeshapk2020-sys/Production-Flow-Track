@@ -13,6 +13,9 @@ export interface UpdateCuttingBatchBody {
   productId?: number;
   materialId?: number;
   material2Id?: number;
+  colorId?: number;
+  sizeId?: number;
+  quantityCut?: number;
   productionFor?: string | null;
   poId?: number | null;
   orderId?: number | null;

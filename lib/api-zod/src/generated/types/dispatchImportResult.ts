@@ -5,11 +5,9 @@
  * Abaya Production Tracking and Inventory Management API
  * OpenAPI spec version: 0.1.0
  */
+import type { DispatchEntry } from "./dispatchEntry";
 
-export interface UpdateFabricRollBody {
-  rollNumber?: string;
-  colorId?: number;
-  supplier?: string;
-  receivedDate?: string;
-  remarks?: string;
+export interface DispatchImportResult {
+  imported: number;
+  records: DispatchEntry[];
 }

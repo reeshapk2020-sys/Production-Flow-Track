@@ -23,6 +23,11 @@ export interface Receiving {
   receiveDate: string;
   remarks?: string;
   receivedBy?: string;
+  hasStain?: boolean;
+  hasDamage?: boolean;
+  needsWash?: boolean;
+  needsRework?: boolean;
+  isLocked?: boolean;
   productionFor?: string | null;
   poNumber?: string | null;
   orderNumber?: string | null;

@@ -244,4 +244,27 @@ router.post("/outsource/return", checkPermission("outsource", "create"), async (
   res.json(updated[0]);
 });
 
+router.put("/outsource/:id", checkPermission("outsource", "edit"), async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { vendorName, remarks } = req.body;
+
+  const [transfer] = await db.select().from(outsourceTransfersTable).where(eq(outsourceTransfersTable.id, id));
+  if (!transfer) return res.status(404).json({ error: "Outsource transfer not found." });
+
+  const isLocked = transfer.quantityReturned > 0 || transfer.quantityDamaged > 0;
+  if (isLocked && vendorName !== undefined) {
+    return res.status(400).json({ error: "Cannot change vendor: returns already recorded for this transfer." });
+  }
+
+  const updates: Record<string, any> = {};
+  if (vendorName !== undefined && !isLocked) updates.vendorName = vendorName || null;
+  if (remarks !== undefined) updates.remarks = remarks || null;
+
+  if (Object.keys(updates).length === 0) return res.status(400).json({ error: "No fields to update." });
+
+  const [row] = await db.update(outsourceTransfersTable).set(updates).where(eq(outsourceTransfersTable.id, id)).returning();
+  await logAudit(req, "UPDATE", "outsource_transfers", String(id), `Updated outsource transfer #${id}`);
+  res.json({ ...row, isLocked });
+});
+
 export default router;

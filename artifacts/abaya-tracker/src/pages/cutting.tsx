@@ -506,6 +506,12 @@ export default function CuttingPage() {
           </DialogHeader>
           {editTarget && (
             <form onSubmit={onEditSubmit} className="grid grid-cols-2 gap-4 pt-4">
+              {(editTarget as any).isLocked && (
+                <div className="col-span-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  Allocations exist for this batch. Product, color, size, and quantity cannot be changed.
+                </div>
+              )}
               <div className="col-span-2 sm:col-span-1">
                 <label className="text-sm font-medium block mb-1.5">Cutter Name</label>
                 <input name="cutter" className="form-input-styled" defaultValue={editTarget.cutter || ""} placeholder="Name..." />

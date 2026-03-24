@@ -276,6 +276,10 @@ export const receivingsTable = pgTable("receivings", {
   receiveDate: timestamp("receive_date").notNull(),
   remarks: text("remarks"),
   receivedBy: text("received_by"),
+  hasStain: boolean("has_stain").notNull().default(false),
+  hasDamage: boolean("has_damage").notNull().default(false),
+  needsWash: boolean("needs_wash").notNull().default(false),
+  needsRework: boolean("needs_rework").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

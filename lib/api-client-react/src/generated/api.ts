@@ -51,6 +51,8 @@ import type {
   DispatchByItemReport,
   DispatchBySourceResponse,
   DispatchEntry,
+  DispatchImportBody,
+  DispatchImportResult,
   DispatchReportSummary,
   Fabric,
   FabricRoll,
@@ -114,6 +116,7 @@ import type {
   UpdateFinishingRecordBody,
   UpdateMaterialBody,
   UpdateOrderBody,
+  UpdateOutsourceBody,
   UpdateProductBody,
   UpdatePurchaseOrderBody,
   UpdateReceivingBody,
@@ -4056,6 +4059,93 @@ export const useSendToOutsource = <
 };
 
 /**
+ * @summary Update outsource transfer (vendor/remarks)
+ */
+export const getUpdateOutsourceTransferUrl = (id: number) => {
+  return `/api/outsource/${id}`;
+};
+
+export const updateOutsourceTransfer = async (
+  id: number,
+  updateOutsourceBody: UpdateOutsourceBody,
+  options?: RequestInit,
+): Promise<OutsourceTransfer> => {
+  return customFetch<OutsourceTransfer>(getUpdateOutsourceTransferUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateOutsourceBody),
+  });
+};
+
+export const getUpdateOutsourceTransferMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateOutsourceTransfer>>,
+    TError,
+    { id: number; data: BodyType<UpdateOutsourceBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateOutsourceTransfer>>,
+  TError,
+  { id: number; data: BodyType<UpdateOutsourceBody> },
+  TContext
+> => {
+  const mutationKey = ["updateOutsourceTransfer"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateOutsourceTransfer>>,
+    { id: number; data: BodyType<UpdateOutsourceBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateOutsourceTransfer(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateOutsourceTransferMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateOutsourceTransfer>>
+>;
+export type UpdateOutsourceTransferMutationBody = BodyType<UpdateOutsourceBody>;
+export type UpdateOutsourceTransferMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update outsource transfer (vendor/remarks)
+ */
+export const useUpdateOutsourceTransfer = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateOutsourceTransfer>>,
+    TError,
+    { id: number; data: BodyType<UpdateOutsourceBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateOutsourceTransfer>>,
+  TError,
+  { id: number; data: BodyType<UpdateOutsourceBody> },
+  TContext
+> => {
+  return useMutation(getUpdateOutsourceTransferMutationOptions(options));
+};
+
+/**
  * @summary Record return from outsource vendor
  */
 export const getReturnFromOutsourceUrl = () => {
@@ -7589,6 +7679,92 @@ export const useDeleteDispatch = <
   TContext
 > => {
   return useMutation(getDeleteDispatchMutationOptions(options));
+};
+
+/**
+ * @summary Bulk import dispatches
+ */
+export const getImportDispatchesUrl = () => {
+  return `/api/dispatch/import`;
+};
+
+export const importDispatches = async (
+  dispatchImportBody: DispatchImportBody,
+  options?: RequestInit,
+): Promise<DispatchImportResult> => {
+  return customFetch<DispatchImportResult>(getImportDispatchesUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(dispatchImportBody),
+  });
+};
+
+export const getImportDispatchesMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof importDispatches>>,
+    TError,
+    { data: BodyType<DispatchImportBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof importDispatches>>,
+  TError,
+  { data: BodyType<DispatchImportBody> },
+  TContext
+> => {
+  const mutationKey = ["importDispatches"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof importDispatches>>,
+    { data: BodyType<DispatchImportBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return importDispatches(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ImportDispatchesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof importDispatches>>
+>;
+export type ImportDispatchesMutationBody = BodyType<DispatchImportBody>;
+export type ImportDispatchesMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Bulk import dispatches
+ */
+export const useImportDispatches = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof importDispatches>>,
+    TError,
+    { data: BodyType<DispatchImportBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof importDispatches>>,
+  TError,
+  { data: BodyType<DispatchImportBody> },
+  TContext
+> => {
+  return useMutation(getImportDispatchesMutationOptions(options));
 };
 
 /**

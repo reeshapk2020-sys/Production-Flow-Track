@@ -2,6 +2,7 @@ import { Router, type IRouter, type Request, type Response, type NextFunction } 
 import { db } from "@workspace/db";
 import {
   finishingRecordsTable,
+  finishedGoodsTable,
   cuttingBatchesTable,
   allocationsTable,
   receivingsTable,
@@ -108,11 +109,20 @@ router.get("/finishing", checkPermission("finishing", "view"), async (req, res) 
   if (conditions.length > 0) q = q.where(and(...conditions));
   const rows = await q.orderBy(sql`${finishingRecordsTable.createdAt} desc`);
 
+  const batchIds = [...new Set(rows.map((r) => r.cuttingBatchId))];
+  const fgSet = new Set(batchIds.length > 0 ? (await db
+    .select({ cuttingBatchId: finishedGoodsTable.cuttingBatchId })
+    .from(finishedGoodsTable)
+    .where(sql`${finishedGoodsTable.cuttingBatchId} IN (${sql.join(batchIds.map((id) => sql`${id}`), sql`, `)})`)
+    .groupBy(finishedGoodsTable.cuttingBatchId)
+  ).map((r) => r.cuttingBatchId) : []);
+
   res.json(
     rows.map((r) => ({
       ...r,
       pendingQuantity: r.inputQuantity - r.outputQuantity - r.defectiveQuantity,
       itemCode: computeItemCode(r.productCode, r.colorCode, r.materialCode, r.material2Code),
+      isLocked: fgSet.has(r.cuttingBatchId),
     }))
   );
 });
@@ -219,19 +229,34 @@ router.post("/finishing", checkPermission("finishing", "create"), async (req, re
 
 router.put("/finishing/:id", checkPermission("finishing", "edit"), async (req, res) => {
   const id = parseInt(req.params.id);
-  const { operator, processDate, remarks } = req.body;
+  const { operator, processDate, remarks, outputQuantity, defectiveQuantity } = req.body;
+
+  const [existing] = await db.select({ cuttingBatchId: finishingRecordsTable.cuttingBatchId }).from(finishingRecordsTable).where(eq(finishingRecordsTable.id, id));
+  if (!existing) return res.status(404).json({ error: "Finishing record not found." });
+
+  const [hasFG] = await db.select({ id: finishedGoodsTable.id }).from(finishedGoodsTable).where(eq(finishedGoodsTable.cuttingBatchId, existing.cuttingBatchId)).limit(1);
+  const isLocked = !!hasFG;
+
+  if (isLocked && (outputQuantity !== undefined || defectiveQuantity !== undefined)) {
+    return res.status(400).json({ error: "Cannot change quantities: finished goods already recorded for this batch." });
+  }
+
+  const updates: Record<string, any> = {};
+  if (operator !== undefined) updates.operator = operator;
+  if (processDate) updates.processDate = new Date(processDate);
+  if (remarks !== undefined) updates.remarks = remarks;
+  if (!isLocked && outputQuantity !== undefined) updates.outputQuantity = outputQuantity;
+  if (!isLocked && defectiveQuantity !== undefined) updates.defectiveQuantity = defectiveQuantity;
+
+  if (Object.keys(updates).length === 0) return res.status(400).json({ error: "No fields to update." });
+
   const [row] = await db
     .update(finishingRecordsTable)
-    .set({
-      operator: operator !== undefined ? operator : undefined,
-      processDate: processDate ? new Date(processDate) : undefined,
-      remarks: remarks !== undefined ? remarks : undefined,
-    })
+    .set(updates)
     .where(eq(finishingRecordsTable.id, id))
     .returning();
-  if (!row) return res.status(404).json({ error: "Finishing record not found." });
   await logAudit(req, "UPDATE", "finishing_records", String(id), `Updated finishing record #${id}`);
-  res.json(row);
+  res.json({ ...row, isLocked });
 });
 
 export default router;

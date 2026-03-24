@@ -13,4 +13,8 @@ export interface CreateReceivingBody {
   quantityDamaged?: number;
   receiveDate: string;
   remarks?: string;
+  hasStain?: boolean;
+  hasDamage?: boolean;
+  needsWash?: boolean;
+  needsRework?: boolean;
 }

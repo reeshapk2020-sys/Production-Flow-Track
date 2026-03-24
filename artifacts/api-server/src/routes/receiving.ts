@@ -185,6 +185,10 @@ router.get("/receiving", checkPermission("receiving", "view"), async (req, res) 
       receiveDate: receivingsTable.receiveDate,
       remarks: receivingsTable.remarks,
       receivedBy: receivingsTable.receivedBy,
+      hasStain: receivingsTable.hasStain,
+      hasDamage: receivingsTable.hasDamage,
+      needsWash: receivingsTable.needsWash,
+      needsRework: receivingsTable.needsRework,
       productionFor: cuttingBatchesTable.productionFor,
       poNumber: purchaseOrdersTable.poNumber,
       orderNumber: ordersTable.orderNumber,
@@ -206,9 +210,28 @@ router.get("/receiving", checkPermission("receiving", "view"), async (req, res) 
 
   if (conditions.length > 0) q = q.where(and(...conditions));
   const rows = await q.orderBy(sql`${receivingsTable.createdAt} desc`);
+
+  const recvBatchIds = [...new Set(rows.map((r: any) => r.allocationId).filter(Boolean))];
+  const batchIdMap = new Map<number, number>();
+  if (recvBatchIds.length > 0) {
+    const allocBatches = await db
+      .select({ id: allocationsTable.id, cuttingBatchId: allocationsTable.cuttingBatchId })
+      .from(allocationsTable)
+      .where(sql`${allocationsTable.id} IN (${sql.join(recvBatchIds.map((id: any) => sql`${id}`), sql`, `)})`);
+    allocBatches.forEach((a: any) => batchIdMap.set(a.id, a.cuttingBatchId));
+  }
+  const uniqueBatchIds = [...new Set(batchIdMap.values())];
+  const finSet = new Set(uniqueBatchIds.length > 0 ? (await db
+    .select({ cuttingBatchId: finishingRecordsTable.cuttingBatchId })
+    .from(finishingRecordsTable)
+    .where(sql`${finishingRecordsTable.cuttingBatchId} IN (${sql.join(uniqueBatchIds.map((id) => sql`${id}`), sql`, `)})`)
+    .groupBy(finishingRecordsTable.cuttingBatchId)
+  ).map((r: any) => r.cuttingBatchId) : []);
+
   res.json(rows.map((r: any) => ({
     ...r,
     itemCode: computeItemCode(r.productCode, r.colorCode, r.materialCode, r.material2Code),
+    isLocked: finSet.has(batchIdMap.get(r.allocationId)),
   })));
 });
 
@@ -220,6 +243,10 @@ router.post("/receiving", checkPermission("receiving", "create"), async (req, re
     quantityDamaged = 0,
     receiveDate,
     remarks,
+    hasStain = false,
+    hasDamage = false,
+    needsWash = false,
+    needsRework = false,
   } = req.body;
 
   if (!allocationId || quantityReceived < 0 || quantityRejected < 0 || quantityDamaged < 0) {
@@ -290,6 +317,10 @@ router.post("/receiving", checkPermission("receiving", "create"), async (req, re
       receiveDate: new Date(receiveDate),
       remarks,
       receivedBy: (req as any).user?.username,
+      hasStain: !!hasStain,
+      hasDamage: !!hasDamage,
+      needsWash: !!needsWash,
+      needsRework: !!needsRework,
     })
     .returning();
 
@@ -311,18 +342,35 @@ router.post("/receiving", checkPermission("receiving", "create"), async (req, re
 export { updateBatchStatus };
 router.put("/receiving/:id", checkPermission("receiving", "edit"), async (req, res) => {
   const id = parseInt(req.params.id);
-  const { receiveDate, remarks } = req.body;
+  const { receiveDate, remarks, hasStain, hasDamage, needsWash, needsRework } = req.body;
+
+  const [existing] = await db.select({ allocationId: receivingsTable.allocationId }).from(receivingsTable).where(eq(receivingsTable.id, id));
+  if (!existing) return res.status(404).json({ error: "Receiving record not found." });
+
+  const [hasFinishing] = await db.select({ id: finishingRecordsTable.id }).from(finishingRecordsTable)
+    .innerJoin(allocationsTable, eq(allocationsTable.cuttingBatchId, finishingRecordsTable.cuttingBatchId))
+    .where(eq(allocationsTable.id, existing.allocationId))
+    .limit(1);
+
+  const isLocked = !!hasFinishing;
+
+  const updates: Record<string, any> = {};
+  if (receiveDate) updates.receiveDate = new Date(receiveDate);
+  if (remarks !== undefined) updates.remarks = remarks;
+  if (hasStain !== undefined) updates.hasStain = !!hasStain;
+  if (hasDamage !== undefined) updates.hasDamage = !!hasDamage;
+  if (needsWash !== undefined) updates.needsWash = !!needsWash;
+  if (needsRework !== undefined) updates.needsRework = !!needsRework;
+
+  if (Object.keys(updates).length === 0) return res.status(400).json({ error: "No fields to update." });
+
   const [row] = await db
     .update(receivingsTable)
-    .set({
-      receiveDate: receiveDate ? new Date(receiveDate) : undefined,
-      remarks: remarks !== undefined ? remarks : undefined,
-    })
+    .set(updates)
     .where(eq(receivingsTable.id, id))
     .returning();
-  if (!row) return res.status(404).json({ error: "Receiving record not found." });
   await logAudit(req, "UPDATE", "receivings", String(id), `Updated receiving record #${id}`);
-  res.json(row);
+  res.json({ ...row, isLocked });
 });
 
 export default router;

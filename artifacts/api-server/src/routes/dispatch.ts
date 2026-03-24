@@ -240,6 +240,74 @@ router.put("/dispatch/:id", checkPermission("dispatch", "edit"), async (req: Req
   res.json(row);
 });
 
+router.post("/dispatch/import", checkPermission("dispatch", "create"), async (req: Request, res: Response) => {
+  const { rows: importRows } = req.body;
+  if (!Array.isArray(importRows) || importRows.length === 0) {
+    return res.status(400).json({ error: "No rows provided." });
+  }
+  if (importRows.length > 500) {
+    return res.status(400).json({ error: "Maximum 500 rows per import." });
+  }
+
+  const stockMap = await getAvailableStockByItemCode();
+  const normalize = (s: string | null | undefined) => (s || "").trim().toLowerCase();
+  const validDest = ["reesha", "purchase_order", "order"];
+  const errors: Array<{ row: number; error: string }> = [];
+  const validRows: any[] = [];
+  const tempStock = new Map(stockMap);
+
+  for (let i = 0; i < importRows.length; i++) {
+    const r = importRows[i];
+    const rowNum = i + 1;
+
+    if (!r.itemCode || !String(r.itemCode).trim()) { errors.push({ row: rowNum, error: "itemCode is required" }); continue; }
+    if (!r.quantity || Number(r.quantity) <= 0) { errors.push({ row: rowNum, error: "quantity must be a positive number" }); continue; }
+    if (!r.dispatchDate) { errors.push({ row: rowNum, error: "dispatchDate is required" }); continue; }
+
+    const dest = r.destinationType || "reesha";
+    if (!validDest.includes(dest)) { errors.push({ row: rowNum, error: `Invalid destinationType: ${dest}` }); continue; }
+
+    const itemKey = normalize(r.itemCode);
+    const available = tempStock.get(itemKey) || 0;
+    const qty = Number(r.quantity);
+
+    if (qty > available) { errors.push({ row: rowNum, error: `Insufficient stock for ${r.itemCode}. Available: ${Math.max(0, available)}, Requested: ${qty}` }); continue; }
+
+    tempStock.set(itemKey, available - qty);
+    validRows.push({ ...r, quantity: qty, destinationType: dest });
+  }
+
+  if (errors.length > 0) {
+    return res.status(400).json({ error: "Validation errors in import data", errors, validCount: validRows.length, errorCount: errors.length });
+  }
+
+  const created: any[] = [];
+  for (const r of validRows) {
+    const dispatchNumber = await generateDispatchNumber();
+    const [row] = await db.insert(dispatchesTable).values({
+      dispatchNumber,
+      dispatchDate: new Date(r.dispatchDate),
+      itemCode: String(r.itemCode).trim(),
+      productCode: r.productCode ? String(r.productCode).trim() : null,
+      productName: r.productName ? String(r.productName).trim() : null,
+      sizeName: r.sizeName ? String(r.sizeName).trim() : null,
+      colorName: r.colorName ? String(r.colorName).trim() : null,
+      quantity: r.quantity,
+      destinationType: r.destinationType as any,
+      poId: r.poId ? Number(r.poId) : null,
+      orderId: r.orderId ? Number(r.orderId) : null,
+      customerName: r.customerName ? String(r.customerName).trim() : null,
+      deliveryStatus: "pending",
+      remarks: r.remarks || null,
+      createdBy: (req as any).user?.username || null,
+    }).returning();
+    created.push(row);
+  }
+
+  await logAudit(req, "CREATE", "dispatches", "bulk", `Imported ${created.length} dispatch records`);
+  res.status(201).json({ imported: created.length, records: created });
+});
+
 router.delete("/dispatch/:id", checkPermission("dispatch", "edit"), async (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
   const [row] = await db.delete(dispatchesTable).where(eq(dispatchesTable.id, id)).returning();

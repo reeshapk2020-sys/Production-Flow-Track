@@ -10,4 +10,6 @@ export interface UpdateFinishingRecordBody {
   operator?: string;
   processDate?: string;
   remarks?: string;
+  outputQuantity?: number;
+  defectiveQuantity?: number;
 }

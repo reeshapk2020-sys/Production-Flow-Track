@@ -11,10 +11,11 @@ import {
   sizesTable,
   colorsTable,
   outsourceTransfersTable,
+  receivingsTable,
   purchaseOrdersTable,
   ordersTable,
 } from "@workspace/db/schema";
-import { eq, sql, and, gte, lte, ilike, inArray } from "drizzle-orm";
+import { eq, sql, and, gte, lte, ilike, inArray, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit.js";
 import { checkPermission } from "./permissions.js";
@@ -143,6 +144,25 @@ router.get("/allocation", checkPermission("allocation", "view"), async (req, res
     }
   }
 
+  const allocIds = mapped.map((r: any) => r.id);
+  if (allocIds.length > 0) {
+    const recvSet = new Set((await db
+      .select({ allocationId: receivingsTable.allocationId })
+      .from(receivingsTable)
+      .where(sql`${receivingsTable.allocationId} IN (${sql.join(allocIds.map((id: number) => sql`${id}`), sql`, `)})`)
+      .groupBy(receivingsTable.allocationId)
+    ).map((r: any) => r.allocationId));
+    const outSet = new Set((await db
+      .select({ allocationId: outsourceTransfersTable.allocationId })
+      .from(outsourceTransfersTable)
+      .where(sql`${outsourceTransfersTable.allocationId} IN (${sql.join(allocIds.map((id: number) => sql`${id}`), sql`, `)})`)
+      .groupBy(outsourceTransfersTable.allocationId)
+    ).map((r: any) => r.allocationId));
+    for (const row of mapped) {
+      (row as any).isLocked = recvSet.has(row.id) || outSet.has(row.id);
+    }
+  }
+
   res.json(mapped);
 });
 
@@ -250,18 +270,33 @@ router.get("/allocation/:id", checkPermission("allocation", "view"), async (req,
 
 router.put("/allocation/:id", checkPermission("allocation", "edit"), async (req, res) => {
   const id = parseInt(req.params.id);
-  const { issueDate, remarks } = req.body;
+  const { issueDate, remarks, stitcherId, teamId, quantityIssued } = req.body;
+
+  const [hasDownstream] = await db.select({ id: receivingsTable.id }).from(receivingsTable).where(eq(receivingsTable.allocationId, id)).limit(1);
+  const [hasOutsource] = await db.select({ id: outsourceTransfersTable.id }).from(outsourceTransfersTable).where(eq(outsourceTransfersTable.allocationId, id)).limit(1);
+  const isLocked = !!(hasDownstream || hasOutsource);
+
+  if (isLocked && quantityIssued !== undefined) {
+    return res.status(400).json({ error: "Cannot change quantity: receiving or outsource records exist for this allocation." });
+  }
+
+  const updates: Record<string, any> = {};
+  if (issueDate) updates.issueDate = new Date(issueDate);
+  if (remarks !== undefined) updates.remarks = remarks;
+  if (stitcherId !== undefined) updates.stitcherId = stitcherId || null;
+  if (teamId !== undefined) updates.teamId = teamId || null;
+  if (!isLocked && quantityIssued !== undefined) updates.quantityIssued = quantityIssued;
+
+  if (Object.keys(updates).length === 0) return res.status(400).json({ error: "No fields to update." });
+
   const [row] = await db
     .update(allocationsTable)
-    .set({
-      issueDate: issueDate ? new Date(issueDate) : undefined,
-      remarks: remarks !== undefined ? remarks : undefined,
-    })
+    .set(updates)
     .where(eq(allocationsTable.id, id))
     .returning();
   if (!row) return res.status(404).json({ error: "Allocation not found." });
   await logAudit(req, "UPDATE", "allocations", String(id), `Updated allocation #${id}`);
-  res.json(row);
+  res.json({ ...row, isLocked });
 });
 
 export default router;
