@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertCircle, Info, Plus, Loader2, Settings2, Pencil } from "lucide-react";
+import { SearchableSelect } from "@/components/searchable-select";
 import {
   useListFinishingRecords,
   useCreateFinishingRecord,
@@ -179,7 +180,7 @@ function FinishingView() {
               <Plus className="h-4 w-4 mr-2" /> Log Finishing
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[520px] rounded-2xl p-6 border-0 shadow-2xl">
+          <DialogContent className="sm:max-w-[520px] rounded-2xl p-6 border-0 shadow-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-xl font-display">Log Finishing Output</DialogTitle>
             </DialogHeader>
@@ -187,25 +188,23 @@ function FinishingView() {
 
               <div>
                 <label className="text-sm font-medium block mb-1.5">Batch</label>
-                <select
+                <SearchableSelect
                   name="cuttingBatchId"
-                  className="form-input-styled bg-white"
                   required
+                  placeholder="Select Batch..."
                   value={selectedBatchId ?? ""}
-                  onChange={(e) => {
-                    setSelectedBatchId(e.target.value ? Number(e.target.value) : null);
+                  options={(batches || []).map((b: any) => ({
+                    value: b.id,
+                    label: `${b.batchNumber} — ${fmtCode(b.productCode, b.productName)}`,
+                    searchText: `${b.batchNumber} ${b.productCode} ${b.productName} ${b.itemCode || ""}`,
+                  }))}
+                  onChange={(val) => {
+                    setSelectedBatchId(val ? Number(val) : null);
                     setInputQty("");
                     setOutputQty("");
                     setDefectiveQty("0");
                   }}
-                >
-                  <option value="">Select Batch...</option>
-                  {batches?.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.batchNumber} — {fmtCode(b.productCode, b.productName)}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
 
               {selectedBatchId && (
@@ -389,7 +388,7 @@ function FinishingView() {
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={(v) => { setEditOpen(v); if (!v) setEditTarget(null); }}>
-        <DialogContent className="sm:max-w-[420px] rounded-2xl p-6 border-0 shadow-2xl">
+        <DialogContent className="sm:max-w-[420px] rounded-2xl p-6 border-0 shadow-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-display">Edit Finishing Record</DialogTitle>
           </DialogHeader>

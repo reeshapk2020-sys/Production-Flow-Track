@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Loader2, Send, Info, Pencil, AlertTriangle, Users, User } from "lucide-react";
+import { SearchableSelect } from "@/components/searchable-select";
 import {
   useListAllocations, useCreateAllocation, getListAllocationsQueryKey,
   useListCuttingBatches, useListStitchers, useUpdateAllocation,
@@ -114,9 +115,10 @@ export default function AllocationPage() {
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!selectedBatch) { toast({ title: "Please select a cutting batch", variant: "destructive" }); return; }
     const fd = new FormData(e.currentTarget);
     const payload: any = {
-      cuttingBatchId: Number(fd.get("cuttingBatchId")),
+      cuttingBatchId: selectedBatch.id,
       allocationType: allocType,
       quantityIssued: Number(fd.get("quantityIssued")),
       issueDate: fd.get("issueDate") as string,
@@ -196,7 +198,7 @@ export default function AllocationPage() {
                 <Plus className="h-4 w-4 mr-2" /> Issue Batch
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[520px] rounded-2xl p-6 border-0 shadow-2xl">
+            <DialogContent className="sm:max-w-[520px] rounded-2xl p-6 border-0 shadow-2xl max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-xl font-display">Allocate Pieces</DialogTitle>
               </DialogHeader>
@@ -204,22 +206,21 @@ export default function AllocationPage() {
 
                 <div>
                   <label className="text-sm font-medium block mb-1.5">Select Cutting Batch</label>
-                  <select
+                  <SearchableSelect
                     name="cuttingBatchId"
-                    className="form-input-styled bg-white"
                     required
-                    onChange={e => {
-                      const b = availableBatches.find(x => x.id === Number(e.target.value));
+                    placeholder="Select Batch..."
+                    value={selectedBatch?.id ?? ""}
+                    options={availableBatches.map(b => ({
+                      value: b.id,
+                      label: `${b.batchNumber} — ${fmtCode(b.productCode, b.productName)} (${b.availableForAllocation} pcs)`,
+                      searchText: `${b.batchNumber} ${b.productCode} ${b.productName} ${b.itemCode || ""}`,
+                    }))}
+                    onChange={(val) => {
+                      const b = availableBatches.find(x => x.id === Number(val));
                       setSelectedBatch(b || null);
                     }}
-                  >
-                    <option value="">Select Batch...</option>
-                    {availableBatches.map(b => (
-                      <option key={b.id} value={b.id}>
-                        {b.batchNumber} — {fmtCode(b.productCode, b.productName)} ({b.availableForAllocation} pcs available)
-                      </option>
-                    ))}
-                  </select>
+                  />
                   {selectedBatch && (
                     <>
                       <div className="mt-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2 flex items-start gap-2">
@@ -480,7 +481,7 @@ export default function AllocationPage() {
       </Card>
 
       <Dialog open={editOpen} onOpenChange={(v) => { setEditOpen(v); if (!v) setEditTarget(null); }}>
-        <DialogContent className="sm:max-w-[400px] rounded-2xl p-6 border-0 shadow-2xl">
+        <DialogContent className="sm:max-w-[400px] rounded-2xl p-6 border-0 shadow-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-display">Edit Allocation</DialogTitle>
           </DialogHeader>

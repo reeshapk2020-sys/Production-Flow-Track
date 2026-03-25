@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Loader2, ArrowUpRight, ArrowDownLeft, List, SendHorizontal, RotateCcw, Pencil, AlertCircle } from "lucide-react";
+import { SearchableSelect } from "@/components/searchable-select";
 import {
   useListOutsourceTransfers, useListOutsourceAllocations,
   useSendToOutsource, useReturnFromOutsource, useUpdateOutsourceTransfer,
@@ -229,28 +230,27 @@ export default function OutsourcePage() {
                     <SendHorizontal className="h-4 w-4 mr-2" /> Send Pieces
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[480px] rounded-2xl p-6 border-0 shadow-2xl">
+                <DialogContent className="sm:max-w-[480px] rounded-2xl p-6 border-0 shadow-2xl max-h-[85vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle className="text-xl font-display">Send to Outsource Vendor</DialogTitle>
                   </DialogHeader>
                   <form onSubmit={onSendSubmit} className="grid grid-cols-1 gap-4 pt-4">
                     <div>
                       <label className="text-sm font-medium block mb-1.5">Select Allocation</label>
-                      <select
-                        className="form-input-styled bg-white"
+                      <SearchableSelect
                         required
-                        onChange={(e) => {
-                          const a = availableAllocations.find((x: any) => x.id === Number(e.target.value));
+                        placeholder="Select allocation..."
+                        value={selectedAlloc?.id ?? ""}
+                        options={availableAllocations.map((a: any) => ({
+                          value: a.id,
+                          label: `${a.allocationNumber} — ${a.batchNumber} (${a.availableToSend} pcs available)`,
+                          searchText: `${a.allocationNumber} ${a.batchNumber} ${a.productName || ""}`,
+                        }))}
+                        onChange={(val) => {
+                          const a = availableAllocations.find((x: any) => x.id === Number(val));
                           setSelectedAlloc(a || null);
                         }}
-                      >
-                        <option value="">Select allocation...</option>
-                        {availableAllocations.map((a: any) => (
-                          <option key={a.id} value={a.id}>
-                            {a.allocationNumber} — {a.batchNumber} ({a.availableToSend} pcs available)
-                          </option>
-                        ))}
-                      </select>
+                      />
                       {selectedAlloc && (
                         <div className="mt-2 bg-violet-50 border border-violet-100 rounded-xl px-3 py-2 text-xs text-violet-700 space-y-0.5">
                           <div><strong>Product:</strong> {selectedAlloc.productName}</div>
@@ -368,31 +368,30 @@ export default function OutsourcePage() {
                     <RotateCcw className="h-4 w-4 mr-2" /> Record Return
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[480px] rounded-2xl p-6 border-0 shadow-2xl">
+                <DialogContent className="sm:max-w-[480px] rounded-2xl p-6 border-0 shadow-2xl max-h-[85vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle className="text-xl font-display">Record Outsource Return</DialogTitle>
                   </DialogHeader>
                   <form onSubmit={onReturnSubmit} className="grid grid-cols-1 gap-4 pt-4">
                     <div>
                       <label className="text-sm font-medium block mb-1.5">Select Outsource Transfer</label>
-                      <select
-                        className="form-input-styled bg-white"
+                      <SearchableSelect
                         required
-                        onChange={(e) => {
-                          const t = pendingTransfers.find((x) => x.id === Number(e.target.value));
+                        placeholder="Select transfer..."
+                        value={selectedTransfer?.id ?? ""}
+                        options={pendingTransfers.map((t) => {
+                          const pending = (t.quantitySent || 0) - (t.quantityReturned || 0) - (t.quantityDamaged || 0);
+                          return {
+                            value: t.id,
+                            label: `#${t.id} — ${t.batchNumber} / ${t.vendorName || "No vendor"} (${pending} pcs pending)`,
+                            searchText: `${t.batchNumber} ${t.vendorName || ""} ${t.outsourceCategory || ""}`,
+                          };
+                        })}
+                        onChange={(val) => {
+                          const t = pendingTransfers.find((x) => x.id === Number(val));
                           setSelectedTransfer(t || null);
                         }}
-                      >
-                        <option value="">Select transfer...</option>
-                        {pendingTransfers.map((t) => {
-                          const pending = (t.quantitySent || 0) - (t.quantityReturned || 0) - (t.quantityDamaged || 0);
-                          return (
-                            <option key={t.id} value={t.id}>
-                              #{t.id} — {t.batchNumber} / {t.vendorName || "No vendor"} ({pending} pcs pending)
-                            </option>
-                          );
-                        })}
-                      </select>
+                      />
                       {selectedTransfer && (
                         <div className="mt-2 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2 text-xs text-emerald-700 space-y-0.5">
                           <div><strong>Batch:</strong> {selectedTransfer.batchNumber}</div>
@@ -554,7 +553,7 @@ export default function OutsourcePage() {
         </Card>
       )}
       <Dialog open={editOpen} onOpenChange={(v) => { setEditOpen(v); if (!v) setEditTarget(null); }}>
-        <DialogContent className="sm:max-w-[400px] rounded-2xl p-6 border-0 shadow-2xl">
+        <DialogContent className="sm:max-w-[400px] rounded-2xl p-6 border-0 shadow-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-display">Edit Outsource Transfer</DialogTitle>
           </DialogHeader>

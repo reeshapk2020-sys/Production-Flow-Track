@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Loader2, Inbox, AlertCircle, CheckCircle2, Pencil } from "lucide-react";
+import { SearchableSelect } from "@/components/searchable-select";
 import {
   useListReceivings, useCreateReceiving, getListReceivingsQueryKey,
   useListAllocations, getListAllocationsQueryKey, useUpdateReceiving,
@@ -120,11 +121,11 @@ export default function ReceivingPage() {
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (formError) return;
+    if (formError || !selectedAllocationId) return;
     const fd = new FormData(e.currentTarget);
     mutate({
       data: {
-        allocationId: Number(fd.get("allocationId")),
+        allocationId: selectedAllocationId,
         quantityReceived: Number(fd.get("quantityReceived")),
         quantityRejected: Number(fd.get("quantityRejected")) || 0,
         quantityDamaged: Number(fd.get("quantityDamaged")) || 0,
@@ -186,7 +187,7 @@ export default function ReceivingPage() {
                 <Plus className="h-4 w-4 mr-2" /> Log Receipt
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[520px] rounded-2xl p-6 border-0 shadow-2xl">
+            <DialogContent className="sm:max-w-[520px] rounded-2xl p-6 border-0 shadow-2xl max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-xl font-display">Receive from Stitcher</DialogTitle>
               </DialogHeader>
@@ -194,27 +195,26 @@ export default function ReceivingPage() {
 
                 <div>
                   <label className="text-sm font-medium block mb-1.5">Select Allocation (Pending)</label>
-                  <select
+                  <SearchableSelect
                     name="allocationId"
-                    className="form-input-styled bg-white"
                     required
-                    onChange={e => {
-                      setSelectedAllocationId(Number(e.target.value) || null);
-                      setQtyReceived(0); setQtyRejected(0); setQtyDamaged(0);
-                    }}
-                  >
-                    <option value="">Choose stitcher / batch...</option>
-                    {pendingAllocations.map(a => {
+                    placeholder="Choose stitcher / batch..."
+                    value={selectedAllocationId ?? ""}
+                    options={pendingAllocations.map(a => {
                       const accounted = (a.quantityReceived || 0) + (a.quantityRejected || 0);
                       const max = a.workType === "outsource_required" ? (a.outsourceReturned || 0) : a.quantityIssued;
                       const pending = Math.max(0, max - accounted);
-                      return (
-                        <option key={a.id} value={a.id}>
-                          {a.stitcherName} — Batch {a.batchNumber} ({pending} pending){a.workType === "outsource_required" ? " ⬡" : ""}
-                        </option>
-                      );
+                      return {
+                        value: a.id,
+                        label: `${a.stitcherName} — Batch ${a.batchNumber} (${pending} pending)${a.workType === "outsource_required" ? " ⬡" : ""}`,
+                        searchText: `${a.stitcherName} ${a.batchNumber} ${a.allocationNumber || ""}`,
+                      };
                     })}
-                  </select>
+                    onChange={(val) => {
+                      setSelectedAllocationId(Number(val) || null);
+                      setQtyReceived(0); setQtyRejected(0); setQtyDamaged(0);
+                    }}
+                  />
                   {pendingAllocations.length === 0 && (
                     <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
                       <CheckCircle2 className="h-3 w-3 text-emerald-500" />
@@ -441,7 +441,7 @@ export default function ReceivingPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={(v) => { setEditOpen(v); if (!v) setEditTarget(null); }}>
-        <DialogContent className="sm:max-w-[400px] rounded-2xl p-6 border-0 shadow-2xl">
+        <DialogContent className="sm:max-w-[400px] rounded-2xl p-6 border-0 shadow-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-display">Edit Receipt</DialogTitle>
           </DialogHeader>
