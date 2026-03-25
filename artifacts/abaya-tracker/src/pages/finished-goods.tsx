@@ -24,7 +24,7 @@ export default function FinishedGoodsPage() {
   return (
     <AppLayout title="Finished Goods Store">
       <Tabs defaultValue="stock" className="w-full">
-        <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 mb-6 inline-block overflow-x-auto">
+        <div className="bg-card p-1 rounded-xl shadow-sm border border-border mb-6 inline-block overflow-x-auto">
           <TabsList className="bg-transparent h-auto p-0 flex space-x-1">
             <TabsTrigger value="stock" className="rounded-lg px-6 py-2.5 data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md">Current Stock</TabsTrigger>
             <TabsTrigger value="entries" className="rounded-lg px-6 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md">Entry Log</TabsTrigger>
@@ -42,24 +42,24 @@ function StockSummaryTab() {
   const { data, isLoading } = useGetFinishedGoodsStock();
 
   return (
-    <Card className="shadow-lg border-slate-200 rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-      <CardHeader className="bg-emerald-50/50 border-b border-emerald-100 py-5 px-6">
+    <Card className="shadow-lg border-border rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+      <CardHeader className="bg-emerald-500/10 border-b border-emerald-500/20 py-5 px-6">
         <CardTitle className="text-xl font-display text-emerald-900 flex items-center gap-2">
           <Package className="h-5 w-5 text-emerald-600" />
           Live Stock Summary
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-0 bg-white">
+      <CardContent className="p-0 bg-card">
         <Table>
-          <TableHeader className="bg-slate-50 border-b border-slate-100">
+          <TableHeader className="bg-background border-b border-border">
             <TableRow>
               <TableHead className="py-4">Product / Design</TableHead>
               <TableHead>Item Code</TableHead>
               <TableHead>Size</TableHead>
               <TableHead>Color</TableHead>
               <TableHead className="text-right text-amber-600">Opening Qty</TableHead>
-              <TableHead className="text-right text-blue-600">Produced Qty</TableHead>
-              <TableHead className="text-right text-slate-500">Total</TableHead>
+              <TableHead className="text-right text-primary">Produced Qty</TableHead>
+              <TableHead className="text-right text-muted-foreground">Total</TableHead>
               <TableHead className="text-right text-red-500">Dispatched</TableHead>
               <TableHead className="text-right text-emerald-700 font-bold">Available</TableHead>
             </TableRow>
@@ -67,25 +67,25 @@ function StockSummaryTab() {
           <TableBody>
             {isLoading ? <TableRow><TableCell colSpan={9} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-emerald-300" /></TableCell></TableRow> :
               data?.map((item: any, i: number) => (
-                <TableRow key={i} className="hover:bg-slate-50/50">
-                  <TableCell className="font-semibold text-slate-900">{fmtCode(item.productCode, item.productName)}</TableCell>
+                <TableRow key={i} className="hover:bg-background/50">
+                  <TableCell className="font-semibold text-foreground">{fmtCode(item.productCode, item.productName)}</TableCell>
                   <TableCell>
                     {item.itemCode
                       ? <span className="font-mono text-xs font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded">{item.itemCode}</span>
-                      : <span className="text-xs text-slate-400">—</span>}
+                      : <span className="text-xs text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell>{item.sizeName || 'Any'}</TableCell>
                   <TableCell>{fmtCode(item.colorCode, item.colorName) || 'Any'}</TableCell>
                   <TableCell className="text-right text-sm text-amber-600 font-medium">{item.openingQty || 0}</TableCell>
-                  <TableCell className="text-right text-sm text-blue-600 font-medium">{item.producedQty || 0}</TableCell>
-                  <TableCell className="text-right text-sm text-slate-500">{item.totalQuantity}</TableCell>
+                  <TableCell className="text-right text-sm text-primary font-medium">{item.producedQty || 0}</TableCell>
+                  <TableCell className="text-right text-sm text-muted-foreground">{item.totalQuantity}</TableCell>
                   <TableCell className="text-right text-sm text-red-500 font-medium">{item.dispatchedQty || 0}</TableCell>
                   <TableCell className="text-right font-display text-2xl font-bold text-emerald-600">{item.availableQty ?? item.totalQuantity}</TableCell>
                 </TableRow>
               ))
             }
             {data?.length === 0 && (
-              <TableRow><TableCell colSpan={9} className="text-center py-12 text-slate-500">Store is empty.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">Store is empty.</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
@@ -209,10 +209,10 @@ function EntryLogTab() {
   return (
     <>
     <FilterBar fields={fgFilterFields} values={filters} onChange={setFilters} />
-    <Card className="shadow-lg border-slate-200 rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-      <CardHeader className="bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
+    <Card className="shadow-lg border-border rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+      <CardHeader className="bg-card border-b border-border flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
         <div>
-          <CardTitle className="text-xl font-display text-slate-800">Store Entry Log</CardTitle>
+          <CardTitle className="text-xl font-display text-foreground">Store Entry Log</CardTitle>
         </div>
         {canCreate && <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
           <DialogTrigger asChild>
@@ -248,21 +248,21 @@ function EntryLogTab() {
               {selectedBatchId && (
                 <div className={`rounded-lg border px-4 py-3 text-sm ${
                   loadingInfo
-                    ? "border-slate-200 bg-slate-50"
+                    ? "border-border bg-background"
                     : available === 0
-                    ? "border-red-200 bg-red-50"
-                    : "border-emerald-200 bg-emerald-50"
+                    ? "border-red-500/20 bg-red-500/10"
+                    : "border-emerald-500/20 bg-emerald-500/10"
                 }`}>
                   {loadingInfo ? (
-                    <div className="flex items-center gap-2 text-slate-500">
+                    <div className="flex items-center gap-2 text-muted-foreground">
                       <Loader2 className="h-4 w-4 animate-spin" /> Loading batch info...
                     </div>
                   ) : (
                     <div className="flex items-start gap-2">
                       <Info className={`h-4 w-4 mt-0.5 shrink-0 ${available === 0 ? "text-red-500" : "text-emerald-600"}`} />
                       <div className="space-y-0.5">
-                        <div className="font-medium text-slate-700">Availability from Finishing</div>
-                        <div className="text-slate-600">
+                        <div className="font-medium text-foreground">Availability from Finishing</div>
+                        <div className="text-muted-foreground">
                           Finishing Output: <strong>{batchInfo?.totalFinishingOutput ?? 0}</strong> pcs &nbsp;|&nbsp;
                           Already Stored: <strong>{batchInfo?.totalStoredQty ?? 0}</strong> pcs &nbsp;|&nbsp;
                           <span className={available === 0 ? "text-red-600 font-bold" : "text-emerald-700 font-bold"}>
@@ -279,12 +279,12 @@ function EntryLogTab() {
                 <div>
                   <label className="text-sm font-medium block mb-1.5">
                     Quantity to Store
-                    {available > 0 && <span className="text-xs text-slate-400 ml-1">(max {available})</span>}
+                    {available > 0 && <span className="text-xs text-muted-foreground ml-1">(max {available})</span>}
                   </label>
                   <input
                     type="number" name="quantity" min="1" max={available || undefined}
                     required placeholder="0"
-                    className={`form-input-styled ${qtyError ? "border-red-400 bg-red-50" : "border-emerald-300 bg-emerald-50"}`}
+                    className={`form-input-styled ${qtyError ? "border-red-500/40 bg-red-500/10" : "border-emerald-300 bg-emerald-500/10"}`}
                     value={qty}
                     onChange={(e) => setQty(e.target.value)}
                   />
@@ -296,7 +296,7 @@ function EntryLogTab() {
               </div>
 
               {qtyError && (
-                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                <div className="flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-700">
                   <AlertCircle className="h-4 w-4 shrink-0" />
                   {qtyError}
                 </div>
@@ -319,9 +319,9 @@ function EntryLogTab() {
           </DialogContent>
         </Dialog>}
       </CardHeader>
-      <CardContent className="p-0 bg-white">
+      <CardContent className="p-0 bg-card">
         <Table>
-          <TableHeader className="bg-slate-50 border-b border-slate-100">
+          <TableHeader className="bg-background border-b border-border">
             <TableRow>
               <TableHead className="py-4">Batch Number</TableHead>
               <TableHead>Product / Specs</TableHead>
@@ -333,22 +333,22 @@ function EntryLogTab() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={canEdit ? 7 : 6} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={canEdit ? 7 : 6} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow> :
               data?.map(entry => (
-                <TableRow key={entry.id} className="group hover:bg-slate-50/50">
+                <TableRow key={entry.id} className="group hover:bg-background/50">
                   <TableCell className="font-mono text-primary font-medium">{entry.batchNumber}</TableCell>
                   <TableCell>
-                    <div className="font-semibold text-slate-900">{fmtCode(entry.productCode, entry.productName)}</div>
-                    <div className="text-xs text-slate-500">{entry.sizeName} | {fmtCode(entry.colorCode, entry.colorName)}</div>
+                    <div className="font-semibold text-foreground">{fmtCode(entry.productCode, entry.productName)}</div>
+                    <div className="text-xs text-muted-foreground">{entry.sizeName} | {fmtCode(entry.colorCode, entry.colorName)}</div>
                   </TableCell>
                   <TableCell>
                     {(entry as any).itemCode
                       ? <span className="font-mono text-xs font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded">{(entry as any).itemCode}</span>
-                      : <span className="text-xs text-slate-400">—</span>}
+                      : <span className="text-xs text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell className="text-right font-bold text-emerald-600 text-lg">+{entry.quantity}</TableCell>
-                  <TableCell className="text-slate-600 text-sm">{entry.entryDate ? format(new Date(entry.entryDate), 'MMM d, yyyy') : '-'}</TableCell>
-                  <TableCell className="text-slate-500 text-sm">{entry.enteredBy}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{entry.entryDate ? format(new Date(entry.entryDate), 'MMM d, yyyy') : '-'}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{entry.enteredBy}</TableCell>
                   {canEdit && (
                     <TableCell>
                       <Button
@@ -357,7 +357,7 @@ function EntryLogTab() {
                         className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={() => { setEditTarget(entry); setEditOpen(true); }}
                       >
-                        <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                       </Button>
                     </TableCell>
                   )}
@@ -376,9 +376,9 @@ function EntryLogTab() {
           </DialogHeader>
           {editTarget && (
             <form onSubmit={onEditSubmit} className="grid grid-cols-1 gap-4 pt-4">
-              <div className="bg-slate-50 rounded-xl p-3 text-sm text-slate-600">
-                <div className="font-semibold text-slate-800">{editTarget.batchNumber}</div>
-                <div className="text-xs text-slate-500 mt-0.5">{fmtCode(editTarget.productCode, editTarget.productName)} · {editTarget.quantity} pcs</div>
+              <div className="bg-background rounded-xl p-3 text-sm text-muted-foreground">
+                <div className="font-semibold text-foreground">{editTarget.batchNumber}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{fmtCode(editTarget.productCode, editTarget.productName)} · {editTarget.quantity} pcs</div>
               </div>
               <div>
                 <label className="text-sm font-medium block mb-1.5">Entry Date</label>

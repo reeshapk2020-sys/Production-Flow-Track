@@ -93,12 +93,12 @@ export function ImportDialog({ open, onOpenChange, moduleName, moduleKey, onSucc
               <Download className="h-3.5 w-3.5" />
               Download Template
             </Button>
-            <span className="text-xs text-slate-400">Excel (.xlsx) with sample data</span>
+            <span className="text-xs text-muted-foreground">Excel (.xlsx) with sample data</span>
           </div>
 
           <div
             className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${
-              file ? "border-primary/40 bg-primary/5" : "border-slate-200 hover:border-slate-300"
+              file ? "border-primary/40 bg-primary/5" : "border-border hover:border-border"
             }`}
             onClick={() => inputRef.current?.click()}
             style={{ cursor: "pointer" }}
@@ -120,9 +120,9 @@ export function ImportDialog({ open, onOpenChange, moduleName, moduleKey, onSucc
               </div>
             ) : (
               <div className="space-y-1">
-                <Upload className="h-8 w-8 mx-auto text-slate-300" />
-                <p className="text-sm text-slate-500">Click to select CSV or Excel file</p>
-                <p className="text-xs text-slate-400">Supports .csv, .xlsx, .xls</p>
+                <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Click to select CSV or Excel file</p>
+                <p className="text-xs text-muted-foreground">Supports .csv, .xlsx, .xls</p>
               </div>
             )}
           </div>
@@ -142,7 +142,7 @@ export function ImportDialog({ open, onOpenChange, moduleName, moduleKey, onSucc
           )}
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-start gap-2">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 flex items-start gap-2">
               <XCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
               <p className="text-sm text-red-700">{error}</p>
             </div>
@@ -151,7 +151,7 @@ export function ImportDialog({ open, onOpenChange, moduleName, moduleKey, onSucc
           {result && (
             <div className="space-y-3">
               <div className={`rounded-xl px-4 py-3 flex items-start gap-2 ${
-                result.failed === 0 ? "bg-emerald-50 border border-emerald-200" : "bg-amber-50 border border-amber-200"
+                result.failed === 0 ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-amber-500/10 border border-amber-500/20"
               }`}>
                 {result.failed === 0 ? (
                   <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
@@ -165,14 +165,14 @@ export function ImportDialog({ open, onOpenChange, moduleName, moduleKey, onSucc
               </div>
 
               {result.errors.length > 0 && (
-                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-                  <div className="px-3 py-2 bg-slate-50 border-b border-slate-100">
-                    <p className="text-xs font-medium text-slate-600">Errors ({result.errors.length})</p>
+                <div className="bg-card border border-border rounded-xl overflow-hidden">
+                  <div className="px-3 py-2 bg-background border-b border-border">
+                    <p className="text-xs font-medium text-muted-foreground">Errors ({result.errors.length})</p>
                   </div>
-                  <div className="max-h-40 overflow-y-auto divide-y divide-slate-100">
+                  <div className="max-h-40 overflow-y-auto divide-y divide-border">
                     {result.errors.map((err, i) => (
                       <div key={i} className="px-3 py-1.5 text-xs flex gap-2">
-                        <span className="font-mono text-slate-400 shrink-0">Row {err.row}:</span>
+                        <span className="font-mono text-muted-foreground shrink-0">Row {err.row}:</span>
                         <span className="text-red-600">{err.reason}</span>
                       </div>
                     ))}

@@ -32,16 +32,16 @@ export default function MasterDataPage() {
   return (
     <AppLayout title="Master Data">
       <Tabs defaultValue="categories" className="w-full">
-        <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 mb-6 inline-block overflow-x-auto max-w-full">
+        <div className="bg-card p-1 rounded-xl shadow-sm border border-border mb-6 inline-block overflow-x-auto max-w-full">
           <TabsList className="bg-transparent h-auto p-0 flex space-x-1 flex-wrap gap-y-1">
-            <TabsTrigger value="categories" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-slate-100 data-[state=active]:text-primary data-[state=active]:shadow-none">Categories</TabsTrigger>
-            <TabsTrigger value="colors" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-slate-100 data-[state=active]:text-primary data-[state=active]:shadow-none">Colors</TabsTrigger>
-            <TabsTrigger value="sizes" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-slate-100 data-[state=active]:text-primary data-[state=active]:shadow-none">Sizes</TabsTrigger>
-            <TabsTrigger value="fabrics" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-slate-100 data-[state=active]:text-primary data-[state=active]:shadow-none">Fabrics</TabsTrigger>
-            <TabsTrigger value="products" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-slate-100 data-[state=active]:text-primary data-[state=active]:shadow-none">Products</TabsTrigger>
-            <TabsTrigger value="teams" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-slate-100 data-[state=active]:text-primary data-[state=active]:shadow-none">Teams</TabsTrigger>
-            <TabsTrigger value="stitchers" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-slate-100 data-[state=active]:text-primary data-[state=active]:shadow-none">Stitchers</TabsTrigger>
-            <TabsTrigger value="materials" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-slate-100 data-[state=active]:text-primary data-[state=active]:shadow-none">Materials</TabsTrigger>
+            <TabsTrigger value="categories" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-muted data-[state=active]:text-primary data-[state=active]:shadow-none">Categories</TabsTrigger>
+            <TabsTrigger value="colors" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-muted data-[state=active]:text-primary data-[state=active]:shadow-none">Colors</TabsTrigger>
+            <TabsTrigger value="sizes" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-muted data-[state=active]:text-primary data-[state=active]:shadow-none">Sizes</TabsTrigger>
+            <TabsTrigger value="fabrics" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-muted data-[state=active]:text-primary data-[state=active]:shadow-none">Fabrics</TabsTrigger>
+            <TabsTrigger value="products" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-muted data-[state=active]:text-primary data-[state=active]:shadow-none">Products</TabsTrigger>
+            <TabsTrigger value="teams" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-muted data-[state=active]:text-primary data-[state=active]:shadow-none">Teams</TabsTrigger>
+            <TabsTrigger value="stitchers" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-muted data-[state=active]:text-primary data-[state=active]:shadow-none">Stitchers</TabsTrigger>
+            <TabsTrigger value="materials" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-muted data-[state=active]:text-primary data-[state=active]:shadow-none">Materials</TabsTrigger>
           </TabsList>
         </div>
 
@@ -60,7 +60,7 @@ export default function MasterDataPage() {
 
 function AdminOnlyBadge() {
   return (
-    <span className="inline-flex items-center gap-1 text-xs bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full">
+    <span className="inline-flex items-center gap-1 text-xs bg-amber-500/10 text-amber-700 border border-amber-500/20 px-2 py-0.5 rounded-full">
       <Shield className="h-3 w-3" /> Admin only
     </span>
   );
@@ -106,9 +106,9 @@ function CategoriesTab({ canCreate, canEdit }: MasterTabProps) {
         </Button>
       </form>
 
-      <div className="mt-6 border rounded-xl overflow-hidden bg-white">
+      <div className="mt-6 border rounded-xl overflow-hidden bg-card">
         <Table>
-          <TableHeader className="bg-slate-50">
+          <TableHeader className="bg-background">
             <TableRow>
               <TableHead className="w-[100px]">ID</TableHead>
               <TableHead>Name</TableHead>
@@ -116,12 +116,12 @@ function CategoriesTab({ canCreate, canEdit }: MasterTabProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={3} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-slate-400" /></TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={3} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow> :
               data?.map(c => (
                 <TableRow key={c.id}>
-                  <TableCell className="font-medium text-slate-500">#{c.id}</TableCell>
+                  <TableCell className="font-medium text-muted-foreground">#{c.id}</TableCell>
                   <TableCell className="font-semibold">{c.name}</TableCell>
-                  <TableCell className="text-slate-600">{c.description || "-"}</TableCell>
+                  <TableCell className="text-muted-foreground">{c.description || "-"}</TableCell>
                 </TableRow>
               ))
             }
@@ -153,11 +153,11 @@ function ColorCodeInput({
     <div>
       <label className="text-sm font-medium block mb-1.5">
         Color Code <span className="text-red-500">*</span>
-        <span className="text-xs font-normal text-slate-400 ml-1">(e.g. BLK, NVY, BRN)</span>
+        <span className="text-xs font-normal text-muted-foreground ml-1">(e.g. BLK, NVY, BRN)</span>
       </label>
       <input
         name="code"
-        className={`form-input-styled font-mono uppercase ${isDup ? "border-red-400 bg-red-50" : ""}`}
+        className={`form-input-styled font-mono uppercase ${isDup ? "border-red-500/40 bg-red-500/10" : ""}`}
         placeholder="BLK"
         required
         maxLength={10}
@@ -166,7 +166,7 @@ function ColorCodeInput({
         autoComplete="off"
       />
       {isDup && (
-        <div className="flex items-center gap-2 mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div className="flex items-center gap-2 mt-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-700">
           <AlertCircle className="h-4 w-4 shrink-0" />
           Code <strong>"{upper}"</strong> is already in use.
         </div>
@@ -280,9 +280,9 @@ function ColorsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
           </Button>
         </form>
 
-        <div className="mt-6 border rounded-xl overflow-hidden bg-white">
+        <div className="mt-6 border rounded-xl overflow-hidden bg-card">
           <Table>
-            <TableHeader className="bg-slate-50">
+            <TableHeader className="bg-background">
               <TableRow>
                 <TableHead className="w-24">Code</TableHead>
                 <TableHead>Name</TableHead>
@@ -296,16 +296,16 @@ function ColorsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
                 data?.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell>
-                      <span className={`px-2 py-1 rounded text-xs font-mono font-bold border ${c.code ? "bg-primary/10 text-primary border-primary/20" : "bg-amber-50 text-amber-600 border-amber-200"}`}>
+                      <span className={`px-2 py-1 rounded text-xs font-mono font-bold border ${c.code ? "bg-primary/10 text-primary border-primary/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"}`}>
                         {c.code || "—"}
                       </span>
                     </TableCell>
-                    <TableCell className="font-semibold text-slate-800">{c.name}</TableCell>
+                    <TableCell className="font-semibold text-foreground">{c.name}</TableCell>
                     {canEdit && (
                       <TableCell className="text-right">
                         <Button
                           size="sm" variant="ghost"
-                          className="h-7 w-7 p-0 text-slate-400 hover:text-primary"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
                           onClick={() => openEdit(c)}
                         >
                           <Pencil className="h-3.5 w-3.5" />
@@ -316,7 +316,7 @@ function ColorsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
                 ))
               )}
               {!isLoading && data?.length === 0 && (
-                <TableRow><TableCell colSpan={canEdit ? 3 : 2} className="text-center py-8 text-slate-500">No colors yet.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 3 : 2} className="text-center py-8 text-muted-foreground">No colors yet.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -382,9 +382,9 @@ function SizesTab({ canCreate, canImport }: MasterTabProps) {
         <div><label className="text-sm font-medium block mb-1.5">Sort Order</label><input type="number" name="sortOrder" className="form-input-styled" defaultValue="0" /></div>
         <Button type="submit" disabled={isPending} className="w-full h-11 rounded-xl">Save</Button>
       </form>
-      <div className="mt-6 border rounded-xl overflow-hidden bg-white">
+      <div className="mt-6 border rounded-xl overflow-hidden bg-card">
         <Table>
-          <TableHeader className="bg-slate-50"><TableRow><TableHead>ID</TableHead><TableHead>Size</TableHead><TableHead>Sort Order</TableHead></TableRow></TableHeader>
+          <TableHeader className="bg-background"><TableRow><TableHead>ID</TableHead><TableHead>Size</TableHead><TableHead>Sort Order</TableHead></TableRow></TableHeader>
           <TableBody>
             {isLoading ? <TableRow><TableCell colSpan={3} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
               data?.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)).map(s => (
@@ -465,7 +465,7 @@ function FabricsTab({ canCreate, canEdit }: MasterTabProps) {
       <form onSubmit={onCreateSubmit} className="space-y-4 pt-4">
         <div>
           <label className="text-sm font-medium block mb-1.5">Fabric Code</label>
-          <input name="code" className={`form-input-styled font-mono uppercase ${createCodeDup ? "border-red-400 bg-red-50" : ""}`} placeholder="e.g. CTN, SILK" value={newCode} onChange={e => setNewCode(e.target.value)} />
+          <input name="code" className={`form-input-styled font-mono uppercase ${createCodeDup ? "border-red-500/40 bg-red-500/10" : ""}`} placeholder="e.g. CTN, SILK" value={newCode} onChange={e => setNewCode(e.target.value)} />
           {createCodeDup && <p className="text-xs text-red-500 mt-1">This code already exists.</p>}
         </div>
         <div>
@@ -476,9 +476,9 @@ function FabricsTab({ canCreate, canEdit }: MasterTabProps) {
         <div><label className="text-sm font-medium block mb-1.5">Description</label><input name="description" className="form-input-styled" /></div>
         <Button type="submit" disabled={creating || createCodeDup} className="w-full h-11 rounded-xl">Save</Button>
       </form>
-      <div className="mt-6 border rounded-xl overflow-hidden bg-white">
+      <div className="mt-6 border rounded-xl overflow-hidden bg-card">
         <Table>
-          <TableHeader className="bg-slate-50">
+          <TableHeader className="bg-background">
             <TableRow>
               <TableHead>Code</TableHead>
               <TableHead>Fabric Name</TableHead>
@@ -492,20 +492,20 @@ function FabricsTab({ canCreate, canEdit }: MasterTabProps) {
             {isLoading ? <TableRow><TableCell colSpan={canEdit ? 6 : 5} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
               data?.map(f => (
                 <TableRow key={f.id} className="group">
-                  <TableCell className="font-mono text-slate-500 text-xs">{f.code ?? "—"}</TableCell>
+                  <TableCell className="font-mono text-muted-foreground text-xs">{f.code ?? "—"}</TableCell>
                   <TableCell className="font-semibold">{f.name}</TableCell>
                   <TableCell>{f.unit}</TableCell>
-                  <TableCell className="text-slate-500 text-sm">{f.description}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{f.description}</TableCell>
                   <TableCell>
-                    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${f.isActive !== false ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${f.isActive !== false ? "bg-emerald-500" : "bg-red-500"}`} />
+                    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${f.isActive !== false ? "bg-emerald-500/10 text-emerald-700" : "bg-red-500/10 text-red-600"}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${f.isActive !== false ? "bg-emerald-500/100" : "bg-red-500/100"}`} />
                       {f.isActive !== false ? "Active" : "Inactive"}
                     </span>
                   </TableCell>
                   {canEdit && (
                     <TableCell>
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => openEdit(f)}>
-                        <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                       </Button>
                     </TableCell>
                   )}
@@ -524,7 +524,7 @@ function FabricsTab({ canCreate, canEdit }: MasterTabProps) {
             <form onSubmit={onEditSubmit} className="space-y-4 pt-4">
               <div>
                 <label className="text-sm font-medium block mb-1.5">Fabric Code</label>
-                <input className={`form-input-styled font-mono uppercase ${editCodeDup ? "border-red-400 bg-red-50" : ""}`} value={editCode} onChange={e => setEditCode(e.target.value)} placeholder="e.g. CTN" />
+                <input className={`form-input-styled font-mono uppercase ${editCodeDup ? "border-red-500/40 bg-red-500/10" : ""}`} value={editCode} onChange={e => setEditCode(e.target.value)} placeholder="e.g. CTN" />
                 {editCodeDup && <p className="text-xs text-red-500 mt-1">This code already exists.</p>}
               </div>
               <div>
@@ -637,7 +637,7 @@ function ProductsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
           <label className="text-sm font-medium block mb-1.5">Design Code <span className="text-red-500">*</span></label>
           <input
             name="code"
-            className={`form-input-styled font-mono uppercase ${createCodeDup ? "border-red-400 bg-red-50" : ""}`}
+            className={`form-input-styled font-mono uppercase ${createCodeDup ? "border-red-500/40 bg-red-500/10" : ""}`}
             required
             value={newCode}
             onChange={(e) => setNewCode(e.target.value.toUpperCase())}
@@ -645,7 +645,7 @@ function ProductsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
             autoComplete="off"
           />
           {createCodeDup && (
-            <div className="flex items-center gap-2 mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <div className="flex items-center gap-2 mt-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-700">
               <AlertCircle className="h-4 w-4 shrink-0" />
               Code <strong>"{newCode.trim().toUpperCase()}"</strong> is already in use.
             </div>
@@ -653,7 +653,7 @@ function ProductsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
         </div>
         <div>
           <label className="text-sm font-medium block mb-1.5">Category</label>
-          <select name="categoryId" className="form-input-styled bg-white" required>
+          <select name="categoryId" className="form-input-styled bg-card" required>
             <option value="">Select Category...</option>
             {categories?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
@@ -662,20 +662,20 @@ function ProductsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
         <div><label className="text-sm font-medium block mb-1.5">Description</label><input name="description" className="form-input-styled" /></div>
         <Button type="submit" disabled={isPending || createCodeDup} className="w-full h-11 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed">Save</Button>
       </form>
-      <div className="mt-6 border rounded-xl overflow-hidden bg-white">
+      <div className="mt-6 border rounded-xl overflow-hidden bg-card">
         <Table>
-          <TableHeader className="bg-slate-50"><TableRow><TableHead>Code</TableHead><TableHead>Design Name</TableHead><TableHead>Category</TableHead><TableHead className="text-right">Points/Pc</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
+          <TableHeader className="bg-background"><TableRow><TableHead>Code</TableHead><TableHead>Design Name</TableHead><TableHead>Category</TableHead><TableHead className="text-right">Points/Pc</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
           <TableBody>
             {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
               data?.map(p => (
                 <TableRow key={p.id}>
-                  <TableCell className="font-mono text-slate-500 text-xs">{p.code}</TableCell>
+                  <TableCell className="font-mono text-muted-foreground text-xs">{p.code}</TableCell>
                   <TableCell className="font-semibold">{p.name}</TableCell>
                   <TableCell>{p.categoryName}</TableCell>
                   <TableCell className="text-right font-mono">{(p as any).pointsPerPiece ?? "—"}</TableCell>
                   <TableCell>
-                    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${p.isActive ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${p.isActive ? "bg-emerald-500" : "bg-red-500"}`} />
+                    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${p.isActive ? "bg-emerald-500/10 text-emerald-700" : "bg-red-500/10 text-red-600"}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${p.isActive ? "bg-emerald-500/100" : "bg-red-500/100"}`} />
                       {p.isActive ? "Active" : "Inactive"}
                     </span>
                   </TableCell>
@@ -700,7 +700,7 @@ function ProductsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
             <div><label className="text-sm font-medium block mb-1.5">Design Code</label><input name="code" className="form-input-styled font-mono uppercase" defaultValue={editProduct.code || ""} /></div>
             <div>
               <label className="text-sm font-medium block mb-1.5">Category</label>
-              <select name="categoryId" className="form-input-styled bg-white" required defaultValue={editProduct.categoryId || ""}>
+              <select name="categoryId" className="form-input-styled bg-card" required defaultValue={editProduct.categoryId || ""}>
                 <option value="">Select Category...</option>
                 {categories?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
@@ -776,11 +776,11 @@ function TeamsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
             <input name="name" className="form-input-styled" required placeholder="e.g. Team Alpha" />
           </div>
           <div>
-            <label className="text-sm font-medium block mb-1.5">Team Code <span className="text-slate-400 font-normal text-xs ml-1">(optional)</span></label>
+            <label className="text-sm font-medium block mb-1.5">Team Code <span className="text-muted-foreground font-normal text-xs ml-1">(optional)</span></label>
             <input name="code" className="form-input-styled font-mono uppercase" placeholder="e.g. TMA" maxLength={10} />
           </div>
           <div>
-            <label className="text-sm font-medium block mb-1.5">Supervisor Name <span className="text-slate-400 font-normal text-xs ml-1">(optional)</span></label>
+            <label className="text-sm font-medium block mb-1.5">Supervisor Name <span className="text-muted-foreground font-normal text-xs ml-1">(optional)</span></label>
             <input name="supervisorName" className="form-input-styled" placeholder="Supervisor name..." />
           </div>
           <Button type="submit" disabled={creating} className="w-full h-11 rounded-xl">
@@ -788,9 +788,9 @@ function TeamsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
           </Button>
         </form>
 
-        <div className="mt-6 border rounded-xl overflow-hidden bg-white">
+        <div className="mt-6 border rounded-xl overflow-hidden bg-card">
           <Table>
-            <TableHeader className="bg-slate-50">
+            <TableHeader className="bg-background">
               <TableRow>
                 <TableHead className="w-24">Code</TableHead>
                 <TableHead>Team Name</TableHead>
@@ -805,21 +805,21 @@ function TeamsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
               ) : data?.map(t => (
                 <TableRow key={t.id}>
                   <TableCell>
-                    <span className={`px-2 py-1 rounded text-xs font-mono font-bold border ${t.code ? "bg-primary/10 text-primary border-primary/20" : "bg-slate-50 text-slate-400 border-slate-200"}`}>
+                    <span className={`px-2 py-1 rounded text-xs font-mono font-bold border ${t.code ? "bg-primary/10 text-primary border-primary/20" : "bg-background text-muted-foreground border-border"}`}>
                       {t.code || "—"}
                     </span>
                   </TableCell>
-                  <TableCell className="font-semibold text-slate-800">{t.name}</TableCell>
-                  <TableCell className="text-slate-600">{t.supervisorName || "—"}</TableCell>
+                  <TableCell className="font-semibold text-foreground">{t.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{t.supervisorName || "—"}</TableCell>
                   <TableCell>
-                    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${t.isActive !== false ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${t.isActive !== false ? "bg-emerald-500" : "bg-red-500"}`} />
+                    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${t.isActive !== false ? "bg-emerald-500/10 text-emerald-700" : "bg-red-500/10 text-red-600"}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${t.isActive !== false ? "bg-emerald-500/100" : "bg-red-500/100"}`} />
                       {t.isActive !== false ? "Active" : "Inactive"}
                     </span>
                   </TableCell>
                   {canEdit && (
                     <TableCell className="text-right">
-                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-slate-400 hover:text-primary" onClick={() => setEditTeam(t)}>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-primary" onClick={() => setEditTeam(t)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
                     </TableCell>
@@ -827,11 +827,11 @@ function TeamsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
                 </TableRow>
               ))}
               {!isLoading && data?.length === 0 && (
-                <TableRow><TableCell colSpan={canEdit ? 5 : 4} className="text-center py-8 text-slate-500">No teams yet.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 5 : 4} className="text-center py-8 text-muted-foreground">No teams yet.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
-          {!canEdit && <div className="px-4 py-2 bg-amber-50 border-t border-amber-100 flex items-center gap-2"><AdminOnlyBadge /><span className="text-xs text-amber-700">Editing requires permission.</span></div>}
+          {!canEdit && <div className="px-4 py-2 bg-amber-500/10 border-t border-amber-500/20 flex items-center gap-2"><AdminOnlyBadge /><span className="text-xs text-amber-700">Editing requires permission.</span></div>}
         </div>
       </MasterCard>
 
@@ -856,7 +856,7 @@ function TeamsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
               </div>
               <div>
                 <label className="text-sm font-medium block mb-1.5">Status</label>
-                <select name="isActive" className="form-input-styled bg-white" defaultValue={editTeam.isActive !== false ? "true" : "false"}>
+                <select name="isActive" className="form-input-styled bg-card" defaultValue={editTeam.isActive !== false ? "true" : "false"}>
                   <option value="true">Active</option>
                   <option value="false">Inactive</option>
                 </select>
@@ -937,17 +937,17 @@ function StitchersTab({ canCreate, canEdit, canImport }: MasterTabProps) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-sm font-medium block mb-1.5">Code <span className="text-slate-400 font-normal text-xs">(optional)</span></label>
+              <label className="text-sm font-medium block mb-1.5">Code <span className="text-muted-foreground font-normal text-xs">(optional)</span></label>
               <input name="code" className="form-input-styled font-mono uppercase" placeholder="e.g. STT01" maxLength={10} />
             </div>
             <div>
-              <label className="text-sm font-medium block mb-1.5">Phone <span className="text-slate-400 font-normal text-xs">(optional)</span></label>
+              <label className="text-sm font-medium block mb-1.5">Phone <span className="text-muted-foreground font-normal text-xs">(optional)</span></label>
               <input name="phone" className="form-input-styled" placeholder="05xxxxxxxx" />
             </div>
           </div>
           <div>
-            <label className="text-sm font-medium block mb-1.5">Team <span className="text-slate-400 font-normal text-xs">(optional)</span></label>
-            <select name="teamId" className="form-input-styled bg-white">
+            <label className="text-sm font-medium block mb-1.5">Team <span className="text-muted-foreground font-normal text-xs">(optional)</span></label>
+            <select name="teamId" className="form-input-styled bg-card">
               <option value="">No Team</option>
               {activeTeams.map(t => (
                 <option key={t.id} value={t.id}>{fmtCode(t.code, t.name)}</option>
@@ -959,9 +959,9 @@ function StitchersTab({ canCreate, canEdit, canImport }: MasterTabProps) {
           </Button>
         </form>
 
-        <div className="mt-6 border rounded-xl overflow-hidden bg-white">
+        <div className="mt-6 border rounded-xl overflow-hidden bg-card">
           <Table>
-            <TableHeader className="bg-slate-50">
+            <TableHeader className="bg-background">
               <TableRow>
                 <TableHead className="w-24">Code</TableHead>
                 <TableHead>Name</TableHead>
@@ -977,22 +977,22 @@ function StitchersTab({ canCreate, canEdit, canImport }: MasterTabProps) {
               ) : data?.map(s => (
                 <TableRow key={s.id} className={s.isActive === false ? "opacity-60" : ""}>
                   <TableCell>
-                    <span className={`px-2 py-1 rounded text-xs font-mono font-bold border ${s.code ? "bg-primary/10 text-primary border-primary/20" : "bg-slate-50 text-slate-400 border-slate-200"}`}>
+                    <span className={`px-2 py-1 rounded text-xs font-mono font-bold border ${s.code ? "bg-primary/10 text-primary border-primary/20" : "bg-background text-muted-foreground border-border"}`}>
                       {s.code || "—"}
                     </span>
                   </TableCell>
-                  <TableCell className="font-semibold text-slate-800">{s.name}</TableCell>
-                  <TableCell className="text-slate-600">{s.teamName ? fmtCode((teams?.find(t => t.id === s.teamId)?.code ?? null), s.teamName) : "—"}</TableCell>
-                  <TableCell className="text-slate-500 text-sm">{s.phone || "—"}</TableCell>
+                  <TableCell className="font-semibold text-foreground">{s.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{s.teamName ? fmtCode((teams?.find(t => t.id === s.teamId)?.code ?? null), s.teamName) : "—"}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{s.phone || "—"}</TableCell>
                   <TableCell>
-                    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${s.isActive !== false ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${s.isActive !== false ? "bg-emerald-500" : "bg-red-500"}`} />
+                    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${s.isActive !== false ? "bg-emerald-500/10 text-emerald-700" : "bg-red-500/10 text-red-600"}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${s.isActive !== false ? "bg-emerald-500/100" : "bg-red-500/100"}`} />
                       {s.isActive !== false ? "Active" : "Inactive"}
                     </span>
                   </TableCell>
                   {canEdit && (
                     <TableCell className="text-right">
-                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-slate-400 hover:text-primary" onClick={() => setEditStitcher(s)}>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-primary" onClick={() => setEditStitcher(s)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
                     </TableCell>
@@ -1000,11 +1000,11 @@ function StitchersTab({ canCreate, canEdit, canImport }: MasterTabProps) {
                 </TableRow>
               ))}
               {!isLoading && data?.length === 0 && (
-                <TableRow><TableCell colSpan={canEdit ? 6 : 5} className="text-center py-8 text-slate-500">No stitchers yet.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 6 : 5} className="text-center py-8 text-muted-foreground">No stitchers yet.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
-          {!canEdit && <div className="px-4 py-2 bg-amber-50 border-t border-amber-100 flex items-center gap-2"><AdminOnlyBadge /><span className="text-xs text-amber-700">Editing requires permission.</span></div>}
+          {!canEdit && <div className="px-4 py-2 bg-amber-500/10 border-t border-amber-500/20 flex items-center gap-2"><AdminOnlyBadge /><span className="text-xs text-amber-700">Editing requires permission.</span></div>}
         </div>
       </MasterCard>
 
@@ -1031,7 +1031,7 @@ function StitchersTab({ canCreate, canEdit, canImport }: MasterTabProps) {
               </div>
               <div>
                 <label className="text-sm font-medium block mb-1.5">Team</label>
-                <select name="teamId" className="form-input-styled bg-white" defaultValue={editStitcher.teamId || ""}>
+                <select name="teamId" className="form-input-styled bg-card" defaultValue={editStitcher.teamId || ""}>
                   <option value="">No Team</option>
                   {teams?.map(t => (
                     <option key={t.id} value={t.id}>{fmtCode(t.code, t.name)}</option>
@@ -1040,7 +1040,7 @@ function StitchersTab({ canCreate, canEdit, canImport }: MasterTabProps) {
               </div>
               <div>
                 <label className="text-sm font-medium block mb-1.5">Status</label>
-                <select name="isActive" className="form-input-styled bg-white" defaultValue={editStitcher.isActive !== false ? "true" : "false"}>
+                <select name="isActive" className="form-input-styled bg-card" defaultValue={editStitcher.isActive !== false ? "true" : "false"}>
                   <option value="true">Active</option>
                   <option value="false">Inactive (Deactivated)</option>
                 </select>
@@ -1152,7 +1152,7 @@ function MaterialsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
           <div>
             <label className="text-sm font-medium block mb-1.5">Material Code <span className="text-red-500">*</span></label>
             <input
-              className={`form-input-styled font-mono uppercase ${createCodeDup ? "border-red-400 bg-red-50" : ""}`}
+              className={`form-input-styled font-mono uppercase ${createCodeDup ? "border-red-500/40 bg-red-500/10" : ""}`}
               required value={newCode} onChange={(e) => setNewCode(e.target.value.toUpperCase())}
               placeholder="e.g. LC01, DR02, PP03"
               maxLength={12}
@@ -1184,9 +1184,9 @@ function MaterialsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
           </Button>
         </form>
 
-        <div className="mt-6 border rounded-xl overflow-hidden bg-white">
+        <div className="mt-6 border rounded-xl overflow-hidden bg-card">
           <Table>
-            <TableHeader className="bg-slate-50">
+            <TableHeader className="bg-background">
               <TableRow>
                 <TableHead className="w-28">Code</TableHead>
                 <TableHead>Name</TableHead>
@@ -1210,19 +1210,19 @@ function MaterialsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
                         {m.code}
                       </span>
                     </TableCell>
-                    <TableCell className="font-semibold text-slate-800">{m.name}</TableCell>
-                    <TableCell className="hidden sm:table-cell text-slate-500 text-sm">{m.description ?? "—"}</TableCell>
+                    <TableCell className="font-semibold text-foreground">{m.name}</TableCell>
+                    <TableCell className="hidden sm:table-cell text-muted-foreground text-sm">{m.description ?? "—"}</TableCell>
                     <TableCell>
                       {m.isActive
                         ? <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
-                        : <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">Inactive</span>
+                        : <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">Inactive</span>
                       }
                     </TableCell>
                     {canEdit && (
                       <TableCell className="text-right">
                         <Button
                           size="sm" variant="ghost"
-                          className="h-7 w-7 p-0 text-slate-400 hover:text-primary"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
                           onClick={() => openEdit(m as EditMat)}
                         >
                           <Pencil className="h-3.5 w-3.5" />
@@ -1234,7 +1234,7 @@ function MaterialsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
               )}
               {!isLoading && data?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={canEdit ? 5 : 4} className="text-center py-8 text-slate-500">No materials yet.</TableCell>
+                  <TableCell colSpan={canEdit ? 5 : 4} className="text-center py-8 text-muted-foreground">No materials yet.</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -1252,7 +1252,7 @@ function MaterialsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
               <div>
                 <label className="text-sm font-medium block mb-1.5">Material Code <span className="text-red-500">*</span></label>
                 <input
-                  className={`form-input-styled font-mono uppercase ${editCodeDup ? "border-red-400 bg-red-50" : ""}`}
+                  className={`form-input-styled font-mono uppercase ${editCodeDup ? "border-red-500/40 bg-red-500/10" : ""}`}
                   required value={editCode} onChange={(e) => setEditCode(e.target.value.toUpperCase())}
                   maxLength={12}
                 />
@@ -1276,7 +1276,7 @@ function MaterialsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
               <div>
                 <label className="text-sm font-medium block mb-1.5">Status</label>
                 <select
-                  className="form-input-styled bg-white"
+                  className="form-input-styled bg-card"
                   value={editActive ? "true" : "false"}
                   onChange={(e) => setEditActive(e.target.value === "true")}
                 >
@@ -1302,9 +1302,9 @@ function MaterialsTab({ canCreate, canEdit, canImport }: MasterTabProps) {
 
 function MasterCard({ title, children, onAdd, addLabel, open, onOpenChange, importButton, hideAdd }: any) {
   return (
-    <Card className="shadow-lg border-slate-200 rounded-2xl overflow-hidden">
-      <CardHeader className="bg-slate-50/50 border-b border-slate-100 flex flex-row items-center justify-between py-5 px-6">
-        <CardTitle className="text-xl font-display text-slate-800">{title}</CardTitle>
+    <Card className="shadow-lg border-border rounded-2xl overflow-hidden">
+      <CardHeader className="bg-background/50 border-b border-border flex flex-row items-center justify-between py-5 px-6">
+        <CardTitle className="text-xl font-display text-foreground">{title}</CardTitle>
         <div className="flex items-center gap-2">
           {importButton}
           {!hideAdd && (
@@ -1324,7 +1324,7 @@ function MasterCard({ title, children, onAdd, addLabel, open, onOpenChange, impo
           )}
         </div>
       </CardHeader>
-      <CardContent className="p-6 bg-white">
+      <CardContent className="p-6 bg-card">
         {hideAdd ? (Array.isArray(children) ? children[1] : children) : children[1]}
       </CardContent>
     </Card>

@@ -91,14 +91,14 @@ export default function FabricRollsPage() {
 
   return (
     <AppLayout title="Fabric Rolls Inventory">
-      <Card className="shadow-lg border-slate-200 rounded-2xl overflow-hidden">
-        <CardHeader className="bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
+      <Card className="shadow-lg border-border rounded-2xl overflow-hidden">
+        <CardHeader className="bg-card border-b border-border flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
           <div>
-            <CardTitle className="text-xl font-display text-slate-800 flex items-center gap-2">
+            <CardTitle className="text-xl font-display text-foreground flex items-center gap-2">
               <Layers className="h-5 w-5 text-primary" />
               Fabric Rolls Directory
             </CardTitle>
-            <p className="text-sm text-slate-500 mt-1">Manage incoming raw material fabric rolls.</p>
+            <p className="text-sm text-muted-foreground mt-1">Manage incoming raw material fabric rolls.</p>
           </div>
           <div className="flex items-center gap-2">
             {canImport && <Button variant="outline" className="rounded-xl gap-1.5" onClick={() => setImportOpen(true)}><Upload className="h-4 w-4" /> Import</Button>}
@@ -124,14 +124,14 @@ export default function FabricRollsPage() {
                 
                 <div className="col-span-2 sm:col-span-1">
                   <label className="text-sm font-medium block mb-1.5">Fabric Type</label>
-                  <select name="fabricId" className="form-input-styled bg-white" required>
+                  <select name="fabricId" className="form-input-styled bg-card" required>
                     <option value="">Select Fabric...</option>
                     {fabrics?.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
                   </select>
                 </div>
                 <div className="col-span-2 sm:col-span-1">
                   <label className="text-sm font-medium block mb-1.5">Color</label>
-                  <select name="colorId" className="form-input-styled bg-white" required>
+                  <select name="colorId" className="form-input-styled bg-card" required>
                     <option value="">Select Color...</option>
                     {colors?.map(c => <option key={c.id} value={c.id}>{c.code ? `${c.code} — ${c.name}` : c.name}</option>)}
                   </select>
@@ -143,7 +143,7 @@ export default function FabricRollsPage() {
                 </div>
                 <div className="col-span-2 sm:col-span-1">
                   <label className="text-sm font-medium block mb-1.5">Unit</label>
-                  <select name="unit" className="form-input-styled bg-white" required>
+                  <select name="unit" className="form-input-styled bg-card" required>
                     <option value="Meters">Meters</option>
                     <option value="Yards">Yards</option>
                     <option value="Kg">Kg</option>
@@ -170,10 +170,10 @@ export default function FabricRollsPage() {
           </Dialog>}
           </div>
         </CardHeader>
-        <CardContent className="p-0 bg-white">
+        <CardContent className="p-0 bg-card">
           <Table>
-            <TableHeader className="bg-slate-50 border-b border-slate-100">
-              <TableRow className="hover:bg-slate-50">
+            <TableHeader className="bg-background border-b border-border">
+              <TableRow className="hover:bg-background">
                 <TableHead className="py-4">Roll Number</TableHead>
                 <TableHead>Fabric Details</TableHead>
                 <TableHead>Supplier</TableHead>
@@ -184,26 +184,26 @@ export default function FabricRollsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? <TableRow><TableCell colSpan={canEdit ? 7 : 6} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow> :
+              {isLoading ? <TableRow><TableCell colSpan={canEdit ? 7 : 6} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow> :
                 data?.map(roll => {
                   return (
                     <TableRow key={roll.id} className="group">
-                      <TableCell className="font-mono text-slate-700 font-medium">{roll.rollNumber}</TableCell>
+                      <TableCell className="font-mono text-foreground font-medium">{roll.rollNumber}</TableCell>
                       <TableCell>
-                        <div className="font-semibold text-slate-900">{roll.fabricName}</div>
-                        <div className="text-xs text-slate-500">{roll.colorCode || roll.colorName}</div>
+                        <div className="font-semibold text-foreground">{roll.fabricName}</div>
+                        <div className="text-xs text-muted-foreground">{roll.colorCode || roll.colorName}</div>
                       </TableCell>
-                      <TableCell className="text-slate-600">{roll.supplier || "-"}</TableCell>
+                      <TableCell className="text-muted-foreground">{roll.supplier || "-"}</TableCell>
                       <TableCell className="text-right">
-                        <div className="font-bold text-slate-900">{roll.availableQuantity} {roll.unit}</div>
-                        <div className="text-xs text-slate-400">of {roll.totalQuantity}</div>
+                        <div className="font-bold text-foreground">{roll.availableQuantity} {roll.unit}</div>
+                        <div className="text-xs text-muted-foreground">of {roll.totalQuantity}</div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={roll.availableQuantity === 0 ? "bg-red-50 text-red-700 border-red-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}>
+                        <Badge variant="outline" className={roll.availableQuantity === 0 ? "bg-red-500/10 text-red-700 border-red-500/20" : "bg-emerald-500/10 text-emerald-700 border-emerald-500/20"}>
                           {roll.availableQuantity === 0 ? "Consumed" : "Available"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-slate-500 text-sm">
+                      <TableCell className="text-muted-foreground text-sm">
                         {roll.receivedDate ? format(new Date(roll.receivedDate), 'MMM d, yyyy') : '-'}
                       </TableCell>
                       {canEdit && (
@@ -214,7 +214,7 @@ export default function FabricRollsPage() {
                             className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                             onClick={() => { setEditTarget(roll); setEditOpen(true); }}
                           >
-                            <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
                         </TableCell>
                       )}
@@ -223,7 +223,7 @@ export default function FabricRollsPage() {
                 })
               }
               {data?.length === 0 && (
-                <TableRow><TableCell colSpan={canEdit ? 7 : 6} className="text-center py-12 text-slate-500">No fabric rolls found. Add one to start.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 7 : 6} className="text-center py-12 text-muted-foreground">No fabric rolls found. Add one to start.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -239,7 +239,7 @@ export default function FabricRollsPage() {
           {editTarget && (
             <form onSubmit={onEditSubmit} className="grid grid-cols-2 gap-4 pt-4">
               {(editTarget as any).isLocked && (
-                <div className="col-span-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
+                <div className="col-span-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                   This roll is used in cutting batches. Color cannot be changed via API.
                 </div>

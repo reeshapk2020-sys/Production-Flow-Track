@@ -72,7 +72,7 @@ export default function OpeningFinishedGoodsPage() {
           >
             <Download className="h-4 w-4" /> Download Template
           </Button>
-          <div className="ml-auto bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2 flex items-center gap-2">
+          <div className="ml-auto bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-2 flex items-center gap-2">
             <Package className="h-4 w-4 text-emerald-600" />
             <span className="text-sm font-medium text-emerald-800">Total Opening Stock: <strong className="text-lg">{totalQty}</strong></span>
           </div>
@@ -89,16 +89,16 @@ export default function OpeningFinishedGoodsPage() {
           onChange={setFilters}
         />
 
-        <Card className="shadow-lg border-slate-200 rounded-2xl overflow-hidden">
-          <CardHeader className="bg-amber-50/50 border-b border-amber-100 py-5 px-6">
+        <Card className="shadow-lg border-border rounded-2xl overflow-hidden">
+          <CardHeader className="bg-amber-500/10 border-b border-amber-500/20 py-5 px-6">
             <CardTitle className="text-xl font-display text-amber-900 flex items-center gap-2">
               <Package className="h-5 w-5 text-amber-600" />
               Opening Stock Entries
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0 bg-white">
+          <CardContent className="p-0 bg-card">
             <Table>
-              <TableHeader className="bg-slate-50 border-b border-slate-100">
+              <TableHeader className="bg-background border-b border-border">
                 <TableRow>
                   <TableHead className="py-4">Item Code</TableHead>
                   <TableHead>Product</TableHead>
@@ -114,29 +114,29 @@ export default function OpeningFinishedGoodsPage() {
                 {isLoading ? (
                   <TableRow><TableCell colSpan={canEdit ? 8 : 7} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-300" /></TableCell></TableRow>
                 ) : data?.length === 0 ? (
-                  <TableRow><TableCell colSpan={canEdit ? 8 : 7} className="text-center py-12 text-slate-500">No opening stock entries yet.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={canEdit ? 8 : 7} className="text-center py-12 text-muted-foreground">No opening stock entries yet.</TableCell></TableRow>
                 ) : data?.map(entry => (
-                  <TableRow key={entry.id} className="group hover:bg-slate-50/50">
+                  <TableRow key={entry.id} className="group hover:bg-background/50">
                     <TableCell>
                       <span className="font-mono text-sm font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded">{entry.itemCode}</span>
                     </TableCell>
                     <TableCell>
-                      {entry.productCode && <span className="font-mono text-xs text-slate-500">{entry.productCode}</span>}
-                      {entry.productName && <div className="text-sm text-slate-800">{entry.productName}</div>}
-                      {!entry.productCode && !entry.productName && <span className="text-xs text-slate-400">—</span>}
+                      {entry.productCode && <span className="font-mono text-xs text-muted-foreground">{entry.productCode}</span>}
+                      {entry.productName && <div className="text-sm text-foreground">{entry.productName}</div>}
+                      {!entry.productCode && !entry.productName && <span className="text-xs text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className="text-sm">{entry.sizeName || "—"}</TableCell>
                     <TableCell className="text-sm">{entry.colorName || "—"}</TableCell>
                     <TableCell className="text-right font-display text-lg font-bold text-emerald-600">{entry.quantity}</TableCell>
-                    <TableCell className="text-xs text-slate-500 max-w-[150px] truncate">{entry.remarks || "—"}</TableCell>
-                    <TableCell className="text-xs text-slate-400">
+                    <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">{entry.remarks || "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
                       {entry.createdAt ? format(new Date(entry.createdAt), "dd MMM yyyy") : "—"}
-                      {entry.enteredBy && <div className="text-[10px] text-slate-300">{entry.enteredBy}</div>}
+                      {entry.enteredBy && <div className="text-[10px] text-muted-foreground">{entry.enteredBy}</div>}
                     </TableCell>
                     {canEdit && (
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="sm" onClick={() => setEditTarget(entry)} className="h-7 w-7 p-0"><Pencil className="h-3.5 w-3.5 text-slate-500" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => setEditTarget(entry)} className="h-7 w-7 p-0"><Pencil className="h-3.5 w-3.5 text-muted-foreground" /></Button>
                           <DeleteButton id={entry.id} onSuccess={invalidate} />
                         </div>
                       </TableCell>
@@ -204,7 +204,7 @@ function AddEditDialog({ open, onOpenChange, entry, onSuccess }: {
 
   const F = (label: string, name: string, required?: boolean, type?: string) => (
     <div className="space-y-1.5">
-      <Label className="text-xs font-medium text-slate-600">{label}{required && <span className="text-red-500"> *</span>}</Label>
+      <Label className="text-xs font-medium text-muted-foreground">{label}{required && <span className="text-red-500"> *</span>}</Label>
       <Input
         value={(form as any)[name]}
         onChange={e => setForm(f => ({ ...f, [name]: e.target.value }))}
@@ -227,7 +227,7 @@ function AddEditDialog({ open, onOpenChange, entry, onSuccess }: {
           {F("Color", "colorName")}
         </div>
         <div className="space-y-1.5 pt-2">
-          <Label className="text-xs font-medium text-slate-600">Remarks</Label>
+          <Label className="text-xs font-medium text-muted-foreground">Remarks</Label>
           <Textarea value={form.remarks} onChange={e => setForm(f => ({ ...f, remarks: e.target.value }))} className="rounded-lg" rows={2} />
         </div>
         <Button onClick={handleSave} disabled={createMut.isPending || updateMut.isPending} className="w-full h-11 rounded-xl mt-3">
@@ -346,11 +346,11 @@ function ImportOpeningStockDialog({ open, onOpenChange, onSuccess }: {
             >
               <Download className="h-3.5 w-3.5" /> Download Template
             </Button>
-            <span className="text-xs text-slate-400">CSV with sample data</span>
+            <span className="text-xs text-muted-foreground">CSV with sample data</span>
           </div>
 
           <div
-            className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer ${file ? "border-primary/40 bg-primary/5" : "border-slate-200 hover:border-slate-300"}`}
+            className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer ${file ? "border-primary/40 bg-primary/5" : "border-border hover:border-border"}`}
             onClick={() => inputRef.current?.click()}
           >
             <input ref={inputRef} type="file" accept=".csv" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }} />
@@ -360,17 +360,17 @@ function ImportOpeningStockDialog({ open, onOpenChange, onSuccess }: {
               </div>
             ) : (
               <div className="space-y-1">
-                <Upload className="h-8 w-8 mx-auto text-slate-300" />
-                <p className="text-sm text-slate-500">Click to select CSV file</p>
-                <p className="text-xs text-slate-400">Columns: itemCode, productCode, productName, sizeName, colorName, quantity, remarks</p>
+                <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Click to select CSV file</p>
+                <p className="text-xs text-muted-foreground">Columns: itemCode, productCode, productName, sizeName, colorName, quantity, remarks</p>
               </div>
             )}
           </div>
 
           {parsedRows.length > 0 && !result && (
-            <div className="border border-slate-200 rounded-xl overflow-hidden">
-              <div className="px-3 py-2 bg-slate-50 border-b border-slate-100">
-                <p className="text-xs font-medium text-slate-600">Preview ({parsedRows.length} rows)</p>
+            <div className="border border-border rounded-xl overflow-hidden">
+              <div className="px-3 py-2 bg-background border-b border-border">
+                <p className="text-xs font-medium text-muted-foreground">Preview ({parsedRows.length} rows)</p>
               </div>
               <div className="max-h-48 overflow-y-auto">
                 <Table>
@@ -387,7 +387,7 @@ function ImportOpeningStockDialog({ open, onOpenChange, onSuccess }: {
                   <TableBody>
                     {parsedRows.slice(0, 20).map((r, i) => (
                       <TableRow key={i}>
-                        <TableCell className="text-xs py-1 text-slate-400">{i + 1}</TableCell>
+                        <TableCell className="text-xs py-1 text-muted-foreground">{i + 1}</TableCell>
                         <TableCell className="text-xs py-1 font-mono">{r.itemCode}</TableCell>
                         <TableCell className="text-xs py-1">{r.productCode || r.productName || "—"}</TableCell>
                         <TableCell className="text-xs py-1">{r.sizeName || r.size || "—"}</TableCell>
@@ -396,7 +396,7 @@ function ImportOpeningStockDialog({ open, onOpenChange, onSuccess }: {
                       </TableRow>
                     ))}
                     {parsedRows.length > 20 && (
-                      <TableRow><TableCell colSpan={6} className="text-center text-xs text-slate-400 py-1">...and {parsedRows.length - 20} more</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={6} className="text-center text-xs text-muted-foreground py-1">...and {parsedRows.length - 20} more</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -411,7 +411,7 @@ function ImportOpeningStockDialog({ open, onOpenChange, onSuccess }: {
           )}
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-start gap-2">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 flex items-start gap-2">
               <XCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
               <p className="text-sm text-red-700">{error}</p>
             </div>
@@ -419,7 +419,7 @@ function ImportOpeningStockDialog({ open, onOpenChange, onSuccess }: {
 
           {result && (
             <div className="space-y-3">
-              <div className={`rounded-xl px-4 py-3 flex items-start gap-2 ${(result.errors?.length || 0) === 0 ? "bg-emerald-50 border border-emerald-200" : "bg-amber-50 border border-amber-200"}`}>
+              <div className={`rounded-xl px-4 py-3 flex items-start gap-2 ${(result.errors?.length || 0) === 0 ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-amber-500/10 border border-amber-500/20"}`}>
                 {(result.errors?.length || 0) === 0 ? <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5" /> : <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />}
                 <div className="text-sm space-y-0.5">
                   <p className="font-medium">{result.imported} of {result.total} rows imported successfully</p>
@@ -428,14 +428,14 @@ function ImportOpeningStockDialog({ open, onOpenChange, onSuccess }: {
               </div>
 
               {result.errors?.length > 0 && (
-                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-                  <div className="px-3 py-2 bg-slate-50 border-b border-slate-100">
-                    <p className="text-xs font-medium text-slate-600">Errors ({result.errors.length})</p>
+                <div className="bg-card border border-border rounded-xl overflow-hidden">
+                  <div className="px-3 py-2 bg-background border-b border-border">
+                    <p className="text-xs font-medium text-muted-foreground">Errors ({result.errors.length})</p>
                   </div>
-                  <div className="max-h-40 overflow-y-auto divide-y divide-slate-100">
+                  <div className="max-h-40 overflow-y-auto divide-y divide-border">
                     {result.errors.map((err: any, i: number) => (
                       <div key={i} className="px-3 py-1.5 text-xs flex gap-2">
-                        <span className="font-mono text-slate-400 shrink-0">Row {err.row}:</span>
+                        <span className="font-mono text-muted-foreground shrink-0">Row {err.row}:</span>
                         <span className="text-red-600">{err.message}</span>
                       </div>
                     ))}

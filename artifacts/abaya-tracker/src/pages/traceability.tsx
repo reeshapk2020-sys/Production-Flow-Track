@@ -23,20 +23,20 @@ export default function TraceabilityPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Search Panel */}
         <div className="lg:col-span-1 space-y-6">
-          <Card className="shadow-lg border-slate-200 rounded-2xl">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-              <CardTitle className="text-lg font-display text-slate-800 flex items-center gap-2">
+          <Card className="shadow-lg border-border rounded-2xl">
+            <CardHeader className="bg-background/50 border-b border-border">
+              <CardTitle className="text-lg font-display text-foreground flex items-center gap-2">
                 <Search className="h-5 w-5 text-primary" /> Find Batch
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <div className="relative">
-                <Search className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                 <Input 
                   value={search} 
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Scan or type batch number..." 
-                  className="pl-10 h-12 rounded-xl text-lg bg-slate-50 border-slate-200 focus-visible:ring-primary/20"
+                  className="pl-10 h-12 rounded-xl text-lg bg-background border-border focus-visible:ring-primary/20"
                 />
               </div>
 
@@ -47,16 +47,16 @@ export default function TraceabilityPage() {
                   <button 
                     key={res.id}
                     onClick={() => setSelectedBatch(res.batchNumber!)}
-                    className={`w-full text-left p-4 rounded-xl border transition-all ${selectedBatch === res.batchNumber ? 'border-primary bg-primary/5 shadow-sm' : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50'}`}
+                    className={`w-full text-left p-4 rounded-xl border transition-all ${selectedBatch === res.batchNumber ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:border-border hover:bg-background'}`}
                   >
                     <p className="font-mono text-primary font-bold">{res.batchNumber}</p>
-                    <p className="text-sm font-semibold text-slate-800 mt-1">{res.label}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{res.subLabel}</p>
+                    <p className="text-sm font-semibold text-foreground mt-1">{res.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{res.subLabel}</p>
                   </button>
                 ))}
 
                 {search.length > 2 && searchResults?.length === 0 && !searching && (
-                  <div className="text-center p-4 text-slate-500">No batches found</div>
+                  <div className="text-center p-4 text-muted-foreground">No batches found</div>
                 )}
               </div>
             </CardContent>
@@ -68,9 +68,9 @@ export default function TraceabilityPage() {
           {selectedBatch ? (
             <BatchTimeline batchNumber={selectedBatch} />
           ) : (
-            <Card className="h-full min-h-[400px] border-dashed border-2 border-slate-200 rounded-2xl flex flex-col items-center justify-center text-slate-400 bg-slate-50/50">
-              <GitBranch className="h-16 w-16 mb-4 text-slate-300" />
-              <p className="text-lg font-medium text-slate-500">Select a batch to view its full journey</p>
+            <Card className="h-full min-h-[400px] border-dashed border-2 border-border rounded-2xl flex flex-col items-center justify-center text-muted-foreground bg-background/50">
+              <GitBranch className="h-16 w-16 mb-4 text-muted-foreground" />
+              <p className="text-lg font-medium text-muted-foreground">Select a batch to view its full journey</p>
             </Card>
           )}
         </div>
@@ -86,11 +86,11 @@ function BatchTimeline({ batchNumber }: { batchNumber: string }) {
   if (!data) return null;
 
   return (
-    <Card className="shadow-lg border-slate-200 rounded-2xl overflow-hidden animate-in fade-in slide-in-from-right-4 duration-500">
-      <div className="bg-slate-900 text-white p-8 relative overflow-hidden">
+    <Card className="shadow-lg border-border rounded-2xl overflow-hidden animate-in fade-in slide-in-from-right-4 duration-500">
+      <div className="bg-gradient-to-br from-primary to-blue-700 text-white p-8 relative overflow-hidden">
         <GitBranch className="absolute right-0 top-0 h-48 w-48 opacity-5 -translate-y-10 translate-x-10" />
         <div className="relative z-10">
-          <Badge className="bg-primary/20 text-blue-200 hover:bg-primary/20 border-primary/30 mb-4">{data.currentStage}</Badge>
+          <Badge className="bg-primary/20 text-primary-foreground hover:bg-primary/20 border-primary/30 mb-4">{data.currentStage}</Badge>
           <h2 className="text-4xl font-mono font-bold tracking-tight mb-2">{data.batchNumber}</h2>
           {(data as any).itemCode && (
             <div className="mb-2">
@@ -99,37 +99,37 @@ function BatchTimeline({ batchNumber }: { batchNumber: string }) {
               </span>
             </div>
           )}
-          <p className="text-lg text-slate-300">{fmtCode(data.productCode, data.productName)} • {data.sizeName || 'Any'} • {fmtCode(data.colorCode, data.colorName) || 'Any'}</p>
+          <p className="text-lg text-muted-foreground">{fmtCode(data.productCode, data.productName)} • {data.sizeName || 'Any'} • {fmtCode(data.colorCode, data.colorName) || 'Any'}</p>
           {(() => {
             const pf = (data as any).productionFor || "reesha_stock";
             if (pf === "purchase_order") return <Badge className="mt-2 bg-violet-500/20 text-violet-200 border-violet-400/30">PO: {(data as any).poNumber || "?"}</Badge>;
             if (pf === "order") return <Badge className="mt-2 bg-orange-500/20 text-orange-200 border-orange-400/30">Order: {(data as any).orderNumber || "?"}</Badge>;
-            return <Badge className="mt-2 bg-slate-500/20 text-slate-300 border-slate-400/30">Reesha Stock</Badge>;
+            return <Badge className="mt-2 bg-muted text-muted-foreground border-border/30">Reesha Stock</Badge>;
           })()}
         </div>
       </div>
       
       <CardContent className="p-8">
-        <div className="relative pl-8 space-y-10 before:absolute before:inset-0 before:ml-[31px] before:w-0.5 before:-translate-x-px before:bg-slate-200">
+        <div className="relative pl-8 space-y-10 before:absolute before:inset-0 before:ml-[31px] before:w-0.5 before:-translate-x-px before:bg-muted">
           {data.timeline.map((event, index) => (
             <div key={index} className="relative">
-              <div className="absolute left-[-40px] top-1 h-6 w-6 rounded-full bg-white border-4 border-primary shadow-sm z-10 flex items-center justify-center" />
+              <div className="absolute left-[-40px] top-1 h-6 w-6 rounded-full bg-card border-4 border-primary shadow-sm z-10 flex items-center justify-center" />
               
-              <div className="bg-white border border-slate-100 shadow-sm rounded-xl p-5 hover:shadow-md transition-shadow">
+              <div className="bg-card border border-border shadow-sm rounded-xl p-5 hover:shadow-md transition-shadow">
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-display font-bold text-lg text-slate-800 capitalize">{event.stage} - {event.eventType}</h3>
-                  <span className="text-sm text-slate-500 font-medium">
+                  <h3 className="font-display font-bold text-lg text-foreground capitalize">{event.stage} - {event.eventType}</h3>
+                  <span className="text-sm text-muted-foreground font-medium">
                     {format(new Date(event.date), 'MMM d, yyyy HH:mm')}
                   </span>
                 </div>
                 
-                <div className="flex items-center text-slate-600 mb-4">
-                  <div className="bg-slate-100 px-2 py-1 rounded text-sm font-semibold mr-3">Qty: {event.quantity}</div>
+                <div className="flex items-center text-muted-foreground mb-4">
+                  <div className="bg-muted px-2 py-1 rounded text-sm font-semibold mr-3">Qty: {event.quantity}</div>
                   <span className="text-sm">By: {event.actor || 'System'}</span>
                 </div>
                 
                 {event.details && (
-                  <p className="text-sm text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <p className="text-sm text-muted-foreground bg-background p-3 rounded-lg border border-border">
                     {event.details}
                   </p>
                 )}
@@ -138,7 +138,7 @@ function BatchTimeline({ batchNumber }: { batchNumber: string }) {
           ))}
           
           <div className="relative">
-            <div className="absolute left-[-40px] top-1 h-6 w-6 rounded-full bg-emerald-500 border-4 border-emerald-100 shadow-sm z-10 flex items-center justify-center">
+            <div className="absolute left-[-40px] top-1 h-6 w-6 rounded-full bg-emerald-500/100 border-4 border-emerald-500/20 shadow-sm z-10 flex items-center justify-center">
               <CheckCircle2 className="h-4 w-4 text-white" />
             </div>
             <div className="font-display font-bold text-lg text-emerald-600 py-1">Current Status</div>

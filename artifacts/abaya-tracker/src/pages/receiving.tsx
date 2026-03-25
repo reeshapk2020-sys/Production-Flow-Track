@@ -20,19 +20,19 @@ import { FilterBar } from "@/components/filter-bar";
 
 function BatchStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
-    cutting:            { label: "Cutting",        cls: "bg-blue-50 text-blue-700 border-blue-200" },
-    allocated:          { label: "Allocated",      cls: "bg-amber-50 text-amber-700 border-amber-200" },
-    allocation:         { label: "Allocated",      cls: "bg-amber-50 text-amber-700 border-amber-200" },
-    partially_received: { label: "Partial",        cls: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-    stitching:          { label: "Partial",        cls: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-    fully_received:     { label: "Fully Rcvd",     cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-    in_finishing:       { label: "In Finishing",   cls: "bg-purple-50 text-purple-700 border-purple-200" },
-    finished:           { label: "Finished",       cls: "bg-slate-100 text-slate-600 border-slate-200" },
-    pending:            { label: "Pending",        cls: "bg-amber-50 text-amber-700 border-amber-200" },
-    partial:            { label: "Partial",        cls: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-    completed:          { label: "Completed",      cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    cutting:            { label: "Cutting",        cls: "bg-primary/10 text-primary border-primary/20" },
+    allocated:          { label: "Allocated",      cls: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
+    allocation:         { label: "Allocated",      cls: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
+    partially_received: { label: "Partial",        cls: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20" },
+    stitching:          { label: "Partial",        cls: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20" },
+    fully_received:     { label: "Fully Rcvd",     cls: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" },
+    in_finishing:       { label: "In Finishing",   cls: "bg-purple-500/10 text-purple-700 border-purple-500/20" },
+    finished:           { label: "Finished",       cls: "bg-muted text-muted-foreground border-border" },
+    pending:            { label: "Pending",        cls: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
+    partial:            { label: "Partial",        cls: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20" },
+    completed:          { label: "Completed",      cls: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" },
   };
-  const { label, cls } = map[status] || { label: status, cls: "bg-slate-100 text-slate-500 border-slate-200" };
+  const { label, cls } = map[status] || { label: status, cls: "bg-muted text-muted-foreground border-border" };
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}>{label}</span>;
 }
 
@@ -172,14 +172,14 @@ export default function ReceivingPage() {
   return (
     <AppLayout title="Receiving from Stitchers">
       <FilterBar fields={receivingFilterFields} values={filters} onChange={setFilters} />
-      <Card className="shadow-lg border-slate-200 rounded-2xl overflow-hidden">
-        <CardHeader className="bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
+      <Card className="shadow-lg border-border rounded-2xl overflow-hidden">
+        <CardHeader className="bg-card border-b border-border flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
           <div>
-            <CardTitle className="text-xl font-display text-slate-800 flex items-center gap-2">
+            <CardTitle className="text-xl font-display text-foreground flex items-center gap-2">
               <Inbox className="h-5 w-5 text-primary" />
               Receive from Stitchers
             </CardTitle>
-            <p className="text-sm text-slate-500 mt-1">Log pieces received back. Supports partial receiving — enter as many receipts as needed.</p>
+            <p className="text-sm text-muted-foreground mt-1">Log pieces received back. Supports partial receiving — enter as many receipts as needed.</p>
           </div>
           {canCreate && <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
             <DialogTrigger asChild>
@@ -216,7 +216,7 @@ export default function ReceivingPage() {
                     }}
                   />
                   {pendingAllocations.length === 0 && (
-                    <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                       <CheckCircle2 className="h-3 w-3 text-emerald-500" />
                       All allocations are fully received.
                     </p>
@@ -231,10 +231,10 @@ export default function ReceivingPage() {
                         <span>Outsource allocation ({selectedAlloc.outsourceCategory?.replace(/_/g, " ")}). Only returned-from-outsource pieces ({outsourceReturned}) can be received.</span>
                       </div>
                     )}
-                    <div className={`rounded-xl border px-4 py-3 grid gap-2 text-center ${isOutsource ? "grid-cols-4 bg-violet-50/40 border-violet-100" : "grid-cols-3 bg-slate-50 border-slate-100"}`}>
+                    <div className={`rounded-xl border px-4 py-3 grid gap-2 text-center ${isOutsource ? "grid-cols-4 bg-violet-50/40 border-violet-100" : "grid-cols-3 bg-background border-border"}`}>
                       <div>
-                        <div className="text-lg font-bold text-slate-800">{selectedAlloc.quantityIssued}</div>
-                        <div className="text-xs text-slate-500">Issued</div>
+                        <div className="text-lg font-bold text-foreground">{selectedAlloc.quantityIssued}</div>
+                        <div className="text-xs text-muted-foreground">Issued</div>
                       </div>
                       {isOutsource && (
                         <div>
@@ -244,11 +244,11 @@ export default function ReceivingPage() {
                       )}
                       <div>
                         <div className="text-lg font-bold text-emerald-600">{selectedAlloc.quantityReceived || 0}</div>
-                        <div className="text-xs text-slate-500">Received</div>
+                        <div className="text-xs text-muted-foreground">Received</div>
                       </div>
                       <div>
                         <div className="text-lg font-bold text-amber-600">{pendingQty}</div>
-                        <div className="text-xs text-slate-500">Can Receive</div>
+                        <div className="text-xs text-muted-foreground">Can Receive</div>
                       </div>
                     </div>
                   </div>
@@ -260,7 +260,7 @@ export default function ReceivingPage() {
                     <input
                       type="number"
                       name="quantityReceived"
-                      className="form-input-styled border-emerald-300 bg-emerald-50"
+                      className="form-input-styled border-emerald-300 bg-emerald-500/10"
                       required
                       min={0}
                       max={selectedAlloc ? pendingQty : undefined}
@@ -275,9 +275,9 @@ export default function ReceivingPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border">
                   <div>
-                    <label className="text-sm font-medium block mb-1.5 text-slate-500">Rejected (Fixable)</label>
+                    <label className="text-sm font-medium block mb-1.5 text-muted-foreground">Rejected (Fixable)</label>
                     <input
                       type="number"
                       name="quantityRejected"
@@ -290,7 +290,7 @@ export default function ReceivingPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium block mb-1.5 text-slate-500">Damaged (Loss)</label>
+                    <label className="text-sm font-medium block mb-1.5 text-muted-foreground">Damaged (Loss)</label>
                     <input
                       type="number"
                       name="quantityDamaged"
@@ -305,29 +305,29 @@ export default function ReceivingPage() {
                 </div>
 
                 {selectedAlloc && thisEntryTotal > 0 && (
-                  <div className={`rounded-xl px-4 py-2.5 border text-sm flex items-center gap-2 ${formError ? "bg-red-50 border-red-200 text-red-700" : "bg-emerald-50 border-emerald-200 text-emerald-700"}`}>
+                  <div className={`rounded-xl px-4 py-2.5 border text-sm flex items-center gap-2 ${formError ? "bg-red-500/10 border-red-500/20 text-red-700" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-700"}`}>
                     {formError ? <AlertCircle className="h-4 w-4 shrink-0" /> : <CheckCircle2 className="h-4 w-4 shrink-0" />}
                     {formError || `This entry accounts for ${thisEntryTotal} of ${pendingQty} pending. ${pendingQty - thisEntryTotal} will remain.`}
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
-                  <label className="col-span-2 text-sm font-medium text-slate-700">Quality Checks</label>
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
+                  <label className="col-span-2 text-sm font-medium text-foreground">Quality Checks</label>
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" name="hasStain" className="rounded border-slate-300 text-red-500 focus:ring-red-500" />
-                    <span className="text-slate-600">Has Stain</span>
+                    <input type="checkbox" name="hasStain" className="rounded border-border text-red-500 focus:ring-red-500" />
+                    <span className="text-muted-foreground">Has Stain</span>
                   </label>
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" name="hasDamage" className="rounded border-slate-300 text-orange-500 focus:ring-orange-500" />
-                    <span className="text-slate-600">Has Damage</span>
+                    <input type="checkbox" name="hasDamage" className="rounded border-border text-orange-500 focus:ring-orange-500" />
+                    <span className="text-muted-foreground">Has Damage</span>
                   </label>
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" name="needsWash" className="rounded border-slate-300 text-blue-500 focus:ring-blue-500" />
-                    <span className="text-slate-600">Needs Wash</span>
+                    <input type="checkbox" name="needsWash" className="rounded border-border text-primary focus:ring-primary" />
+                    <span className="text-muted-foreground">Needs Wash</span>
                   </label>
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" name="needsRework" className="rounded border-slate-300 text-amber-500 focus:ring-amber-500" />
-                    <span className="text-slate-600">Needs Rework</span>
+                    <input type="checkbox" name="needsRework" className="rounded border-border text-amber-500 focus:ring-amber-500" />
+                    <span className="text-muted-foreground">Needs Rework</span>
                   </label>
                 </div>
 
@@ -350,9 +350,9 @@ export default function ReceivingPage() {
           </Dialog>}
         </CardHeader>
 
-        <CardContent className="p-0 bg-white">
+        <CardContent className="p-0 bg-card">
           <Table>
-            <TableHeader className="bg-slate-50 border-b border-slate-100">
+            <TableHeader className="bg-background border-b border-border">
               <TableRow>
                 <TableHead className="py-4">Batch / Allocation</TableHead>
                 <TableHead>Item Code</TableHead>
@@ -367,30 +367,30 @@ export default function ReceivingPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={canEdit ? 9 : 8} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 9 : 8} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
               ) : (
                 data?.map(rec => (
-                  <TableRow key={rec.id} className="group hover:bg-slate-50/50">
+                  <TableRow key={rec.id} className="group hover:bg-background/50">
                     <TableCell>
                       <div className="font-semibold text-primary text-sm">{rec.batchNumber}</div>
-                      <div className="text-xs text-slate-400 font-mono">{rec.allocationNumber}</div>
-                      <div className="text-xs text-slate-500">{fmtCode(rec.productCode, rec.productName)}</div>
+                      <div className="text-xs text-muted-foreground font-mono">{rec.allocationNumber}</div>
+                      <div className="text-xs text-muted-foreground">{fmtCode(rec.productCode, rec.productName)}</div>
                       {(() => {
                         const pf = (rec as any).productionFor || "reesha_stock";
                         if (pf === "purchase_order") return <span className="inline-flex items-center mt-0.5 px-1.5 py-0 rounded text-[10px] font-medium bg-violet-50 text-violet-600 border border-violet-200">PO: {(rec as any).poNumber || "?"}</span>;
-                        if (pf === "order") return <span className="inline-flex items-center mt-0.5 px-1.5 py-0 rounded text-[10px] font-medium bg-orange-50 text-orange-600 border border-orange-200">Order: {(rec as any).orderNumber || "?"}</span>;
+                        if (pf === "order") return <span className="inline-flex items-center mt-0.5 px-1.5 py-0 rounded text-[10px] font-medium bg-orange-500/10 text-orange-600 border border-orange-500/20">Order: {(rec as any).orderNumber || "?"}</span>;
                         return null;
                       })()}
                     </TableCell>
                     <TableCell>
                       {(rec as any).itemCode
                         ? <span className="font-mono text-xs font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded">{(rec as any).itemCode}</span>
-                        : <span className="text-xs text-slate-400">—</span>}
+                        : <span className="text-xs text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell>
-                      <div className="font-semibold text-slate-900 text-sm">{rec.stitcherName}</div>
+                      <div className="font-semibold text-foreground text-sm">{rec.stitcherName}</div>
                     </TableCell>
-                    <TableCell className="text-right text-slate-600 text-sm">{rec.quantityIssued ?? "—"}</TableCell>
+                    <TableCell className="text-right text-muted-foreground text-sm">{rec.quantityIssued ?? "—"}</TableCell>
                     <TableCell className="text-right">
                       <span className="font-bold text-emerald-600 text-base">{rec.quantityReceived}</span>
                     </TableCell>
@@ -401,19 +401,19 @@ export default function ReceivingPage() {
                           {(rec.quantityDamaged || 0) > 0 && <span className="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded">D: {rec.quantityDamaged}</span>}
                         </div>
                       ) : (
-                        <span className="text-slate-300 text-sm">—</span>
+                        <span className="text-muted-foreground text-sm">—</span>
                       )}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        {(rec as any).hasStain && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-600 border border-red-200">Stain</span>}
-                        {(rec as any).hasDamage && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-600 border border-orange-200">Damage</span>}
-                        {(rec as any).needsWash && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-200">Wash</span>}
-                        {(rec as any).needsRework && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-600 border border-amber-200">Rework</span>}
-                        {!(rec as any).hasStain && !(rec as any).hasDamage && !(rec as any).needsWash && !(rec as any).needsRework && <span className="text-xs text-slate-300">OK</span>}
+                        {(rec as any).hasStain && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-500/10 text-red-600 border border-red-500/20">Stain</span>}
+                        {(rec as any).hasDamage && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-500/10 text-orange-600 border border-orange-500/20">Damage</span>}
+                        {(rec as any).needsWash && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">Wash</span>}
+                        {(rec as any).needsRework && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-600 border border-amber-500/20">Rework</span>}
+                        {!(rec as any).hasStain && !(rec as any).hasDamage && !(rec as any).needsWash && !(rec as any).needsRework && <span className="text-xs text-muted-foreground">OK</span>}
                       </div>
                     </TableCell>
-                    <TableCell className="text-slate-600 text-sm">
+                    <TableCell className="text-muted-foreground text-sm">
                       {rec.receiveDate ? format(new Date(rec.receiveDate), 'MMM d, yyyy') : '-'}
                     </TableCell>
                     {canEdit && (
@@ -424,7 +424,7 @@ export default function ReceivingPage() {
                           className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={() => { setEditTarget(rec); setEditOpen(true); }}
                         >
-                          <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                         </Button>
                       </TableCell>
                     )}
@@ -432,7 +432,7 @@ export default function ReceivingPage() {
                 ))
               )}
               {!isLoading && data?.length === 0 && (
-                <TableRow><TableCell colSpan={canEdit ? 9 : 8} className="text-center py-12 text-slate-500">No receivings logged yet.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 9 : 8} className="text-center py-12 text-muted-foreground">No receivings logged yet.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -447,12 +447,12 @@ export default function ReceivingPage() {
           </DialogHeader>
           {editTarget && (
             <form onSubmit={onEditSubmit} className="grid grid-cols-1 gap-4 pt-4">
-              <div className="bg-slate-50 rounded-xl p-3 text-sm text-slate-600">
-                <div className="font-semibold text-slate-800">{editTarget.batchNumber}</div>
-                <div className="text-xs text-slate-500 mt-0.5">{editTarget.stitcherName} · {editTarget.quantityReceived} pcs received</div>
+              <div className="bg-background rounded-xl p-3 text-sm text-muted-foreground">
+                <div className="font-semibold text-foreground">{editTarget.batchNumber}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{editTarget.stitcherName} · {editTarget.quantityReceived} pcs received</div>
               </div>
               {(editTarget as any).isLocked && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                   Finishing records exist for this batch. Quantities cannot be changed.
                 </div>
@@ -461,23 +461,23 @@ export default function ReceivingPage() {
                 <label className="text-sm font-medium block mb-1.5">Receive Date</label>
                 <input type="date" name="receiveDate" className="form-input-styled" required defaultValue={editTarget.receiveDate?.split('T')[0] || ""} />
               </div>
-              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
-                <label className="col-span-2 text-sm font-medium text-slate-700">Quality Checks</label>
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
+                <label className="col-span-2 text-sm font-medium text-foreground">Quality Checks</label>
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" name="hasStain" className="rounded border-slate-300 text-red-500 focus:ring-red-500" defaultChecked={!!(editTarget as any).hasStain} />
-                  <span className="text-slate-600">Has Stain</span>
+                  <input type="checkbox" name="hasStain" className="rounded border-border text-red-500 focus:ring-red-500" defaultChecked={!!(editTarget as any).hasStain} />
+                  <span className="text-muted-foreground">Has Stain</span>
                 </label>
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" name="hasDamage" className="rounded border-slate-300 text-orange-500 focus:ring-orange-500" defaultChecked={!!(editTarget as any).hasDamage} />
-                  <span className="text-slate-600">Has Damage</span>
+                  <input type="checkbox" name="hasDamage" className="rounded border-border text-orange-500 focus:ring-orange-500" defaultChecked={!!(editTarget as any).hasDamage} />
+                  <span className="text-muted-foreground">Has Damage</span>
                 </label>
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" name="needsWash" className="rounded border-slate-300 text-blue-500 focus:ring-blue-500" defaultChecked={!!(editTarget as any).needsWash} />
-                  <span className="text-slate-600">Needs Wash</span>
+                  <input type="checkbox" name="needsWash" className="rounded border-border text-primary focus:ring-primary" defaultChecked={!!(editTarget as any).needsWash} />
+                  <span className="text-muted-foreground">Needs Wash</span>
                 </label>
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" name="needsRework" className="rounded border-slate-300 text-amber-500 focus:ring-amber-500" defaultChecked={!!(editTarget as any).needsRework} />
-                  <span className="text-slate-600">Needs Rework</span>
+                  <input type="checkbox" name="needsRework" className="rounded border-border text-amber-500 focus:ring-amber-500" defaultChecked={!!(editTarget as any).needsRework} />
+                  <span className="text-muted-foreground">Needs Rework</span>
                 </label>
               </div>
               <div>

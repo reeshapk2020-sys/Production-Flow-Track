@@ -92,9 +92,9 @@ export default function DispatchPage() {
 
   const statusBadge = (status: string) => {
     const config: Record<string, { color: string; icon: any; label: string }> = {
-      pending: { color: "bg-yellow-100 text-yellow-800 border-yellow-200", icon: Clock, label: "Pending" },
-      dispatched: { color: "bg-blue-100 text-blue-800 border-blue-200", icon: Send, label: "Dispatched" },
-      delivered: { color: "bg-green-100 text-green-800 border-green-200", icon: CheckCircle2, label: "Delivered" },
+      pending: { color: "bg-yellow-100 text-yellow-800 border-yellow-500/20", icon: Clock, label: "Pending" },
+      dispatched: { color: "bg-primary/15 text-primary border-primary/20", icon: Send, label: "Dispatched" },
+      delivered: { color: "bg-green-100 text-green-800 border-green-500/20", icon: CheckCircle2, label: "Delivered" },
     };
     const c = config[status] || config.pending;
     const Icon = c.icon;
@@ -131,7 +131,7 @@ export default function DispatchPage() {
             <Card className="rounded-2xl shadow-md">
               <CardContent className="pt-4 pb-4 text-center">
                 <p className="text-sm text-muted-foreground">In Transit</p>
-                <p className="text-2xl font-bold text-blue-600">{reportSummary.dispatched}</p>
+                <p className="text-2xl font-bold text-primary">{reportSummary.dispatched}</p>
               </CardContent>
             </Card>
             <Card className="rounded-2xl shadow-md">
@@ -157,7 +157,7 @@ export default function DispatchPage() {
           <Button variant="outline" className="rounded-xl gap-2" onClick={exportToExcel} disabled={!dispatches?.length}>
             <Download className="h-4 w-4" /> Export Excel
           </Button>
-          <div className="ml-auto bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-2 flex items-center gap-2">
+          <div className="ml-auto bg-indigo-500/10 border border-indigo-500/20 rounded-xl px-4 py-2 flex items-center gap-2">
             <Truck className="h-4 w-4 text-indigo-600" />
             <span className="text-sm font-medium text-indigo-800">Total: <strong className="text-lg">{totalQty}</strong></span>
           </div>
@@ -365,7 +365,7 @@ function AddDispatchDialog({ onClose, onSuccess }: { onClose: () => void; onSucc
             </div>
           </div>
           {selectedStock && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-sm text-blue-800">
+            <div className="bg-primary/10 border border-primary/20 rounded-xl px-3 py-2 text-sm text-primary">
               <Package className="h-4 w-4 inline mr-1" /> Available: <strong>{maxAvailable}</strong>
             </div>
           )}
@@ -651,7 +651,7 @@ function ImportDispatchDialog({ onClose, onSuccess }: { onClose: () => void; onS
           <DialogTitle className="flex items-center gap-2"><FileSpreadsheet className="h-5 w-5" /> Import Dispatches</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-800 space-y-2">
+          <div className="bg-primary/10 border border-primary/20 rounded-xl px-4 py-3 text-sm text-primary space-y-2">
             <p>Upload an Excel or CSV file with dispatch records. Required columns: <strong>dispatchDate</strong>, <strong>itemCode</strong>, <strong>quantity</strong>.</p>
             <Button variant="outline" size="sm" className="rounded-lg gap-2" onClick={downloadTemplate}>
               <Download className="h-3.5 w-3.5" /> Download Template
@@ -665,14 +665,14 @@ function ImportDispatchDialog({ onClose, onSuccess }: { onClose: () => void; onS
           </div>
 
           {errors.length > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 space-y-1">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-700 space-y-1">
               <div className="flex items-center gap-2 font-medium"><AlertCircle className="h-4 w-4" /> Validation Errors</div>
               {errors.map((e, i) => <p key={i} className="text-xs">{e}</p>)}
             </div>
           )}
 
           {parsedRows.length > 0 && errors.length === 0 && (
-            <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-800">
+            <div className="bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3 text-sm text-green-800">
               <CheckCircle2 className="h-4 w-4 inline mr-1" />
               {parsedRows.length} rows parsed. Total quantity: {parsedRows.reduce((s: number, r: any) => s + r.quantity, 0)}.
             </div>

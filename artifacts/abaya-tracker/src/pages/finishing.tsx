@@ -165,14 +165,14 @@ function FinishingView() {
   return (
     <>
     <FilterBar fields={finishingFilterFields} values={filters} onChange={setFilters} />
-    <Card className="shadow-lg border-slate-200 rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-      <CardHeader className="bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
+    <Card className="shadow-lg border-border rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+      <CardHeader className="bg-card border-b border-border flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
         <div>
-          <CardTitle className="text-xl font-display text-slate-800 flex items-center gap-2">
+          <CardTitle className="text-xl font-display text-foreground flex items-center gap-2">
             <Settings2 className="h-5 w-5 text-primary" />
             Finishing Records
           </CardTitle>
-          <p className="text-sm text-slate-500 mt-1">Receiving → Finishing → Finished Goods</p>
+          <p className="text-sm text-muted-foreground mt-1">Receiving → Finishing → Finished Goods</p>
         </div>
         {canCreate && <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
           <DialogTrigger asChild>
@@ -210,21 +210,21 @@ function FinishingView() {
               {selectedBatchId && (
                 <div className={`rounded-lg border px-4 py-3 text-sm ${
                   loadingInfo
-                    ? "border-slate-200 bg-slate-50"
+                    ? "border-border bg-background"
                     : available === 0
-                    ? "border-red-200 bg-red-50"
-                    : "border-emerald-200 bg-emerald-50"
+                    ? "border-red-500/20 bg-red-500/10"
+                    : "border-emerald-500/20 bg-emerald-500/10"
                 }`}>
                   {loadingInfo ? (
-                    <div className="flex items-center gap-2 text-slate-500">
+                    <div className="flex items-center gap-2 text-muted-foreground">
                       <Loader2 className="h-4 w-4 animate-spin" /> Loading batch info...
                     </div>
                   ) : (
                     <div className="flex items-start gap-2">
                       <Info className={`h-4 w-4 mt-0.5 shrink-0 ${available === 0 ? "text-red-500" : "text-emerald-600"}`} />
                       <div className="space-y-0.5">
-                        <div className="font-medium text-slate-700">Availability from Receiving</div>
-                        <div className="text-slate-600">
+                        <div className="font-medium text-foreground">Availability from Receiving</div>
+                        <div className="text-muted-foreground">
                           Total Received: <strong>{batchInfo?.totalReceived ?? 0}</strong> pcs &nbsp;|&nbsp;
                           Already Finished: <strong>{batchInfo?.totalFinishingOutput ?? 0}</strong> pcs &nbsp;|&nbsp;
                           <span className={available === 0 ? "text-red-600 font-bold" : "text-emerald-700 font-bold"}>
@@ -241,12 +241,12 @@ function FinishingView() {
                 <div>
                   <label className="text-sm font-medium block mb-1.5">
                     Input Qty
-                    {available > 0 && <span className="text-xs text-slate-400 ml-1">(max {available})</span>}
+                    {available > 0 && <span className="text-xs text-muted-foreground ml-1">(max {available})</span>}
                   </label>
                   <input
                     type="number" name="inputQuantity" min="1" max={available || undefined}
                     required placeholder="0"
-                    className={`form-input-styled ${qtyError && input > available ? "border-red-400 bg-red-50" : ""}`}
+                    className={`form-input-styled ${qtyError && input > available ? "border-red-500/40 bg-red-500/10" : ""}`}
                     value={inputQty}
                     onChange={(e) => setInputQty(e.target.value)}
                   />
@@ -257,7 +257,7 @@ function FinishingView() {
                     type="number" name="outputQuantity" min="0" required placeholder="0"
                     className={`form-input-styled ${
                       qtyError && (output > input)
-                        ? "border-red-400 bg-red-50"
+                        ? "border-red-500/40 bg-red-500/10"
                         : "border-primary/30 bg-primary/5"
                     }`}
                     value={outputQty}
@@ -267,7 +267,7 @@ function FinishingView() {
               </div>
 
               {qtyError && (
-                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                <div className="flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-700">
                   <AlertCircle className="h-4 w-4 shrink-0" />
                   {qtyError}
                 </div>
@@ -275,7 +275,7 @@ function FinishingView() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium block mb-1.5 text-slate-500">Defective Qty</label>
+                  <label className="text-sm font-medium block mb-1.5 text-muted-foreground">Defective Qty</label>
                   <input
                     type="number" name="defectiveQuantity" min="0"
                     className="form-input-styled"
@@ -298,7 +298,7 @@ function FinishingView() {
               </div>
 
               <div>
-                <label className="text-sm font-medium block mb-1.5 text-slate-400">Remarks</label>
+                <label className="text-sm font-medium block mb-1.5 text-muted-foreground">Remarks</label>
                 <input name="remarks" className="form-input-styled" placeholder="Optional notes..." />
               </div>
 
@@ -316,16 +316,16 @@ function FinishingView() {
         </Dialog>}
       </CardHeader>
 
-      <CardContent className="p-0 bg-white">
+      <CardContent className="p-0 bg-card">
         <Table>
-          <TableHeader className="bg-slate-50 border-b border-slate-100">
+          <TableHeader className="bg-background border-b border-border">
             <TableRow>
               <TableHead className="py-4">Batch / Product</TableHead>
               <TableHead>Item Code</TableHead>
               <TableHead className="text-right">Input</TableHead>
               <TableHead className="text-right text-emerald-600 font-semibold">Output</TableHead>
               <TableHead className="text-right text-red-500">Defective</TableHead>
-              <TableHead className="text-right text-slate-400">Pending</TableHead>
+              <TableHead className="text-right text-muted-foreground">Pending</TableHead>
               <TableHead>Operator</TableHead>
               <TableHead>Date</TableHead>
               {canEdit && <TableHead className="w-16"></TableHead>}
@@ -335,29 +335,29 @@ function FinishingView() {
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={canEdit ? 9 : 8} className="text-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" />
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
                 </TableCell>
               </TableRow>
             ) : (
               data?.map((rec) => (
-                <TableRow key={rec.id} className="group hover:bg-slate-50/50">
+                <TableRow key={rec.id} className="group hover:bg-background/50">
                   <TableCell>
                     <div className="font-semibold text-primary">{rec.batchNumber}</div>
-                    <div className="text-xs text-slate-500">{fmtCode(rec.productCode, rec.productName)}</div>
+                    <div className="text-xs text-muted-foreground">{fmtCode(rec.productCode, rec.productName)}</div>
                   </TableCell>
                   <TableCell>
                     {(rec as any).itemCode
                       ? <span className="font-mono text-xs font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded">{(rec as any).itemCode}</span>
-                      : <span className="text-xs text-slate-400">—</span>}
+                      : <span className="text-xs text-muted-foreground">—</span>}
                   </TableCell>
-                  <TableCell className="text-right text-slate-500 font-medium">{rec.inputQuantity}</TableCell>
+                  <TableCell className="text-right text-muted-foreground font-medium">{rec.inputQuantity}</TableCell>
                   <TableCell className="text-right font-bold text-emerald-600 text-lg">{rec.outputQuantity}</TableCell>
                   <TableCell className="text-right text-red-500 font-medium">{rec.defectiveQuantity || "—"}</TableCell>
-                  <TableCell className="text-right text-slate-400 font-medium">
+                  <TableCell className="text-right text-muted-foreground font-medium">
                     {Math.max(0, rec.inputQuantity - rec.outputQuantity - (rec.defectiveQuantity ?? 0))}
                   </TableCell>
-                  <TableCell className="text-slate-700">{rec.operator}</TableCell>
-                  <TableCell className="text-slate-600 text-sm">
+                  <TableCell className="text-foreground">{rec.operator}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
                     {rec.processDate ? format(new Date(rec.processDate), "MMM d, yyyy") : "—"}
                   </TableCell>
                   {canEdit && (
@@ -368,7 +368,7 @@ function FinishingView() {
                         className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={() => { setEditTarget(rec); setEditOpen(true); }}
                       >
-                        <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                       </Button>
                     </TableCell>
                   )}
@@ -377,7 +377,7 @@ function FinishingView() {
             )}
             {!isLoading && data?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={canEdit ? 9 : 8} className="text-center py-12 text-slate-500">
+                <TableCell colSpan={canEdit ? 9 : 8} className="text-center py-12 text-muted-foreground">
                   No finishing records yet.
                 </TableCell>
               </TableRow>
@@ -394,12 +394,12 @@ function FinishingView() {
           </DialogHeader>
           {editTarget && (
             <form onSubmit={onEditSubmit} className="grid grid-cols-2 gap-4 pt-4">
-              <div className="col-span-2 bg-slate-50 rounded-xl p-3 text-sm text-slate-600">
-                <div className="font-semibold text-slate-800">{editTarget.batchNumber}</div>
-                <div className="text-xs text-slate-500 mt-0.5">Input: {editTarget.inputQuantity} · Output: {editTarget.outputQuantity}</div>
+              <div className="col-span-2 bg-background rounded-xl p-3 text-sm text-muted-foreground">
+                <div className="font-semibold text-foreground">{editTarget.batchNumber}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">Input: {editTarget.inputQuantity} · Output: {editTarget.outputQuantity}</div>
               </div>
               {(editTarget as any).isLocked && (
-                <div className="col-span-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
+                <div className="col-span-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                   Finished goods exist for this batch. Quantities cannot be changed.
                 </div>

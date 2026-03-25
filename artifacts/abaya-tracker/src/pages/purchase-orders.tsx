@@ -16,12 +16,12 @@ import { useAppAuth } from "@/lib/auth-context";
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
-    open: { label: "Open", cls: "bg-blue-50 text-blue-700 border-blue-200" },
-    in_progress: { label: "In Progress", cls: "bg-amber-50 text-amber-700 border-amber-200" },
-    completed: { label: "Completed", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-    cancelled: { label: "Cancelled", cls: "bg-red-50 text-red-700 border-red-200" },
+    open: { label: "Open", cls: "bg-primary/10 text-primary border-primary/20" },
+    in_progress: { label: "In Progress", cls: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
+    completed: { label: "Completed", cls: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" },
+    cancelled: { label: "Cancelled", cls: "bg-red-500/10 text-red-700 border-red-500/20" },
   };
-  const { label, cls } = map[status] || { label: status, cls: "bg-slate-100 text-slate-500 border-slate-200" };
+  const { label, cls } = map[status] || { label: status, cls: "bg-muted text-muted-foreground border-border" };
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}>{label}</span>;
 }
 
@@ -37,30 +37,30 @@ function PODetailRow({ poId }: { poId: number }) {
   return (
     <tr>
       <td colSpan={5} className="p-0">
-        <div className="bg-slate-50 p-4 border-t">
+        <div className="bg-background p-4 border-t">
           <div className="grid grid-cols-6 gap-4 mb-3">
-            <div className="text-center p-2 bg-white rounded border">
-              <div className="text-xs text-slate-500">Allocated</div>
+            <div className="text-center p-2 bg-card rounded border">
+              <div className="text-xs text-muted-foreground">Allocated</div>
               <div className="font-semibold">{summary.totalAllocated || 0}</div>
             </div>
-            <div className="text-center p-2 bg-white rounded border">
-              <div className="text-xs text-slate-500">Received</div>
+            <div className="text-center p-2 bg-card rounded border">
+              <div className="text-xs text-muted-foreground">Received</div>
               <div className="font-semibold">{summary.totalReceived || 0}</div>
             </div>
-            <div className="text-center p-2 bg-white rounded border">
-              <div className="text-xs text-slate-500">Finished</div>
+            <div className="text-center p-2 bg-card rounded border">
+              <div className="text-xs text-muted-foreground">Finished</div>
               <div className="font-semibold">{summary.totalFinished || 0}</div>
             </div>
-            <div className="text-center p-2 bg-white rounded border">
-              <div className="text-xs text-slate-500">Outsourced</div>
+            <div className="text-center p-2 bg-card rounded border">
+              <div className="text-xs text-muted-foreground">Outsourced</div>
               <div className="font-semibold">{summary.totalOutsourced || 0}</div>
             </div>
-            <div className="text-center p-2 bg-white rounded border">
-              <div className="text-xs text-slate-500">Dispatched</div>
+            <div className="text-center p-2 bg-card rounded border">
+              <div className="text-xs text-muted-foreground">Dispatched</div>
               <div className="font-semibold">{summary.totalDispatched || 0}</div>
             </div>
-            <div className="text-center p-2 bg-white rounded border">
-              <div className="text-xs text-slate-500">Delivered</div>
+            <div className="text-center p-2 bg-card rounded border">
+              <div className="text-xs text-muted-foreground">Delivered</div>
               <div className="font-semibold">{summary.totalDelivered || 0}</div>
             </div>
           </div>
@@ -88,7 +88,7 @@ function PODetailRow({ poId }: { poId: number }) {
               </TableBody>
             </Table>
           ) : (
-            <p className="text-sm text-slate-500 text-center py-2">No batches linked to this PO yet.</p>
+            <p className="text-sm text-muted-foreground text-center py-2">No batches linked to this PO yet.</p>
           )}
         </div>
       </td>
@@ -169,8 +169,8 @@ export default function PurchaseOrdersPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-display font-bold text-slate-800">Purchase Orders</h2>
-            <p className="text-sm text-slate-500 mt-1">Manage purchase orders and view linked cutting batches</p>
+            <h2 className="text-2xl font-display font-bold text-foreground">Purchase Orders</h2>
+            <p className="text-sm text-muted-foreground mt-1">Manage purchase orders and view linked cutting batches</p>
           </div>
           {canCreate && (
             <Dialog open={open} onOpenChange={setOpen}>
@@ -181,15 +181,15 @@ export default function PurchaseOrdersPage() {
                 <DialogHeader><DialogTitle>Create Purchase Order</DialogTitle></DialogHeader>
                 <form onSubmit={onSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">PO Number *</label>
+                    <label className="block text-sm font-medium text-foreground mb-1">PO Number *</label>
                     <input name="poNumber" required className="w-full border rounded-md px-3 py-2 text-sm" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Supplier Name *</label>
+                    <label className="block text-sm font-medium text-foreground mb-1">Supplier Name *</label>
                     <input name="supplierName" required className="w-full border rounded-md px-3 py-2 text-sm" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                    <label className="block text-sm font-medium text-foreground mb-1">Status</label>
                     <select name="status" defaultValue="open" className="w-full border rounded-md px-3 py-2 text-sm">
                       <option value="open">Open</option>
                       <option value="in_progress">In Progress</option>
@@ -198,7 +198,7 @@ export default function PurchaseOrdersPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Remarks</label>
+                    <label className="block text-sm font-medium text-foreground mb-1">Remarks</label>
                     <textarea name="remarks" rows={2} className="w-full border rounded-md px-3 py-2 text-sm" />
                   </div>
                   <Button type="submit" disabled={isPending} className="w-full">
@@ -218,7 +218,7 @@ export default function PurchaseOrdersPage() {
             {isLoading ? (
               <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
             ) : !data?.length ? (
-              <div className="text-center py-12 text-slate-500"><AlertCircle className="mx-auto h-10 w-10 mb-2 text-slate-300" /><p>No purchase orders yet</p></div>
+              <div className="text-center py-12 text-muted-foreground"><AlertCircle className="mx-auto h-10 w-10 mb-2 text-muted-foreground" /><p>No purchase orders yet</p></div>
             ) : (
               <div className="rounded-md border overflow-hidden">
                 <Table>
@@ -242,7 +242,7 @@ export default function PurchaseOrdersPage() {
                           <TableCell className="font-mono text-xs font-semibold">{po.poNumber}</TableCell>
                           <TableCell>{po.supplierName}</TableCell>
                           <TableCell><StatusBadge status={po.status} /></TableCell>
-                          <TableCell className="text-xs text-slate-500">{po.createdAt ? format(new Date(po.createdAt), "dd MMM yyyy") : "-"}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{po.createdAt ? format(new Date(po.createdAt), "dd MMM yyyy") : "-"}</TableCell>
                           {canEdit && (
                             <TableCell>
                               <Button variant="ghost" size="sm" onClick={(ev) => { ev.stopPropagation(); setEditTarget(po); setEditOpen(true); }}>
@@ -267,15 +267,15 @@ export default function PurchaseOrdersPage() {
             {editTarget && (
               <form onSubmit={onEditSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">PO Number *</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">PO Number *</label>
                   <input name="poNumber" required defaultValue={editTarget.poNumber} className="w-full border rounded-md px-3 py-2 text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Supplier Name *</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Supplier Name *</label>
                   <input name="supplierName" required defaultValue={editTarget.supplierName} className="w-full border rounded-md px-3 py-2 text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Status</label>
                   <select name="status" defaultValue={editTarget.status} className="w-full border rounded-md px-3 py-2 text-sm">
                     <option value="open">Open</option>
                     <option value="in_progress">In Progress</option>
@@ -284,7 +284,7 @@ export default function PurchaseOrdersPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Remarks</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Remarks</label>
                   <textarea name="remarks" rows={2} defaultValue={editTarget.remarks ?? ""} className="w-full border rounded-md px-3 py-2 text-sm" />
                 </div>
                 <Button type="submit" disabled={isUpdating} className="w-full">

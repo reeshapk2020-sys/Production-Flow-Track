@@ -31,12 +31,12 @@ export function FilterBar({ fields, values, onChange }: FilterBarProps) {
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 mb-4">
+    <div className="bg-card border border-border rounded-xl px-4 py-3 mb-4">
       <div className="flex items-center gap-2">
         <Button
           variant="ghost"
           size="sm"
-          className={`rounded-lg gap-1.5 text-sm ${hasActiveFilters ? 'text-primary font-semibold' : 'text-slate-500'}`}
+          className={`rounded-lg gap-1.5 text-sm ${hasActiveFilters ? 'text-primary font-semibold' : 'text-muted-foreground'}`}
           onClick={() => setExpanded(!expanded)}
         >
           <Filter className="h-4 w-4" />
@@ -51,7 +51,7 @@ export function FilterBar({ fields, values, onChange }: FilterBarProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="rounded-lg text-xs text-slate-400 hover:text-red-500 gap-1"
+            className="rounded-lg text-xs text-muted-foreground hover:text-red-500 gap-1"
             onClick={handleClear}
           >
             <X className="h-3 w-3" /> Clear
@@ -60,28 +60,28 @@ export function FilterBar({ fields, values, onChange }: FilterBarProps) {
       </div>
 
       {expanded && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 mt-3 pt-3 border-t border-slate-100">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 mt-3 pt-3 border-t border-border">
           {fields.map(field => (
             <div key={field.name}>
-              <label className="text-xs font-medium text-slate-500 block mb-1">{field.label}</label>
+              <label className="text-xs font-medium text-muted-foreground block mb-1">{field.label}</label>
               {field.type === "text" ? (
                 <input
                   type="text"
                   placeholder={field.placeholder || "Search..."}
-                  className="w-full text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:ring-1 focus:ring-primary/30 focus:border-primary outline-none"
+                  className="w-full text-sm border border-border rounded-lg px-2.5 py-1.5 bg-card focus:ring-1 focus:ring-primary/30 focus:border-primary outline-none"
                   value={values[field.name] || ""}
                   onChange={e => handleChange(field.name, e.target.value)}
                 />
               ) : field.type === "date" ? (
                 <input
                   type="date"
-                  className="w-full text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:ring-1 focus:ring-primary/30 focus:border-primary outline-none"
+                  className="w-full text-sm border border-border rounded-lg px-2.5 py-1.5 bg-card focus:ring-1 focus:ring-primary/30 focus:border-primary outline-none"
                   value={values[field.name] || ""}
                   onChange={e => handleChange(field.name, e.target.value)}
                 />
               ) : (
                 <select
-                  className="w-full text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:ring-1 focus:ring-primary/30 focus:border-primary outline-none"
+                  className="w-full text-sm border border-border rounded-lg px-2.5 py-1.5 bg-card focus:ring-1 focus:ring-primary/30 focus:border-primary outline-none"
                   value={values[field.name] || ""}
                   onChange={e => handleChange(field.name, e.target.value)}
                 >

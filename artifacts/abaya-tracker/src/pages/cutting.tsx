@@ -23,19 +23,19 @@ import { FilterBar } from "@/components/filter-bar";
 
 function BatchStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
-    cutting:            { label: "Cutting",        cls: "bg-blue-50 text-blue-700 border-blue-200" },
-    allocated:          { label: "Allocated",      cls: "bg-amber-50 text-amber-700 border-amber-200" },
-    allocation:         { label: "Allocated",      cls: "bg-amber-50 text-amber-700 border-amber-200" },
-    partially_received: { label: "Partial Recv",   cls: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-    stitching:          { label: "Partial Recv",   cls: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-    fully_received:     { label: "Fully Received", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-    in_finishing:       { label: "In Finishing",   cls: "bg-purple-50 text-purple-700 border-purple-200" },
-    finishing:          { label: "In Finishing",   cls: "bg-purple-50 text-purple-700 border-purple-200" },
-    finished:           { label: "Finished",       cls: "bg-slate-100 text-slate-600 border-slate-200" },
-    partial:            { label: "Partial Recv",   cls: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-    completed:          { label: "Completed",      cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    cutting:            { label: "Cutting",        cls: "bg-primary/10 text-primary border-primary/20" },
+    allocated:          { label: "Allocated",      cls: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
+    allocation:         { label: "Allocated",      cls: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
+    partially_received: { label: "Partial Recv",   cls: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20" },
+    stitching:          { label: "Partial Recv",   cls: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20" },
+    fully_received:     { label: "Fully Received", cls: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" },
+    in_finishing:       { label: "In Finishing",   cls: "bg-purple-500/10 text-purple-700 border-purple-500/20" },
+    finishing:          { label: "In Finishing",   cls: "bg-purple-500/10 text-purple-700 border-purple-500/20" },
+    finished:           { label: "Finished",       cls: "bg-muted text-muted-foreground border-border" },
+    partial:            { label: "Partial Recv",   cls: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20" },
+    completed:          { label: "Completed",      cls: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" },
   };
-  const { label, cls } = map[status] || { label: status, cls: "bg-slate-100 text-slate-500 border-slate-200" };
+  const { label, cls } = map[status] || { label: status, cls: "bg-muted text-muted-foreground border-border" };
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}>{label}</span>;
 }
 
@@ -215,14 +215,14 @@ export default function CuttingPage() {
   return (
     <AppLayout title="Cutting Department">
       <FilterBar fields={filterFields} values={filters} onChange={setFilters} />
-      <Card className="shadow-lg border-slate-200 rounded-2xl overflow-hidden">
-        <CardHeader className="bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
+      <Card className="shadow-lg border-border rounded-2xl overflow-hidden">
+        <CardHeader className="bg-card border-b border-border flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
           <div>
-            <CardTitle className="text-xl font-display text-slate-800 flex items-center gap-2">
+            <CardTitle className="text-xl font-display text-foreground flex items-center gap-2">
               <Scissors className="h-5 w-5 text-primary" />
               Cutting Batches (WIP)
             </CardTitle>
-            <p className="text-sm text-slate-500 mt-1">Manage fabric cutting and batch creation.</p>
+            <p className="text-sm text-muted-foreground mt-1">Manage fabric cutting and batch creation.</p>
           </div>
           <div className="flex gap-2">
           {canImport && (
@@ -247,7 +247,7 @@ export default function CuttingPage() {
                   </label>
                   <input
                     name="batchNumber"
-                    className={`form-input-styled font-mono ${isDuplicate ? "border-red-400 bg-red-50" : ""}`}
+                    className={`form-input-styled font-mono ${isDuplicate ? "border-red-500/40 bg-red-500/10" : ""}`}
                     placeholder="e.g. BT-001 or any unique identifier..."
                     required
                     value={batchNumber}
@@ -255,7 +255,7 @@ export default function CuttingPage() {
                     autoComplete="off"
                   />
                   {isDuplicate && (
-                    <div className="flex items-center gap-2 mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    <div className="flex items-center gap-2 mt-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-700">
                       <AlertCircle className="h-4 w-4 shrink-0" />
                       Batch number <strong>"{batchNumber.trim()}"</strong> already exists. Please enter a unique batch number.
                     </div>
@@ -263,7 +263,7 @@ export default function CuttingPage() {
                 </div>
 
                 <div className="col-span-2 bg-violet-50/50 p-4 rounded-xl border border-violet-100 space-y-4">
-                  <h3 className="font-semibold text-slate-800 text-sm uppercase tracking-wider">Production Source</h3>
+                  <h3 className="font-semibold text-foreground text-sm uppercase tracking-wider">Production Source</h3>
                   <div className="grid grid-cols-3 gap-2">
                     {[
                       { value: "reesha_stock", label: "Reesha Stock" },
@@ -277,7 +277,7 @@ export default function CuttingPage() {
                         className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all ${
                           productionFor === opt.value
                             ? "bg-violet-600 text-white border-violet-600 shadow-sm"
-                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                            : "bg-card text-muted-foreground border-border hover:bg-background"
                         }`}
                       >
                         {opt.label}
@@ -288,7 +288,7 @@ export default function CuttingPage() {
                     <div>
                       <label className="text-sm font-medium block mb-1.5">Purchase Order <span className="text-red-500">*</span></label>
                       <select
-                        className="form-input-styled bg-white"
+                        className="form-input-styled bg-card"
                         required
                         value={selectedPoId ?? ""}
                         onChange={(e) => setSelectedPoId(Number(e.target.value) || undefined)}
@@ -304,7 +304,7 @@ export default function CuttingPage() {
                     <div>
                       <label className="text-sm font-medium block mb-1.5">Order <span className="text-red-500">*</span></label>
                       <select
-                        className="form-input-styled bg-white"
+                        className="form-input-styled bg-card"
                         required
                         value={selectedOrderId ?? ""}
                         onChange={(e) => setSelectedOrderId(Number(e.target.value) || undefined)}
@@ -318,26 +318,26 @@ export default function CuttingPage() {
                   )}
                 </div>
 
-                <div className="col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-4">
-                  <h3 className="font-semibold text-slate-800 text-sm uppercase tracking-wider">Product Selection</h3>
+                <div className="col-span-2 bg-background p-4 rounded-xl border border-border space-y-4">
+                  <h3 className="font-semibold text-foreground text-sm uppercase tracking-wider">Product Selection</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2">
-                      <label className="text-sm font-medium block mb-1.5">Design / Product <span className="text-xs text-slate-400 font-normal">(optional at cutting)</span></label>
-                      <select name="productId" className="form-input-styled bg-white">
+                      <label className="text-sm font-medium block mb-1.5">Design / Product <span className="text-xs text-muted-foreground font-normal">(optional at cutting)</span></label>
+                      <select name="productId" className="form-input-styled bg-card">
                         <option value="">— None —</option>
                         {products?.filter(p=>p.isActive).map(p => <option key={p.id} value={p.id}>{p.code} - {p.name}</option>)}
                       </select>
                     </div>
                     <div className="col-span-1">
                       <label className="text-sm font-medium block mb-1.5">Size <span className="text-red-500">*</span></label>
-                      <select name="sizeId" className="form-input-styled bg-white" required>
+                      <select name="sizeId" className="form-input-styled bg-card" required>
                         <option value="">Select Size...</option>
                         {sizes?.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                       </select>
                     </div>
                     <div className="col-span-1">
                       <label className="text-sm font-medium block mb-1.5">Color <span className="text-red-500">*</span></label>
-                      <select name="colorId" className="form-input-styled bg-white" required>
+                      <select name="colorId" className="form-input-styled bg-card" required>
                         <option value="">Select Color...</option>
                         {colors?.map(c => <option key={c.id} value={c.id}>{c.code ? `${c.code} — ${c.name}` : c.name}</option>)}
                       </select>
@@ -347,13 +347,13 @@ export default function CuttingPage() {
 
                 <div className="col-span-2 bg-teal-50/50 p-4 rounded-xl border border-teal-100 space-y-4">
                   <div>
-                    <h3 className="font-semibold text-slate-800 text-sm uppercase tracking-wider">Materials (for Item Code)</h3>
-                    <p className="text-xs text-slate-500 mt-0.5">Item Code = Product Code – Color Code – Material 1 – Material 2</p>
+                    <h3 className="font-semibold text-foreground text-sm uppercase tracking-wider">Materials (for Item Code)</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Item Code = Product Code – Color Code – Material 1 – Material 2</p>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium block mb-1.5">Material 1</label>
-                      <select name="materialId" className="form-input-styled bg-white">
+                      <select name="materialId" className="form-input-styled bg-card">
                         <option value="">— None —</option>
                         {materials?.filter((m: any) => m.isActive).map((m: any) => (
                           <option key={m.id} value={m.id}>{fmtCode(m.code, m.name)}</option>
@@ -362,7 +362,7 @@ export default function CuttingPage() {
                     </div>
                     <div>
                       <label className="text-sm font-medium block mb-1.5">Material 2</label>
-                      <select name="material2Id" className="form-input-styled bg-white">
+                      <select name="material2Id" className="form-input-styled bg-card">
                         <option value="">— None —</option>
                         {materials?.filter((m: any) => m.isActive).map((m: any) => (
                           <option key={m.id} value={m.id}>{fmtCode(m.code, m.name)}</option>
@@ -372,14 +372,14 @@ export default function CuttingPage() {
                   </div>
                 </div>
 
-                <div className="col-span-2 bg-blue-50/50 p-4 rounded-xl border border-blue-100 space-y-4">
-                  <h3 className="font-semibold text-slate-800 text-sm uppercase tracking-wider">Fabric Consumption</h3>
+                <div className="col-span-2 bg-primary/10 p-4 rounded-xl border border-primary/20 space-y-4">
+                  <h3 className="font-semibold text-foreground text-sm uppercase tracking-wider">Fabric Consumption</h3>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="col-span-2">
                       <label className="text-sm font-medium block mb-1.5">Select Fabric Roll</label>
                       <select
                         name="fabricRollId"
-                        className="form-input-styled bg-white"
+                        className="form-input-styled bg-card"
                         required
                         value={selectedRollId ?? ""}
                         onChange={e => setSelectedRollId(e.target.value ? Number(e.target.value) : null)}
@@ -396,7 +396,7 @@ export default function CuttingPage() {
                         type="number"
                         step="0.1"
                         name="quantityUsed"
-                        className={`form-input-styled ${exceedsTolerance ? "border-red-400 bg-red-50" : withinTolerance ? "border-amber-400 bg-amber-50" : ""}`}
+                        className={`form-input-styled ${exceedsTolerance ? "border-red-500/40 bg-red-500/10" : withinTolerance ? "border-amber-500/40 bg-amber-500/10" : ""}`}
                         required
                         placeholder="0.0"
                         value={quantityUsed}
@@ -405,19 +405,19 @@ export default function CuttingPage() {
                     </div>
                   </div>
                   {selectedRoll && (
-                    <div className="text-sm text-slate-600 bg-white rounded-lg px-3 py-2 border border-slate-200">
+                    <div className="text-sm text-muted-foreground bg-card rounded-lg px-3 py-2 border border-border">
                       Available: <strong>{selectedRoll.availableQuantity} {selectedRoll.unit}</strong>
-                      <span className="text-slate-400 ml-2">(tolerance: +{TOLERANCE})</span>
+                      <span className="text-muted-foreground ml-2">(tolerance: +{TOLERANCE})</span>
                     </div>
                   )}
                   {withinTolerance && (
-                    <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                    <div className="flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-700">
                       <AlertCircle className="h-4 w-4 shrink-0" />
                       Quantity exceeds available stock but is within the {TOLERANCE} tolerance. This will be allowed.
                     </div>
                   )}
                   {exceedsTolerance && (
-                    <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    <div className="flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-700">
                       <AlertCircle className="h-4 w-4 shrink-0" />
                       Quantity exceeds available stock by more than {TOLERANCE}. Cannot proceed.
                     </div>
@@ -456,9 +456,9 @@ export default function CuttingPage() {
           </Dialog>}
           </div>
         </CardHeader>
-        <CardContent className="p-0 bg-white">
+        <CardContent className="p-0 bg-card">
           <Table>
-            <TableHeader className="bg-slate-50 border-b border-slate-100">
+            <TableHeader className="bg-background border-b border-border">
               <TableRow>
                 <TableHead className="py-4">Batch Number</TableHead>
                 <TableHead>Product / Specs</TableHead>
@@ -472,38 +472,38 @@ export default function CuttingPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? <TableRow><TableCell colSpan={canEdit ? 9 : 8} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow> :
+              {isLoading ? <TableRow><TableCell colSpan={canEdit ? 9 : 8} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow> :
                 data?.map(batch => (
                   <TableRow key={batch.id} className="group">
                     <TableCell className="font-mono text-primary font-bold">{batch.batchNumber}</TableCell>
                     <TableCell>
-                      <div className="font-semibold text-slate-900">{fmtCode(batch.productCode, batch.productName)}</div>
-                      <div className="text-xs text-slate-500 flex gap-2 mt-0.5">
-                        {batch.sizeName && <span className="bg-slate-100 px-1.5 rounded">{batch.sizeName}</span>}
-                        {(batch.colorCode || batch.colorName) && <span className="bg-slate-100 px-1.5 rounded">{batch.colorCode || batch.colorName}</span>}
+                      <div className="font-semibold text-foreground">{fmtCode(batch.productCode, batch.productName)}</div>
+                      <div className="text-xs text-muted-foreground flex gap-2 mt-0.5">
+                        {batch.sizeName && <span className="bg-muted px-1.5 rounded">{batch.sizeName}</span>}
+                        {(batch.colorCode || batch.colorName) && <span className="bg-muted px-1.5 rounded">{batch.colorCode || batch.colorName}</span>}
                       </div>
                     </TableCell>
                     <TableCell>
                       {batch.itemCode
                         ? <span className="font-mono text-xs font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded">{batch.itemCode}</span>
-                        : <span className="text-xs text-slate-400">—</span>}
+                        : <span className="text-xs text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className="text-right font-semibold text-lg">{batch.quantityCut}</TableCell>
                     <TableCell className="text-right">
-                      <span className={`font-bold ${batch.availableForAllocation! > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      <span className={`font-bold ${batch.availableForAllocation! > 0 ? 'text-emerald-600' : 'text-muted-foreground'}`}>
                         {batch.availableForAllocation}
                       </span>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm text-slate-900">{batch.cuttingDate ? format(new Date(batch.cuttingDate), 'MMM d, yyyy') : '-'}</div>
-                      <div className="text-xs text-slate-500">{batch.cutter || '-'}</div>
+                      <div className="text-sm text-foreground">{batch.cuttingDate ? format(new Date(batch.cuttingDate), 'MMM d, yyyy') : '-'}</div>
+                      <div className="text-xs text-muted-foreground">{batch.cutter || '-'}</div>
                     </TableCell>
                     <TableCell>
                       {(() => {
                         const pf = (batch as any).productionFor || "reesha_stock";
                         if (pf === "purchase_order") return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-50 text-violet-700 border-violet-200">PO: {(batch as any).poNumber || "?"}</span>;
-                        if (pf === "order") return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-orange-50 text-orange-700 border-orange-200">Order: {(batch as any).orderNumber || "?"}</span>;
-                        return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-slate-50 text-slate-600 border-slate-200">Reesha Stock</span>;
+                        if (pf === "order") return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-orange-500/10 text-orange-700 border-orange-500/20">Order: {(batch as any).orderNumber || "?"}</span>;
+                        return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-background text-muted-foreground border-border">Reesha Stock</span>;
                       })()}
                     </TableCell>
                     <TableCell>
@@ -517,7 +517,7 @@ export default function CuttingPage() {
                           className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={() => { setEditTarget(batch); setEditProductionFor(batch.productionFor || "reesha_stock"); setEditOpen(true); }}
                         >
-                          <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                         </Button>
                       </TableCell>
                     )}
@@ -525,7 +525,7 @@ export default function CuttingPage() {
                 ))
               }
               {data?.length === 0 && (
-                <TableRow><TableCell colSpan={canEdit ? 8 : 7} className="text-center py-12 text-slate-500">No cutting batches found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 8 : 7} className="text-center py-12 text-muted-foreground">No cutting batches found.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -541,7 +541,7 @@ export default function CuttingPage() {
           {editTarget && (
             <form onSubmit={onEditSubmit} className="grid grid-cols-2 gap-4 pt-4">
               {(editTarget as any).isLocked && (
-                <div className="col-span-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
+                <div className="col-span-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                   Allocations exist for this batch. Product, color, size, and quantity cannot be changed.
                 </div>

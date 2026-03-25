@@ -1,11 +1,12 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { useAppAuth, displayName, getRoleLabel } from "@/lib/auth-context";
+import { useTheme } from "@/lib/theme-context";
 import {
   LayoutDashboard, Database, Layers, Scissors, Send,
   Inbox, Settings2, Package, Box, BarChart3,
   GitBranch, Shield, Users, LogOut, Loader2, ChevronRight, KeyRound, ArrowUpRight,
-  FileText, ShoppingCart, PackageOpen, Truck
+  FileText, ShoppingCart, PackageOpen, Truck, Moon, Sun
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -34,10 +35,11 @@ const NAV_ITEMS = [
 export function AppLayout({ children, title }: { children: ReactNode; title: string }) {
   const [location] = useLocation();
   const { user, isLoading, logout, can } = useAppAuth();
+  const { theme, toggleTheme } = useTheme();
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -72,16 +74,15 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
   const initials = userDisplay.split(" ").map(w => w[0]).join("").substring(0, 2).toUpperCase();
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 shadow-2xl z-20 hidden md:flex">
-        <div className="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-950">
+    <div className="flex h-screen bg-background font-sans overflow-hidden">
+      <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col flex-shrink-0 shadow-2xl z-20 hidden md:flex">
+        <div className="h-16 flex items-center px-6 border-b border-sidebar-border bg-sidebar">
           <Package className="h-6 w-6 text-primary mr-3" />
-          <span className="font-display font-bold text-lg text-white tracking-wide">Reesha Production Management System</span>
+          <span className="font-display font-bold text-lg text-foreground tracking-wide">Reesha Production Management System</span>
         </div>
 
         <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1 custom-scrollbar">
-          <div className="px-3 pb-2 text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+          <div className="px-3 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
             Main Menu
           </div>
           {visibleNavItems.map((item) => {
@@ -95,14 +96,14 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
                 className={`flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 group ${
                   isActive
                     ? "bg-primary text-white shadow-md shadow-primary/20 font-medium"
-                    : "hover:bg-slate-800 hover:text-white"
+                    : "hover:bg-sidebar-accent hover:text-foreground"
                 }`}
               >
                 <item.icon
                   className={`h-5 w-5 mr-3 transition-colors ${
                     isActive
                       ? "text-white"
-                      : "text-slate-400 group-hover:text-primary"
+                      : "text-muted-foreground group-hover:text-primary"
                   }`}
                 />
                 {item.label}
@@ -111,21 +112,21 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
           })}
         </div>
 
-        <div className="p-4 border-t border-slate-800 bg-slate-950">
+        <div className="p-4 border-t border-sidebar-border bg-sidebar">
           <div className="flex items-center mb-4 gap-3">
             <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary text-sm shrink-0">
               {initials || "U"}
             </div>
             <div className="overflow-hidden flex-1">
-              <p className="text-sm font-medium text-white truncate">{userDisplay}</p>
-              <p className="text-xs text-slate-400">
+              <p className="text-sm font-medium text-foreground truncate">{userDisplay}</p>
+              <p className="text-xs text-muted-foreground">
                 @{user?.username} · <span className="capitalize">{getRoleLabel(user?.role ?? "")}</span>
               </p>
             </div>
           </div>
           <Button
             variant="ghost"
-            className="w-full justify-start text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl"
+            className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-sidebar-accent rounded-xl"
             onClick={() => logout()}
           >
             <LogOut className="h-4 w-4 mr-2" />
@@ -133,12 +134,17 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
           </Button>
         </div>
       </aside>
-      {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 bg-white border-b border-slate-200 shadow-sm flex items-center px-6 lg:px-8 shrink-0 z-10">
-          <h1 className="text-2xl font-display font-semibold text-slate-800 flex-1">{title}</h1>
-          {/* Mobile user info */}
-          <div className="flex items-center gap-2 md:hidden">
+        <header className="h-16 bg-card border-b border-border shadow-sm flex items-center px-6 lg:px-8 shrink-0 z-10">
+          <h1 className="text-2xl font-display font-semibold text-foreground flex-1">{title}</h1>
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </button>
+          <div className="flex items-center gap-2 md:hidden ml-2">
             <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary text-xs">
               {initials || "U"}
             </div>

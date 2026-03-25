@@ -35,12 +35,12 @@ interface User {
 function roleBadgeColor(role: string) {
   const map: Record<string, string> = {
     admin: "bg-purple-100 text-purple-800",
-    cutting: "bg-blue-100 text-blue-800",
+    cutting: "bg-primary/15 text-primary",
     allocation: "bg-amber-100 text-amber-800",
     stitching: "bg-indigo-100 text-indigo-800",
     finishing: "bg-green-100 text-green-800",
     store: "bg-orange-100 text-orange-800",
-    reporting: "bg-slate-100 text-slate-700",
+    reporting: "bg-muted text-foreground",
     data_entry: "bg-teal-100 text-teal-800",
     supervisor: "bg-rose-100 text-rose-800",
   };
@@ -109,7 +109,7 @@ export default function UsersPage() {
   if (currentUser?.role !== "admin") {
     return (
       <AppLayout title="User Management">
-        <div className="text-center py-20 text-slate-500">
+        <div className="text-center py-20 text-muted-foreground">
           <p className="text-lg font-medium">Access Denied</p>
           <p className="mt-2 text-sm">Only administrators can manage users.</p>
         </div>
@@ -121,8 +121,8 @@ export default function UsersPage() {
     <AppLayout title="User Management">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-slate-800">Staff Users</h2>
-          <p className="text-sm text-slate-500 mt-0.5">Manage factory staff accounts and their roles.</p>
+          <h2 className="text-lg font-semibold text-foreground">Staff Users</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">Manage factory staff accounts and their roles.</p>
         </div>
         <Button onClick={() => setShowCreate(true)} className="rounded-xl">
           <Plus className="h-4 w-4 mr-2" />
@@ -130,15 +130,15 @@ export default function UsersPage() {
         </Button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center h-48">
-            <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
           <Table>
             <TableHeader>
-              <TableRow className="bg-slate-50">
+              <TableRow className="bg-background">
                 <TableHead>Full Name</TableHead>
                 <TableHead>Username</TableHead>
                 <TableHead>Role</TableHead>
@@ -152,14 +152,14 @@ export default function UsersPage() {
               {users.map((u) => (
                 <TableRow key={u.id}>
                   <TableCell className="font-medium">{u.fullName || u.displayName || "—"}</TableCell>
-                  <TableCell className="text-slate-500 font-mono text-sm">{u.username}</TableCell>
+                  <TableCell className="text-muted-foreground font-mono text-sm">{u.username}</TableCell>
                   <TableCell>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${roleBadgeColor(u.role)}`}>
                       {getRoleLabel(u.role)}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-muted-foreground">
                       {u.replitUserId ? "Replit" : "Internal"}
                     </span>
                   </TableCell>
@@ -168,7 +168,7 @@ export default function UsersPage() {
                       {u.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-slate-400 text-sm">
+                  <TableCell className="text-muted-foreground text-sm">
                     {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString() : "Never"}
                   </TableCell>
                   <TableCell className="text-right">
@@ -197,7 +197,7 @@ export default function UsersPage() {
               ))}
               {users.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-slate-400 py-10">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-10">
                     No users yet. Add your first staff member.
                   </TableCell>
                 </TableRow>
@@ -261,7 +261,7 @@ function CreateUserDialog({ open, onClose, onSubmit, loading, availableRoles }: 
           <div className="space-y-1.5">
             <Label>Username</Label>
             <Input value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} placeholder="mohammed_r" required className="rounded-xl font-mono" />
-            <p className="text-xs text-slate-400">Letters, numbers and underscores only.</p>
+            <p className="text-xs text-muted-foreground">Letters, numbers and underscores only.</p>
           </div>
           <div className="space-y-1.5">
             <Label>Password</Label>

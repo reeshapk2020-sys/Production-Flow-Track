@@ -22,22 +22,22 @@ type TabKey = "send" | "return" | "log";
 
 function TransferStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
-    sent: { label: "Sent", cls: "bg-amber-50 text-amber-700 border-amber-200" },
-    partial_return: { label: "Partial Return", cls: "bg-blue-50 text-blue-700 border-blue-200" },
-    returned: { label: "Returned", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    sent: { label: "Sent", cls: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
+    partial_return: { label: "Partial Return", cls: "bg-primary/10 text-primary border-primary/20" },
+    returned: { label: "Returned", cls: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" },
   };
-  const { label, cls } = map[status] || { label: status, cls: "bg-slate-100 text-slate-500 border-slate-200" };
+  const { label, cls } = map[status] || { label: status, cls: "bg-muted text-muted-foreground border-border" };
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}>{label}</span>;
 }
 
 function CategoryLabel({ cat }: { cat?: string | null }) {
-  if (!cat) return <span className="text-xs text-slate-400">-</span>;
+  if (!cat) return <span className="text-xs text-muted-foreground">-</span>;
   const map: Record<string, { label: string; cls: string }> = {
-    heat_stone: { label: "Heat Stone", cls: "bg-orange-50 text-orange-700 border-orange-200" },
+    heat_stone: { label: "Heat Stone", cls: "bg-orange-500/10 text-orange-700 border-orange-500/20" },
     embroidery: { label: "Embroidery", cls: "bg-pink-50 text-pink-700 border-pink-200" },
     hand_stones: { label: "Hand Stones", cls: "bg-cyan-50 text-cyan-700 border-cyan-200" },
   };
-  const { label, cls } = map[cat] || { label: cat.replace(/_/g, " "), cls: "bg-slate-50 text-slate-600 border-slate-200" };
+  const { label, cls } = map[cat] || { label: cat.replace(/_/g, " "), cls: "bg-background text-muted-foreground border-border" };
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border capitalize ${cls}`}>{label}</span>;
 }
 
@@ -203,7 +203,7 @@ export default function OutsourcePage() {
             className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
               tab === key
                 ? "bg-violet-600 text-white border-violet-600 shadow-sm"
-                : "bg-white text-slate-600 border-slate-200 hover:border-violet-300"
+                : "bg-card text-muted-foreground border-border hover:border-violet-300"
             }`}
           >
             <Icon className="h-4 w-4" /> {label}
@@ -214,14 +214,14 @@ export default function OutsourcePage() {
       {tab === "log" && <FilterBar fields={filterFields} values={filters} onChange={setFilters} />}
 
       {tab === "send" && (
-        <Card className="shadow-lg border-slate-200 rounded-2xl overflow-hidden">
-          <CardHeader className="bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
+        <Card className="shadow-lg border-border rounded-2xl overflow-hidden">
+          <CardHeader className="bg-card border-b border-border flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
             <div>
-              <CardTitle className="text-xl font-display text-slate-800 flex items-center gap-2">
+              <CardTitle className="text-xl font-display text-foreground flex items-center gap-2">
                 <ArrowUpRight className="h-5 w-5 text-violet-600" />
                 Send to Outsource
               </CardTitle>
-              <p className="text-sm text-slate-500 mt-1">Allocations marked as "Outsource Required" with available pieces.</p>
+              <p className="text-sm text-muted-foreground mt-1">Allocations marked as "Outsource Required" with available pieces.</p>
             </div>
             {canCreate && (
               <Dialog open={sendOpen} onOpenChange={(v) => { setSendOpen(v); if (!v) setSelectedAlloc(null); }}>
@@ -262,7 +262,7 @@ export default function OutsourcePage() {
                     </div>
                     <div>
                       <label className="text-sm font-medium block mb-1.5">Outsource Category</label>
-                      <select name="outsourceCategory" className="form-input-styled bg-white" required defaultValue={selectedAlloc?.outsourceCategory || ""}>
+                      <select name="outsourceCategory" className="form-input-styled bg-card" required defaultValue={selectedAlloc?.outsourceCategory || ""}>
                         <option value="">Select type...</option>
                         <option value="heat_stone">Heat Stone</option>
                         <option value="embroidery">Embroidery</option>
@@ -302,9 +302,9 @@ export default function OutsourcePage() {
               </Dialog>
             )}
           </CardHeader>
-          <CardContent className="p-0 bg-white">
+          <CardContent className="p-0 bg-card">
             <Table>
-              <TableHeader className="bg-slate-50 border-b border-slate-100">
+              <TableHeader className="bg-background border-b border-border">
                 <TableRow>
                   <TableHead className="py-4">Alloc. #</TableHead>
                   <TableHead>Batch / Product</TableHead>
@@ -319,23 +319,23 @@ export default function OutsourcePage() {
               </TableHeader>
               <TableBody>
                 {allocsLoading ? (
-                  <TableRow><TableCell colSpan={9} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
                 ) : allocations?.map((a: any) => (
-                  <TableRow key={a.id} className="hover:bg-slate-50/50">
-                    <TableCell className="font-mono text-xs text-slate-500">{a.allocationNumber}</TableCell>
+                  <TableRow key={a.id} className="hover:bg-background/50">
+                    <TableCell className="font-mono text-xs text-muted-foreground">{a.allocationNumber}</TableCell>
                     <TableCell>
                       <div className="font-semibold text-primary text-sm">{a.batchNumber}</div>
-                      <div className="text-xs text-slate-500">{a.productName}</div>
+                      <div className="text-xs text-muted-foreground">{a.productName}</div>
                     </TableCell>
                     <TableCell className="text-sm">{a.assigneeName}</TableCell>
                     <TableCell><CategoryLabel cat={a.outsourceCategory} /></TableCell>
-                    <TableCell className="text-right font-bold text-slate-800">{a.quantityIssued}</TableCell>
+                    <TableCell className="text-right font-bold text-foreground">{a.quantityIssued}</TableCell>
                     <TableCell className="text-right font-semibold text-violet-600">{a.totalSentToOutsource || 0}</TableCell>
                     <TableCell className="text-right font-semibold text-emerald-600">{a.totalReturnedFromOutsource || 0}</TableCell>
                     <TableCell className="text-right font-bold text-amber-700">{a.availableToSend || 0}</TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
-                        a.status === "completed" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"
+                        a.status === "completed" ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" : "bg-amber-500/10 text-amber-700 border-amber-500/20"
                       }`}>
                         {a.status || "pending"}
                       </span>
@@ -343,7 +343,7 @@ export default function OutsourcePage() {
                   </TableRow>
                 ))}
                 {!allocsLoading && (!allocations || allocations.length === 0) && (
-                  <TableRow><TableCell colSpan={9} className="text-center py-12 text-slate-500">No outsource-type allocations found.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">No outsource-type allocations found.</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -352,14 +352,14 @@ export default function OutsourcePage() {
       )}
 
       {tab === "return" && (
-        <Card className="shadow-lg border-slate-200 rounded-2xl overflow-hidden">
-          <CardHeader className="bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
+        <Card className="shadow-lg border-border rounded-2xl overflow-hidden">
+          <CardHeader className="bg-card border-b border-border flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
             <div>
-              <CardTitle className="text-xl font-display text-slate-800 flex items-center gap-2">
+              <CardTitle className="text-xl font-display text-foreground flex items-center gap-2">
                 <ArrowDownLeft className="h-5 w-5 text-emerald-600" />
                 Return from Outsource
               </CardTitle>
-              <p className="text-sm text-slate-500 mt-1">Record pieces returned from outsource vendors.</p>
+              <p className="text-sm text-muted-foreground mt-1">Record pieces returned from outsource vendors.</p>
             </div>
             {canCreate && (
               <Dialog open={returnOpen} onOpenChange={(v) => { setReturnOpen(v); if (!v) setSelectedTransfer(null); }}>
@@ -393,7 +393,7 @@ export default function OutsourcePage() {
                         }}
                       />
                       {selectedTransfer && (
-                        <div className="mt-2 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2 text-xs text-emerald-700 space-y-0.5">
+                        <div className="mt-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-2 text-xs text-emerald-700 space-y-0.5">
                           <div><strong>Batch:</strong> {selectedTransfer.batchNumber}</div>
                           <div><strong>Category:</strong> {selectedTransfer.outsourceCategory?.replace(/_/g, " ")}</div>
                           <div><strong>Vendor:</strong> {selectedTransfer.vendorName || "N/A"}</div>
@@ -408,7 +408,7 @@ export default function OutsourcePage() {
                         <input
                           type="number"
                           name="quantityReturned"
-                          className="form-input-styled border-emerald-300 bg-emerald-50"
+                          className="form-input-styled border-emerald-300 bg-emerald-500/10"
                           required
                           min={0}
                           max={selectedTransfer ? (selectedTransfer.quantitySent || 0) - (selectedTransfer.quantityReturned || 0) - (selectedTransfer.quantityDamaged || 0) : undefined}
@@ -419,7 +419,7 @@ export default function OutsourcePage() {
                         <input
                           type="number"
                           name="quantityDamaged"
-                          className="form-input-styled border-red-200 bg-red-50"
+                          className="form-input-styled border-red-500/20 bg-red-500/10"
                           min={0}
                           defaultValue={0}
                         />
@@ -441,9 +441,9 @@ export default function OutsourcePage() {
               </Dialog>
             )}
           </CardHeader>
-          <CardContent className="p-0 bg-white">
+          <CardContent className="p-0 bg-card">
             <Table>
-              <TableHeader className="bg-slate-50 border-b border-slate-100">
+              <TableHeader className="bg-background border-b border-border">
                 <TableRow>
                   <TableHead className="py-4">ID</TableHead>
                   <TableHead>Batch</TableHead>
@@ -459,29 +459,29 @@ export default function OutsourcePage() {
               </TableHeader>
               <TableBody>
                 {transfersLoading ? (
-                  <TableRow><TableCell colSpan={10} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={10} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
                 ) : pendingTransfers.map((t) => {
                   const pending = (t.quantitySent || 0) - (t.quantityReturned || 0) - (t.quantityDamaged || 0);
                   return (
-                    <TableRow key={t.id} className="hover:bg-slate-50/50">
-                      <TableCell className="font-mono text-xs text-slate-500">#{t.id}</TableCell>
+                    <TableRow key={t.id} className="hover:bg-background/50">
+                      <TableCell className="font-mono text-xs text-muted-foreground">#{t.id}</TableCell>
                       <TableCell>
                         <div className="font-semibold text-primary text-sm">{t.batchNumber}</div>
-                        <div className="text-xs text-slate-500">{t.productName}</div>
+                        <div className="text-xs text-muted-foreground">{t.productName}</div>
                       </TableCell>
                       <TableCell><CategoryLabel cat={t.outsourceCategory} /></TableCell>
-                      <TableCell className="text-sm">{t.vendorName || <span className="text-slate-400">-</span>}</TableCell>
+                      <TableCell className="text-sm">{t.vendorName || <span className="text-muted-foreground">-</span>}</TableCell>
                       <TableCell className="text-right font-bold text-violet-600">{t.quantitySent}</TableCell>
                       <TableCell className="text-right font-semibold text-emerald-600">{t.quantityReturned || 0}</TableCell>
                       <TableCell className="text-right font-semibold text-red-500">{t.quantityDamaged || 0}</TableCell>
                       <TableCell className="text-right font-bold text-amber-700">{pending}</TableCell>
                       <TableCell><TransferStatusBadge status={t.status || "sent"} /></TableCell>
-                      <TableCell className="text-slate-600 text-sm">{t.sendDate ? format(new Date(t.sendDate), "MMM d, yyyy") : "-"}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{t.sendDate ? format(new Date(t.sendDate), "MMM d, yyyy") : "-"}</TableCell>
                     </TableRow>
                   );
                 })}
                 {!transfersLoading && pendingTransfers.length === 0 && (
-                  <TableRow><TableCell colSpan={10} className="text-center py-12 text-slate-500">No pending outsource transfers.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={10} className="text-center py-12 text-muted-foreground">No pending outsource transfers.</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -490,17 +490,17 @@ export default function OutsourcePage() {
       )}
 
       {tab === "log" && (
-        <Card className="shadow-lg border-slate-200 rounded-2xl overflow-hidden">
-          <CardHeader className="bg-white border-b border-slate-100 py-5 px-6">
-            <CardTitle className="text-xl font-display text-slate-800 flex items-center gap-2">
-              <List className="h-5 w-5 text-slate-600" />
+        <Card className="shadow-lg border-border rounded-2xl overflow-hidden">
+          <CardHeader className="bg-card border-b border-border py-5 px-6">
+            <CardTitle className="text-xl font-display text-foreground flex items-center gap-2">
+              <List className="h-5 w-5 text-muted-foreground" />
               Transfer Log
             </CardTitle>
-            <p className="text-sm text-slate-500 mt-1">Complete history of all outsource transfers.</p>
+            <p className="text-sm text-muted-foreground mt-1">Complete history of all outsource transfers.</p>
           </CardHeader>
-          <CardContent className="p-0 bg-white">
+          <CardContent className="p-0 bg-card">
             <Table>
-              <TableHeader className="bg-slate-50 border-b border-slate-100">
+              <TableHeader className="bg-background border-b border-border">
                 <TableRow>
                   <TableHead className="py-4">ID</TableHead>
                   <TableHead>Alloc. #</TableHead>
@@ -518,34 +518,34 @@ export default function OutsourcePage() {
               </TableHeader>
               <TableBody>
                 {transfersLoading ? (
-                  <TableRow><TableCell colSpan={11} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={11} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
                 ) : transfers?.map((t) => (
-                  <TableRow key={t.id} className="hover:bg-slate-50/50">
-                    <TableCell className="font-mono text-xs text-slate-500">#{t.id}</TableCell>
-                    <TableCell className="font-mono text-xs text-slate-500">{t.allocationNumber}</TableCell>
+                  <TableRow key={t.id} className="hover:bg-background/50">
+                    <TableCell className="font-mono text-xs text-muted-foreground">#{t.id}</TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{t.allocationNumber}</TableCell>
                     <TableCell>
                       <div className="font-semibold text-primary text-sm">{t.batchNumber}</div>
-                      <div className="text-xs text-slate-500">{t.productName}</div>
+                      <div className="text-xs text-muted-foreground">{t.productName}</div>
                     </TableCell>
                     <TableCell><CategoryLabel cat={t.outsourceCategory} /></TableCell>
-                    <TableCell className="text-sm">{t.vendorName || <span className="text-slate-400">-</span>}</TableCell>
+                    <TableCell className="text-sm">{t.vendorName || <span className="text-muted-foreground">-</span>}</TableCell>
                     <TableCell className="text-right font-bold text-violet-600">{t.quantitySent}</TableCell>
                     <TableCell className="text-right font-semibold text-emerald-600">{t.quantityReturned || 0}</TableCell>
                     <TableCell className="text-right font-semibold text-red-500">{t.quantityDamaged || 0}</TableCell>
                     <TableCell><TransferStatusBadge status={t.status || "sent"} /></TableCell>
-                    <TableCell className="text-slate-600 text-sm">{t.sendDate ? format(new Date(t.sendDate), "MMM d, yyyy") : "-"}</TableCell>
-                    <TableCell className="text-slate-600 text-sm">{t.returnDate ? format(new Date(t.returnDate), "MMM d, yyyy") : "-"}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{t.sendDate ? format(new Date(t.sendDate), "MMM d, yyyy") : "-"}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{t.returnDate ? format(new Date(t.returnDate), "MMM d, yyyy") : "-"}</TableCell>
                     {canEdit && (
                       <TableCell>
                         <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => { setEditTarget({ ...t, isLocked: ((t.quantityReturned || 0) > 0 || (t.quantityDamaged || 0) > 0) }); setEditOpen(true); }}>
-                          <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                         </Button>
                       </TableCell>
                     )}
                   </TableRow>
                 ))}
                 {!transfersLoading && (!transfers || transfers.length === 0) && (
-                  <TableRow><TableCell colSpan={canEdit ? 12 : 11} className="text-center py-12 text-slate-500">No outsource transfers found.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={canEdit ? 12 : 11} className="text-center py-12 text-muted-foreground">No outsource transfers found.</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -559,12 +559,12 @@ export default function OutsourcePage() {
           </DialogHeader>
           {editTarget && (
             <form onSubmit={onEditSubmit} className="grid grid-cols-1 gap-4 pt-4">
-              <div className="bg-slate-50 rounded-xl p-3 text-sm text-slate-600">
-                <div className="font-semibold text-slate-800">#{editTarget.id} — {editTarget.batchNumber}</div>
-                <div className="text-xs text-slate-500 mt-0.5">{editTarget.quantitySent} pcs sent · {editTarget.outsourceCategory?.replace(/_/g, " ")}</div>
+              <div className="bg-background rounded-xl p-3 text-sm text-muted-foreground">
+                <div className="font-semibold text-foreground">#{editTarget.id} — {editTarget.batchNumber}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{editTarget.quantitySent} pcs sent · {editTarget.outsourceCategory?.replace(/_/g, " ")}</div>
               </div>
               {(editTarget as any).isLocked && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                   Returns recorded for this transfer. Vendor name cannot be changed.
                 </div>

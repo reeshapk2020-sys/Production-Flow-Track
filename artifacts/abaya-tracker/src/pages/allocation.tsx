@@ -24,20 +24,20 @@ type BatchStatus = string;
 
 function StatusBadge({ status }: { status: BatchStatus }) {
   const map: Record<string, { label: string; cls: string }> = {
-    cutting:            { label: "Cutting",           cls: "bg-blue-50 text-blue-700 border-blue-200" },
-    allocated:          { label: "Allocated",         cls: "bg-amber-50 text-amber-700 border-amber-200" },
-    allocation:         { label: "Allocated",         cls: "bg-amber-50 text-amber-700 border-amber-200" },
-    partially_received: { label: "Partial Recv",      cls: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-    stitching:          { label: "Partial Recv",      cls: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-    fully_received:     { label: "Fully Received",    cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-    in_finishing:       { label: "In Finishing",      cls: "bg-purple-50 text-purple-700 border-purple-200" },
-    finishing:          { label: "In Finishing",      cls: "bg-purple-50 text-purple-700 border-purple-200" },
-    finished:           { label: "Finished",          cls: "bg-slate-100 text-slate-600 border-slate-200" },
-    pending:            { label: "Pending",           cls: "bg-amber-50 text-amber-700 border-amber-200" },
-    partial:            { label: "Partial Recv",      cls: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-    completed:          { label: "Completed",         cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    cutting:            { label: "Cutting",           cls: "bg-primary/10 text-primary border-primary/20" },
+    allocated:          { label: "Allocated",         cls: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
+    allocation:         { label: "Allocated",         cls: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
+    partially_received: { label: "Partial Recv",      cls: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20" },
+    stitching:          { label: "Partial Recv",      cls: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20" },
+    fully_received:     { label: "Fully Received",    cls: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" },
+    in_finishing:       { label: "In Finishing",      cls: "bg-purple-500/10 text-purple-700 border-purple-500/20" },
+    finishing:          { label: "In Finishing",      cls: "bg-purple-500/10 text-purple-700 border-purple-500/20" },
+    finished:           { label: "Finished",          cls: "bg-muted text-muted-foreground border-border" },
+    pending:            { label: "Pending",           cls: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
+    partial:            { label: "Partial Recv",      cls: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20" },
+    completed:          { label: "Completed",         cls: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" },
   };
-  const { label, cls } = map[status] || { label: status, cls: "bg-slate-100 text-slate-500 border-slate-200" };
+  const { label, cls } = map[status] || { label: status, cls: "bg-muted text-muted-foreground border-border" };
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}>{label}</span>;
 }
 
@@ -183,14 +183,14 @@ export default function AllocationPage() {
     <AppLayout title="Allocation to Stitchers / Teams">
       <FilterBar fields={filterFields} values={filters} onChange={setFilters} />
 
-      <Card className="shadow-lg border-slate-200 rounded-2xl overflow-hidden">
-        <CardHeader className="bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
+      <Card className="shadow-lg border-border rounded-2xl overflow-hidden">
+        <CardHeader className="bg-card border-b border-border flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
           <div>
-            <CardTitle className="text-xl font-display text-slate-800 flex items-center gap-2">
+            <CardTitle className="text-xl font-display text-foreground flex items-center gap-2">
               <Send className="h-5 w-5 text-primary" />
               Allocations
             </CardTitle>
-            <p className="text-sm text-slate-500 mt-1">Issue cut pieces to individual stitchers or teams.</p>
+            <p className="text-sm text-muted-foreground mt-1">Issue cut pieces to individual stitchers or teams.</p>
           </div>
           {canCreate && <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setSelectedBatch(null); setAllocType("individual"); setWorkType("simple_stitch"); } }}>
             <DialogTrigger asChild>
@@ -223,9 +223,9 @@ export default function AllocationPage() {
                   />
                   {selectedBatch && (
                     <>
-                      <div className="mt-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2 flex items-start gap-2">
-                        <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-                        <div className="text-xs text-blue-700 space-y-0.5">
+                      <div className="mt-2 bg-primary/10 border border-primary/20 rounded-xl px-3 py-2 flex items-start gap-2">
+                        <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                        <div className="text-xs text-primary space-y-0.5">
                           <div><strong>Total Cut:</strong> {selectedBatch.totalCutQuantity} pcs &nbsp;|&nbsp; <strong>Available:</strong> {selectedBatch.availableForAllocation} pcs</div>
                           {selectedBatch.sizeName && <div><strong>Size:</strong> {selectedBatch.sizeName} &nbsp;|&nbsp; <strong>Color:</strong> {fmtCode(selectedBatch.colorCode, selectedBatch.colorName)}</div>}
                           {selectedBatch.itemCode && (
@@ -234,7 +234,7 @@ export default function AllocationPage() {
                         </div>
                       </div>
                       {batchNeedsCompletion && (
-                        <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-3 space-y-3">
+                        <div className="mt-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-3 space-y-3">
                           <div className="flex items-start gap-2">
                             <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
                             <p className="text-xs text-amber-800 font-medium">This batch is missing required fields. Please complete them below before allocating.</p>
@@ -243,7 +243,7 @@ export default function AllocationPage() {
                             {batchNeedsProduct && (
                               <div>
                                 <label className="text-sm font-medium block mb-1">Product / Design <span className="text-red-500">*</span></label>
-                                <select name="batchProductId" className="form-input-styled bg-white" required>
+                                <select name="batchProductId" className="form-input-styled bg-card" required>
                                   <option value="">Select Product...</option>
                                   {products?.filter((p: any) => p.isActive).map((p: any) => (
                                     <option key={p.id} value={p.id}>{p.code} - {p.name}</option>
@@ -254,7 +254,7 @@ export default function AllocationPage() {
                             {batchNeedsMaterial && (
                               <div>
                                 <label className="text-sm font-medium block mb-1">Material 1 <span className="text-red-500">*</span></label>
-                                <select name="batchMaterialId" className="form-input-styled bg-white" required>
+                                <select name="batchMaterialId" className="form-input-styled bg-card" required>
                                   <option value="">Select Material...</option>
                                   {materials?.filter((m: any) => m.isActive).map((m: any) => (
                                     <option key={m.id} value={m.id}>{fmtCode(m.code, m.name)}</option>
@@ -274,14 +274,14 @@ export default function AllocationPage() {
                   <div className="flex gap-2 mb-3">
                     <button
                       type="button"
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${allocType === "individual" ? "bg-primary text-white border-primary shadow-sm" : "bg-white text-slate-600 border-slate-200 hover:border-primary/50"}`}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${allocType === "individual" ? "bg-primary text-white border-primary shadow-sm" : "bg-card text-muted-foreground border-border hover:border-primary/50"}`}
                       onClick={() => setAllocType("individual")}
                     >
                       <User className="h-4 w-4" /> Individual
                     </button>
                     <button
                       type="button"
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${allocType === "team" ? "bg-primary text-white border-primary shadow-sm" : "bg-white text-slate-600 border-slate-200 hover:border-primary/50"}`}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${allocType === "team" ? "bg-primary text-white border-primary shadow-sm" : "bg-card text-muted-foreground border-border hover:border-primary/50"}`}
                       onClick={() => setAllocType("team")}
                     >
                       <Users className="h-4 w-4" /> Team
@@ -289,14 +289,14 @@ export default function AllocationPage() {
                   </div>
 
                   {allocType === "individual" ? (
-                    <select name="stitcherId" className="form-input-styled bg-white" required>
+                    <select name="stitcherId" className="form-input-styled bg-card" required>
                       <option value="">Select Stitcher...</option>
                       {stitchers?.filter((s: any) => s.isActive).map((s: any) => (
                         <option key={s.id} value={s.id}>{fmtCode(s.code, s.name)}{s.teamName ? ` (${s.teamName})` : ''}</option>
                       ))}
                     </select>
                   ) : (
-                    <select name="teamId" className="form-input-styled bg-white" required>
+                    <select name="teamId" className="form-input-styled bg-card" required>
                       <option value="">Select Team...</option>
                       {activeTeams.map((t: any) => (
                         <option key={t.id} value={t.id}>{fmtCode(t.code, t.name)}</option>
@@ -310,14 +310,14 @@ export default function AllocationPage() {
                   <div className="flex gap-2 mb-3">
                     <button
                       type="button"
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${workType === "simple_stitch" ? "bg-primary text-white border-primary shadow-sm" : "bg-white text-slate-600 border-slate-200 hover:border-primary/50"}`}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${workType === "simple_stitch" ? "bg-primary text-white border-primary shadow-sm" : "bg-card text-muted-foreground border-border hover:border-primary/50"}`}
                       onClick={() => setWorkType("simple_stitch")}
                     >
                       Simple Stitch
                     </button>
                     <button
                       type="button"
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${workType === "outsource_required" ? "bg-violet-600 text-white border-violet-600 shadow-sm" : "bg-white text-slate-600 border-slate-200 hover:border-violet-400"}`}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${workType === "outsource_required" ? "bg-violet-600 text-white border-violet-600 shadow-sm" : "bg-card text-muted-foreground border-border hover:border-violet-400"}`}
                       onClick={() => setWorkType("outsource_required")}
                     >
                       Outsource Required
@@ -339,14 +339,14 @@ export default function AllocationPage() {
                     <input
                       type="number"
                       name="quantityIssued"
-                      className="form-input-styled border-amber-300 bg-amber-50"
+                      className="form-input-styled border-amber-500/30 bg-amber-500/10"
                       required
                       min={1}
                       max={selectedBatch?.availableForAllocation}
                       placeholder="0"
                     />
                     {selectedBatch && (
-                      <p className="text-xs text-slate-400 mt-1">Max: {selectedBatch.availableForAllocation}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Max: {selectedBatch.availableForAllocation}</p>
                     )}
                   </div>
                   <div>
@@ -370,9 +370,9 @@ export default function AllocationPage() {
           </Dialog>}
         </CardHeader>
 
-        <CardContent className="p-0 bg-white">
+        <CardContent className="p-0 bg-card">
           <Table>
-            <TableHeader className="bg-slate-50 border-b border-slate-100">
+            <TableHeader className="bg-background border-b border-border">
               <TableRow>
                 <TableHead className="py-4">Alloc. #</TableHead>
                 <TableHead>Batch / Product</TableHead>
@@ -389,28 +389,28 @@ export default function AllocationPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={canEdit ? 11 : 10} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 11 : 10} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
               ) : (
                 data?.map(alloc => {
                   const pending = alloc.quantityPending ?? (alloc.quantityIssued - (alloc.quantityReceived || 0) - (alloc.quantityRejected || 0));
                   const isTeam = alloc.allocationType === "team";
                   return (
-                    <TableRow key={alloc.id} className="group hover:bg-slate-50/50">
-                      <TableCell className="font-mono text-xs text-slate-500 font-medium">{alloc.allocationNumber}</TableCell>
+                    <TableRow key={alloc.id} className="group hover:bg-background/50">
+                      <TableCell className="font-mono text-xs text-muted-foreground font-medium">{alloc.allocationNumber}</TableCell>
                       <TableCell>
                         <div className="font-semibold text-primary text-sm">{alloc.batchNumber}</div>
-                        <div className="text-xs text-slate-500">{fmtCode(alloc.productCode, alloc.productName)}</div>
+                        <div className="text-xs text-muted-foreground">{fmtCode(alloc.productCode, alloc.productName)}</div>
                         {(() => {
                           const pf = (alloc as any).productionFor || "reesha_stock";
                           if (pf === "purchase_order") return <span className="inline-flex items-center mt-0.5 px-1.5 py-0 rounded text-[10px] font-medium bg-violet-50 text-violet-600 border border-violet-200">PO: {(alloc as any).poNumber || "?"}</span>;
-                          if (pf === "order") return <span className="inline-flex items-center mt-0.5 px-1.5 py-0 rounded text-[10px] font-medium bg-orange-50 text-orange-600 border border-orange-200">Order: {(alloc as any).orderNumber || "?"}</span>;
+                          if (pf === "order") return <span className="inline-flex items-center mt-0.5 px-1.5 py-0 rounded text-[10px] font-medium bg-orange-500/10 text-orange-600 border border-orange-500/20">Order: {(alloc as any).orderNumber || "?"}</span>;
                           return null;
                         })()}
                       </TableCell>
                       <TableCell>
                         {(alloc as any).itemCode
                           ? <span className="font-mono text-xs font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded">{(alloc as any).itemCode}</span>
-                          : <span className="text-xs text-slate-400">—</span>}
+                          : <span className="text-xs text-muted-foreground">—</span>}
                       </TableCell>
                       <TableCell>
                         {(alloc as any).workType === "outsource_required" ? (
@@ -421,21 +421,21 @@ export default function AllocationPage() {
                             )}
                           </div>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-slate-50 text-slate-600 border-slate-200">Simple Stitch</span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-background text-muted-foreground border-border">Simple Stitch</span>
                         )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1.5">
-                          {isTeam ? <Users className="h-3.5 w-3.5 text-violet-500" /> : <User className="h-3.5 w-3.5 text-slate-400" />}
+                          {isTeam ? <Users className="h-3.5 w-3.5 text-violet-500" /> : <User className="h-3.5 w-3.5 text-muted-foreground" />}
                           <div>
-                            <div className="font-semibold text-slate-900 text-sm">{alloc.assigneeName || alloc.stitcherName || alloc.teamName || '—'}</div>
+                            <div className="font-semibold text-foreground text-sm">{alloc.assigneeName || alloc.stitcherName || alloc.teamName || '—'}</div>
                             {isTeam && <span className="text-xs text-violet-500 font-medium">Team</span>}
-                            {!isTeam && alloc.stitcherTeamName && <div className="text-xs text-slate-500">{alloc.stitcherTeamName}</div>}
+                            {!isTeam && alloc.stitcherTeamName && <div className="text-xs text-muted-foreground">{alloc.stitcherTeamName}</div>}
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <span className="font-bold text-slate-800">{alloc.quantityIssued}</span>
+                        <span className="font-bold text-foreground">{alloc.quantityIssued}</span>
                       </TableCell>
                       <TableCell className="text-right">
                         <span className="font-semibold text-emerald-600">{alloc.quantityReceived || 0}</span>
@@ -453,7 +453,7 @@ export default function AllocationPage() {
                       <TableCell>
                         <StatusBadge status={alloc.status || "pending"} />
                       </TableCell>
-                      <TableCell className="text-slate-600 text-sm">
+                      <TableCell className="text-muted-foreground text-sm">
                         {alloc.issueDate ? format(new Date(alloc.issueDate), 'MMM d, yyyy') : '-'}
                       </TableCell>
                       {canEdit && (
@@ -464,7 +464,7 @@ export default function AllocationPage() {
                             className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                             onClick={() => { setEditTarget(alloc); setEditOpen(true); }}
                           >
-                            <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
                         </TableCell>
                       )}
@@ -473,7 +473,7 @@ export default function AllocationPage() {
                 })
               )}
               {!isLoading && data?.length === 0 && (
-                <TableRow><TableCell colSpan={canEdit ? 11 : 10} className="text-center py-12 text-slate-500">No allocations found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={canEdit ? 11 : 10} className="text-center py-12 text-muted-foreground">No allocations found.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -487,12 +487,12 @@ export default function AllocationPage() {
           </DialogHeader>
           {editTarget && (
             <form onSubmit={onEditSubmit} className="grid grid-cols-1 gap-4 pt-4">
-              <div className="bg-slate-50 rounded-xl p-3 text-sm text-slate-600">
-                <div className="font-semibold text-slate-800">{editTarget.batchNumber}</div>
-                <div className="text-xs text-slate-500 mt-0.5">{editTarget.assigneeName || editTarget.stitcherName} · {editTarget.quantityIssued} pcs issued</div>
+              <div className="bg-background rounded-xl p-3 text-sm text-muted-foreground">
+                <div className="font-semibold text-foreground">{editTarget.batchNumber}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{editTarget.assigneeName || editTarget.stitcherName} · {editTarget.quantityIssued} pcs issued</div>
               </div>
               {(editTarget as any).isLocked && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
                   <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
                   Receiving or outsource records exist. Quantity issued cannot be changed.
                 </div>

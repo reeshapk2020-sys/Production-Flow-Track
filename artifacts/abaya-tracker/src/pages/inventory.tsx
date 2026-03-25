@@ -53,9 +53,9 @@ export default function InventoryPage() {
     <AppLayout title="Pipeline & Inventory">
       <div className="max-w-4xl mx-auto space-y-8 py-8">
         
-        <Card className="overflow-hidden rounded-2xl border-none transition-all bg-slate-800 text-white">
+        <Card className="overflow-hidden rounded-2xl border-none transition-all bg-secondary text-white">
           <CardContent className="p-8 relative">
-            <Layers className="absolute right-0 top-1/2 -translate-y-1/2 -translate-x-4 h-32 w-32 opacity-10 pointer-events-none text-slate-400" />
+            <Layers className="absolute right-0 top-1/2 -translate-y-1/2 -translate-x-4 h-32 w-32 opacity-10 pointer-events-none text-muted-foreground" />
             <h2 className="text-2xl font-display font-bold mb-6 flex items-center gap-3">
               <Layers className="h-6 w-6" /> Raw Materials
             </h2>
@@ -71,7 +71,7 @@ export default function InventoryPage() {
             </div>
 
             {rawMaterials && rawMaterials.length > 0 && (
-              <div className="bg-white/10 rounded-xl overflow-hidden">
+              <div className="bg-card/10 rounded-xl overflow-hidden">
                 <div className="px-4 py-2 border-b border-white/10">
                   <p className="text-xs font-semibold uppercase tracking-wider opacity-70">Breakdown by Fabric Type & Color</p>
                 </div>
@@ -79,7 +79,7 @@ export default function InventoryPage() {
                   <div key={group.fabricId} className="border-b border-white/5 last:border-0">
                     <button
                       onClick={() => toggleFabric(group.fabricId)}
-                      className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors text-left"
+                      className="w-full flex items-center justify-between px-4 py-3 hover:bg-card/5 transition-colors text-left"
                     >
                       <div className="flex items-center gap-2">
                         {expandedFabrics.has(group.fabricId)
@@ -94,7 +94,7 @@ export default function InventoryPage() {
                       </div>
                     </button>
                     {expandedFabrics.has(group.fabricId) && group.colors.length > 0 && (
-                      <div className="bg-white/5 px-4 pb-3">
+                      <div className="bg-card/5 px-4 pb-3">
                         {group.colors.map((c, i) => (
                           <div key={i} className="flex items-center justify-between py-1.5 px-6 text-sm border-b border-white/5 last:border-0">
                             <span className="opacity-80">
@@ -115,7 +115,7 @@ export default function InventoryPage() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-center"><ArrowRight className="h-8 w-8 text-slate-300" /></div>
+        <div className="flex justify-center"><ArrowRight className="h-8 w-8 text-muted-foreground" /></div>
 
         <InventoryStageCard 
           title="Cutting (WIP)" 
@@ -124,11 +124,11 @@ export default function InventoryPage() {
             { label: "Active Batches", value: data.cuttingWip.totalBatches },
             { label: "Pieces Cut", value: data.cuttingWip.totalQuantity.toLocaleString() }
           ]} 
-          color="bg-blue-600 text-white" 
-          iconColor="text-blue-300"
+          color="bg-primary text-white" 
+          iconColor="text-primary/70"
         />
 
-        <div className="flex justify-center"><ArrowRight className="h-8 w-8 text-slate-300" /></div>
+        <div className="flex justify-center"><ArrowRight className="h-8 w-8 text-muted-foreground" /></div>
 
         <InventoryStageCard 
           title="With Stitchers" 
@@ -137,11 +137,11 @@ export default function InventoryPage() {
             { label: "Active Allocations", value: data.pendingWithStitchers.totalAllocations },
             { label: "Pending Pieces", value: data.pendingWithStitchers.totalQuantity.toLocaleString() }
           ]} 
-          color="bg-amber-500 text-white" 
+          color="bg-amber-500/100 text-white" 
           iconColor="text-amber-200"
         />
 
-        <div className="flex justify-center"><ArrowRight className="h-8 w-8 text-slate-300" /></div>
+        <div className="flex justify-center"><ArrowRight className="h-8 w-8 text-muted-foreground" /></div>
 
         <InventoryStageCard 
           title="Finishing Pipeline" 
@@ -152,12 +152,12 @@ export default function InventoryPage() {
             { label: "Hanger", value: data.inFinishing.hanger },
             { label: "Packing", value: data.inFinishing.packing }
           ]} 
-          color="bg-indigo-500 text-white" 
+          color="bg-indigo-500/100 text-white" 
           iconColor="text-indigo-200"
           gridCols={4}
         />
 
-        <div className="flex justify-center"><ArrowRight className="h-8 w-8 text-slate-300" /></div>
+        <div className="flex justify-center"><ArrowRight className="h-8 w-8 text-muted-foreground" /></div>
 
         <InventoryStageCard 
           title="Finished Goods Store" 

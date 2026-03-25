@@ -19,11 +19,11 @@ export default function ReportsPage() {
   return (
     <AppLayout title="Analytics & Reports">
       <Tabs defaultValue="stitcher" className="w-full">
-        <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 mb-6 inline-block overflow-x-auto max-w-full">
+        <div className="bg-card p-1 rounded-xl shadow-sm border border-border mb-6 inline-block overflow-x-auto max-w-full">
           <TabsList className="bg-transparent h-auto p-0 flex space-x-1">
             <TabsTrigger value="stitcher" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white">Stitcher Performance</TabsTrigger>
             <TabsTrigger value="team" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-emerald-600 data-[state=active]:text-white">Team Performance</TabsTrigger>
-            <TabsTrigger value="daily" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-blue-600 data-[state=active]:text-white">Daily Production</TabsTrigger>
+            <TabsTrigger value="daily" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white">Daily Production</TabsTrigger>
             <TabsTrigger value="outsource" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-violet-600 data-[state=active]:text-white">Outsource Summary</TabsTrigger>
             <TabsTrigger value="stitcher-points" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-amber-600 data-[state=active]:text-white">Stitcher Points</TabsTrigger>
             <TabsTrigger value="team-points" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-amber-600 data-[state=active]:text-white">Team Points</TabsTrigger>
@@ -64,7 +64,7 @@ function StitcherReport() {
       <FilterBar fields={filterFields} values={filters} onChange={setFilters} />
       <ReportCard title="Stitcher Performance & Efficiency">
         <Table>
-          <TableHeader className="bg-slate-50">
+          <TableHeader className="bg-background">
             <TableRow>
               <TableHead>Stitcher Name</TableHead>
               <TableHead className="text-right">Total Issued</TableHead>
@@ -76,7 +76,7 @@ function StitcherReport() {
           </TableHeader>
           <TableBody>
             {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
-              !data?.length ? <TableRow><TableCell colSpan={6} className="text-center py-12 text-slate-400">No data for selected period</TableCell></TableRow> :
+              !data?.length ? <TableRow><TableCell colSpan={6} className="text-center py-12 text-muted-foreground">No data for selected period</TableCell></TableRow> :
               data?.map((row: any, i: number) => (
                 <TableRow key={i}>
                   <TableCell className="font-semibold">{row.stitcherName}</TableCell>
@@ -121,7 +121,7 @@ function TeamReport() {
       <FilterBar fields={filterFields} values={filters} onChange={setFilters} />
       <ReportCard title="Team Performance & Efficiency">
         <Table>
-          <TableHeader className="bg-slate-50">
+          <TableHeader className="bg-background">
             <TableRow>
               <TableHead>Team</TableHead>
               <TableHead className="text-right">Members</TableHead>
@@ -134,12 +134,12 @@ function TeamReport() {
           </TableHeader>
           <TableBody>
             {isLoading ? <TableRow><TableCell colSpan={7} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
-              !data?.length ? <TableRow><TableCell colSpan={7} className="text-center py-12 text-slate-400">No team allocation data found</TableCell></TableRow> :
+              !data?.length ? <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">No team allocation data found</TableCell></TableRow> :
               data?.map((row: any, i: number) => (
                 <TableRow key={i}>
                   <TableCell>
                     <div className="font-semibold">{row.teamName}</div>
-                    {row.teamCode && <div className="text-xs text-slate-400">{row.teamCode}</div>}
+                    {row.teamCode && <div className="text-xs text-muted-foreground">{row.teamCode}</div>}
                   </TableCell>
                   <TableCell className="text-right">
                     <Badge variant="outline" className="font-mono">{row.memberCount ?? '-'}</Badge>
@@ -193,10 +193,10 @@ function DailyProductionReport() {
               finished: acc.finished + (r.finished || 0),
             }), { cutting: 0, allocated: 0, received: 0, finishing: 0, finished: 0 });
             return [
-              { label: "Cut", value: totals.cutting, color: "bg-blue-50 text-blue-700 border-blue-200" },
+              { label: "Cut", value: totals.cutting, color: "bg-primary/10 text-primary border-primary/20" },
               { label: "Allocated", value: totals.allocated, color: "bg-violet-50 text-violet-700 border-violet-200" },
-              { label: "Received", value: totals.received, color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-              { label: "Finishing", value: totals.finishing, color: "bg-amber-50 text-amber-700 border-amber-200" },
+              { label: "Received", value: totals.received, color: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" },
+              { label: "Finishing", value: totals.finishing, color: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
               { label: "Stored", value: totals.finished, color: "bg-teal-50 text-teal-700 border-teal-200" },
             ].map(card => (
               <Card key={card.label} className={`${card.color} border rounded-xl`}>
@@ -211,7 +211,7 @@ function DailyProductionReport() {
       )}
       <ReportCard title="Date-wise Production Summary">
         <Table>
-          <TableHeader className="bg-slate-50">
+          <TableHeader className="bg-background">
             <TableRow>
               <TableHead>Date</TableHead>
               <TableHead className="text-right">Cut</TableHead>
@@ -223,7 +223,7 @@ function DailyProductionReport() {
           </TableHeader>
           <TableBody>
             {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
-              !rows.length ? <TableRow><TableCell colSpan={6} className="text-center py-12 text-slate-400">Select a date range to view production data</TableCell></TableRow> :
+              !rows.length ? <TableRow><TableCell colSpan={6} className="text-center py-12 text-muted-foreground">Select a date range to view production data</TableCell></TableRow> :
               rows.map((row: any, i: number) => (
                 <TableRow key={i}>
                   <TableCell className="font-semibold">{row.date || `${row.startDate} – ${row.endDate}`}</TableCell>
@@ -247,7 +247,7 @@ function PendingReport() {
   return (
     <ReportCard title="Bottleneck / Stage Pending Analysis">
       <Table>
-        <TableHeader className="bg-slate-50">
+        <TableHeader className="bg-background">
           <TableRow>
             <TableHead>Production Stage</TableHead>
             <TableHead className="text-right">Batches Stuck</TableHead>
@@ -259,7 +259,7 @@ function PendingReport() {
             data?.map((row: any, i: number) => (
               <TableRow key={i}>
                 <TableCell className="font-semibold capitalize text-lg">{row.stage}</TableCell>
-                <TableCell className="text-right text-slate-500">{row.batchCount}</TableCell>
+                <TableCell className="text-right text-muted-foreground">{row.batchCount}</TableCell>
                 <TableCell className="text-right font-display text-2xl font-bold text-amber-600">{row.pendingQuantity}</TableCell>
               </TableRow>
             ))
@@ -285,7 +285,7 @@ function BatchReport() {
     <FilterBar fields={batchFilterFields} values={filters} onChange={setFilters} />
     <ReportCard title="All Batches Overview">
       <Table>
-        <TableHeader className="bg-slate-50">
+        <TableHeader className="bg-background">
           <TableRow>
             <TableHead>Batch</TableHead>
             <TableHead>Product</TableHead>
@@ -307,7 +307,7 @@ function BatchReport() {
                 <TableCell>{row.quantityReceived}</TableCell>
                 <TableCell>{row.quantityFinished}</TableCell>
                 <TableCell>
-                  <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-none capitalize">{row.currentStage}</Badge>
+                  <Badge className="bg-primary/15 text-primary hover:bg-primary/15 border-none capitalize">{row.currentStage}</Badge>
                 </TableCell>
               </TableRow>
             ))
@@ -374,15 +374,15 @@ function OutsourceSummaryReport() {
         <div className="text-xs text-violet-600 font-medium">Total Sent</div>
         <div className="text-2xl font-bold text-violet-800">{totalSent}</div>
       </div>
-      <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
+      <div className="bg-emerald-500/10 rounded-xl p-4 border border-emerald-500/20">
         <div className="text-xs text-emerald-600 font-medium">Total Returned</div>
         <div className="text-2xl font-bold text-emerald-800">{totalReturned}</div>
       </div>
-      <div className="bg-red-50 rounded-xl p-4 border border-red-200">
+      <div className="bg-red-500/10 rounded-xl p-4 border border-red-500/20">
         <div className="text-xs text-red-600 font-medium">Total Damaged</div>
         <div className="text-2xl font-bold text-red-800">{totalDamaged}</div>
       </div>
-      <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+      <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/20">
         <div className="text-xs text-amber-600 font-medium">Still Pending</div>
         <div className="text-2xl font-bold text-amber-800">{totalPending}</div>
       </div>
@@ -390,7 +390,7 @@ function OutsourceSummaryReport() {
 
     <ReportCard title="By Category">
       <Table>
-        <TableHeader className="bg-slate-50">
+        <TableHeader className="bg-background">
           <TableRow>
             <TableHead className="py-3">Category</TableHead>
             <TableHead className="text-right">Sent</TableHead>
@@ -410,10 +410,10 @@ function OutsourceSummaryReport() {
             </TableRow>
           ))}
           {Object.keys(byCat).length === 0 && !isLoading && (
-            <TableRow><TableCell colSpan={5} className="text-center py-8 text-slate-500">No outsource data for the selected period.</TableCell></TableRow>
+            <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No outsource data for the selected period.</TableCell></TableRow>
           )}
           {isLoading && (
-            <TableRow><TableCell colSpan={5} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
+            <TableRow><TableCell colSpan={5} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
           )}
         </TableBody>
       </Table>
@@ -422,7 +422,7 @@ function OutsourceSummaryReport() {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
     <ReportCard title="By Date">
       <Table>
-        <TableHeader className="bg-slate-50">
+        <TableHeader className="bg-background">
           <TableRow>
             <TableHead className="py-3">Date</TableHead>
             <TableHead className="text-right">Sent</TableHead>
@@ -440,7 +440,7 @@ function OutsourceSummaryReport() {
             </TableRow>
           ))}
           {Object.keys(byDate).length === 0 && !isLoading && (
-            <TableRow><TableCell colSpan={4} className="text-center py-6 text-slate-500">No data.</TableCell></TableRow>
+            <TableRow><TableCell colSpan={4} className="text-center py-6 text-muted-foreground">No data.</TableCell></TableRow>
           )}
         </TableBody>
       </Table>
@@ -448,7 +448,7 @@ function OutsourceSummaryReport() {
 
     <ReportCard title="By Vendor">
       <Table>
-        <TableHeader className="bg-slate-50">
+        <TableHeader className="bg-background">
           <TableRow>
             <TableHead className="py-3">Vendor</TableHead>
             <TableHead className="text-right">Sent</TableHead>
@@ -466,7 +466,7 @@ function OutsourceSummaryReport() {
             </TableRow>
           ))}
           {Object.keys(byVendor).length === 0 && !isLoading && (
-            <TableRow><TableCell colSpan={4} className="text-center py-6 text-slate-500">No data.</TableCell></TableRow>
+            <TableRow><TableCell colSpan={4} className="text-center py-6 text-muted-foreground">No data.</TableCell></TableRow>
           )}
         </TableBody>
       </Table>
@@ -475,7 +475,7 @@ function OutsourceSummaryReport() {
 
     <ReportCard title="Transfer Details">
       <Table>
-        <TableHeader className="bg-slate-50">
+        <TableHeader className="bg-background">
           <TableRow>
             <TableHead className="py-3">Batch</TableHead>
             <TableHead>Category</TableHead>
@@ -489,13 +489,13 @@ function OutsourceSummaryReport() {
         </TableHeader>
         <TableBody>
           {isLoading && (
-            <TableRow><TableCell colSpan={8} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-slate-300" /></TableCell></TableRow>
+            <TableRow><TableCell colSpan={8} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
           )}
           {data?.map((t) => (
             <TableRow key={t.id}>
               <TableCell>
                 <div className="font-semibold text-sm">{t.batchNumber}</div>
-                <div className="text-xs text-slate-500">{t.productName}</div>
+                <div className="text-xs text-muted-foreground">{t.productName}</div>
               </TableCell>
               <TableCell className="capitalize text-sm">{t.outsourceCategory?.replace(/_/g, " ")}</TableCell>
               <TableCell className="text-sm">{t.vendorName || "-"}</TableCell>
@@ -504,16 +504,16 @@ function OutsourceSummaryReport() {
               <TableCell className="text-right font-semibold text-red-500">{t.quantityDamaged || 0}</TableCell>
               <TableCell>
                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
-                  t.status === "returned" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-                  t.status === "partial_return" ? "bg-blue-50 text-blue-700 border-blue-200" :
-                  "bg-amber-50 text-amber-700 border-amber-200"
+                  t.status === "returned" ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" :
+                  t.status === "partial_return" ? "bg-primary/10 text-primary border-primary/20" :
+                  "bg-amber-500/10 text-amber-700 border-amber-500/20"
                 }`}>{t.status?.replace(/_/g, " ")}</span>
               </TableCell>
-              <TableCell className="text-sm text-slate-600">{t.sendDate ? format(new Date(t.sendDate), "MMM d, yyyy") : "-"}</TableCell>
+              <TableCell className="text-sm text-muted-foreground">{t.sendDate ? format(new Date(t.sendDate), "MMM d, yyyy") : "-"}</TableCell>
             </TableRow>
           ))}
           {!isLoading && (!data || data.length === 0) && (
-            <TableRow><TableCell colSpan={8} className="text-center py-8 text-slate-500">No outsource transfers found.</TableCell></TableRow>
+            <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No outsource transfers found.</TableCell></TableRow>
           )}
         </TableBody>
       </Table>
@@ -548,12 +548,12 @@ function StitcherPointsReport() {
         { name: "endDate", label: "To Date", type: "date" as const },
       ]} values={filters} onChange={setFilters} />
       <div className="grid grid-cols-2 gap-4 mb-4">
-        <Card className="p-4 text-center"><div className="text-xs text-slate-500">Total Points (Period)</div><div className="text-2xl font-bold text-amber-600">{Math.round(grandTotal * 100) / 100}</div></Card>
-        <Card className="p-4 text-center"><div className="text-xs text-slate-500">Stitchers with Points</div><div className="text-2xl font-bold">{stitcherSummary.size}</div></Card>
+        <Card className="p-4 text-center"><div className="text-xs text-muted-foreground">Total Points (Period)</div><div className="text-2xl font-bold text-amber-600">{Math.round(grandTotal * 100) / 100}</div></Card>
+        <Card className="p-4 text-center"><div className="text-xs text-muted-foreground">Stitchers with Points</div><div className="text-2xl font-bold">{stitcherSummary.size}</div></Card>
       </div>
       <ReportCard title="Stitcher Points — Product Breakdown">
         <Table>
-          <TableHeader className="bg-slate-50">
+          <TableHeader className="bg-background">
             <TableRow>
               <TableHead>Stitcher</TableHead>
               <TableHead>Team</TableHead>
@@ -566,11 +566,11 @@ function StitcherPointsReport() {
           </TableHeader>
           <TableBody>
             {isLoading ? <TableRow><TableCell colSpan={7} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
-              !rows.length ? <TableRow><TableCell colSpan={7} className="text-center py-12 text-slate-400">No data for selected period</TableCell></TableRow> :
+              !rows.length ? <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">No data for selected period</TableCell></TableRow> :
               rows.map((r: any, i: number) => (
                 <TableRow key={i}>
                   <TableCell className="font-semibold">{r.stitcherName}</TableCell>
-                  <TableCell className="text-slate-500">{r.teamName || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{r.teamName || "—"}</TableCell>
                   <TableCell className="font-mono text-xs">{r.productCode}</TableCell>
                   <TableCell>{r.productName}</TableCell>
                   <TableCell className="text-right">{r.completedQty}</TableCell>
@@ -580,7 +580,7 @@ function StitcherPointsReport() {
               ))
             }
             {rows.length > 0 && (
-              <TableRow className="bg-amber-50 font-bold border-t-2">
+              <TableRow className="bg-amber-500/10 font-bold border-t-2">
                 <TableCell colSpan={6} className="text-right">Grand Total</TableCell>
                 <TableCell className="text-right text-amber-700 text-lg">{Math.round(grandTotal * 100) / 100}</TableCell>
               </TableRow>
@@ -592,7 +592,7 @@ function StitcherPointsReport() {
       {stitcherSummary.size > 0 && (
         <ReportCard title="Stitcher Points — Summary">
           <Table>
-            <TableHeader className="bg-slate-50">
+            <TableHeader className="bg-background">
               <TableRow>
                 <TableHead>Stitcher</TableHead>
                 <TableHead>Team</TableHead>
@@ -604,7 +604,7 @@ function StitcherPointsReport() {
               {Array.from(stitcherSummary.values()).sort((a, b) => b.totalPts - a.totalPts).map((s, i) => (
                 <TableRow key={i}>
                   <TableCell className="font-semibold">{s.name}</TableCell>
-                  <TableCell className="text-slate-500">{s.teamName || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{s.teamName || "—"}</TableCell>
                   <TableCell className="text-right">{s.totalQty}</TableCell>
                   <TableCell className="text-right font-bold text-amber-600">{Math.round(s.totalPts * 100) / 100}</TableCell>
                 </TableRow>
@@ -646,12 +646,12 @@ function TeamPointsReport() {
         { name: "teamId", label: "Team", type: "select" as const, options: teams?.filter((t: any) => t.isActive).map((t: any) => ({ value: t.id, label: `${t.code || ""} - ${t.name}` })) || [] },
       ]} values={filters} onChange={setFilters} />
       <div className="grid grid-cols-2 gap-4 mb-4">
-        <Card className="p-4 text-center"><div className="text-xs text-slate-500">Total Points (Period)</div><div className="text-2xl font-bold text-amber-600">{Math.round(grandTotal * 100) / 100}</div></Card>
-        <Card className="p-4 text-center"><div className="text-xs text-slate-500">Teams with Points</div><div className="text-2xl font-bold">{teamSummary.size}</div></Card>
+        <Card className="p-4 text-center"><div className="text-xs text-muted-foreground">Total Points (Period)</div><div className="text-2xl font-bold text-amber-600">{Math.round(grandTotal * 100) / 100}</div></Card>
+        <Card className="p-4 text-center"><div className="text-xs text-muted-foreground">Teams with Points</div><div className="text-2xl font-bold">{teamSummary.size}</div></Card>
       </div>
       <ReportCard title="Team Points — Product Breakdown">
         <Table>
-          <TableHeader className="bg-slate-50">
+          <TableHeader className="bg-background">
             <TableRow>
               <TableHead>Team</TableHead>
               <TableHead>Product Code</TableHead>
@@ -663,12 +663,12 @@ function TeamPointsReport() {
           </TableHeader>
           <TableBody>
             {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
-              !rows.length ? <TableRow><TableCell colSpan={6} className="text-center py-12 text-slate-400">No team points data found</TableCell></TableRow> :
+              !rows.length ? <TableRow><TableCell colSpan={6} className="text-center py-12 text-muted-foreground">No team points data found</TableCell></TableRow> :
               rows.map((r: any, i: number) => (
                 <TableRow key={i}>
                   <TableCell>
                     <div className="font-semibold">{r.teamName}</div>
-                    {r.teamCode && <div className="text-xs text-slate-400">{r.teamCode}</div>}
+                    {r.teamCode && <div className="text-xs text-muted-foreground">{r.teamCode}</div>}
                   </TableCell>
                   <TableCell className="font-mono text-xs">{r.productCode}</TableCell>
                   <TableCell>{r.productName}</TableCell>
@@ -679,7 +679,7 @@ function TeamPointsReport() {
               ))
             }
             {rows.length > 0 && (
-              <TableRow className="bg-amber-50 font-bold border-t-2">
+              <TableRow className="bg-amber-500/10 font-bold border-t-2">
                 <TableCell colSpan={5} className="text-right">Grand Total</TableCell>
                 <TableCell className="text-right text-amber-700 text-lg">{Math.round(grandTotal * 100) / 100}</TableCell>
               </TableRow>
@@ -691,7 +691,7 @@ function TeamPointsReport() {
       {teamSummary.size > 0 && (
         <ReportCard title="Team Points — Summary">
           <Table>
-            <TableHeader className="bg-slate-50">
+            <TableHeader className="bg-background">
               <TableRow>
                 <TableHead>Team</TableHead>
                 <TableHead className="text-right">Total Completed</TableHead>
@@ -703,7 +703,7 @@ function TeamPointsReport() {
                 <TableRow key={i}>
                   <TableCell>
                     <div className="font-semibold">{s.name}</div>
-                    {s.code && <div className="text-xs text-slate-400">{s.code}</div>}
+                    {s.code && <div className="text-xs text-muted-foreground">{s.code}</div>}
                   </TableCell>
                   <TableCell className="text-right">{s.totalQty}</TableCell>
                   <TableCell className="text-right font-bold text-amber-600">{Math.round(s.totalPts * 100) / 100}</TableCell>
@@ -719,12 +719,12 @@ function TeamPointsReport() {
 
 function ReportCard({ title, children }: any) {
   return (
-    <Card className="shadow-lg border-slate-200 rounded-2xl overflow-hidden animate-in fade-in duration-500">
-      <CardHeader className="bg-white border-b border-slate-100 py-5 px-6 flex flex-row items-center gap-2">
+    <Card className="shadow-lg border-border rounded-2xl overflow-hidden animate-in fade-in duration-500">
+      <CardHeader className="bg-card border-b border-border py-5 px-6 flex flex-row items-center gap-2">
         <FileText className="h-5 w-5 text-primary" />
-        <CardTitle className="text-xl font-display text-slate-800">{title}</CardTitle>
+        <CardTitle className="text-xl font-display text-foreground">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="p-0 bg-white">
+      <CardContent className="p-0 bg-card">
         {children}
       </CardContent>
     </Card>

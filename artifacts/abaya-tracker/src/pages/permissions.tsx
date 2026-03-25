@@ -160,7 +160,7 @@ export default function PermissionsPage() {
     return (
       <AppLayout title="Role Permissions">
         <div className="flex items-center justify-center h-64">
-          <p className="text-slate-500">Access denied. Admin only.</p>
+          <p className="text-muted-foreground">Access denied. Admin only.</p>
         </div>
       </AppLayout>
     );
@@ -182,14 +182,14 @@ export default function PermissionsPage() {
 
   return (
     <AppLayout title="Role Permissions">
-      <Card className="shadow-lg border-slate-200 rounded-2xl overflow-hidden">
-        <CardHeader className="bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
+      <Card className="shadow-lg border-border rounded-2xl overflow-hidden">
+        <CardHeader className="bg-card border-b border-border flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
           <div>
-            <CardTitle className="text-xl font-display text-slate-800 flex items-center gap-2">
+            <CardTitle className="text-xl font-display text-foreground flex items-center gap-2">
               <Shield className="h-5 w-5 text-primary" />
               Role Permissions
             </CardTitle>
-            <p className="text-sm text-slate-500 mt-1">Configure what each role can access and do.</p>
+            <p className="text-sm text-muted-foreground mt-1">Configure what each role can access and do.</p>
           </div>
           <div className="flex items-center gap-2">
             <Dialog open={newRoleOpen} onOpenChange={setNewRoleOpen}>
@@ -211,7 +211,7 @@ export default function PermissionsPage() {
                       className="form-input-styled"
                       placeholder="e.g. Quality Control"
                     />
-                    <p className="text-xs text-slate-400 mt-1">Will be normalized to lowercase with underscores</p>
+                    <p className="text-xs text-muted-foreground mt-1">Will be normalized to lowercase with underscores</p>
                   </div>
                   <Button onClick={createRole} disabled={creatingRole || !newRoleName.trim()} className="w-full h-10 rounded-xl">
                     {creatingRole ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
@@ -235,7 +235,7 @@ export default function PermissionsPage() {
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                   selectedRole === role
                     ? "bg-primary text-white shadow-md"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    : "bg-muted text-muted-foreground hover:bg-muted"
                 }`}
               >
                 {getRoleLabel(role)}
@@ -244,7 +244,7 @@ export default function PermissionsPage() {
           </div>
 
           {isAdmin && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-center gap-3">
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-6 flex items-center gap-3">
               <Lock className="h-5 w-5 text-amber-600 flex-shrink-0" />
               <p className="text-sm text-amber-800">
                 Admin always has full permissions on all modules. These cannot be changed.
@@ -254,7 +254,7 @@ export default function PermissionsPage() {
 
           {!isAdmin && !isSystemRole && (
             <div className="flex justify-end mb-4">
-              <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50 rounded-xl gap-1.5" onClick={() => deleteRole(selectedRole)}>
+              <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-500/10 rounded-xl gap-1.5" onClick={() => deleteRole(selectedRole)}>
                 <Trash2 className="h-3.5 w-3.5" /> Delete Role
               </Button>
             </div>
@@ -263,11 +263,11 @@ export default function PermissionsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700 w-48">Module</th>
-                  <th className="text-center py-3 px-4 font-semibold text-slate-700">All</th>
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 px-4 font-semibold text-foreground w-48">Module</th>
+                  <th className="text-center py-3 px-4 font-semibold text-foreground">All</th>
                   {ACTIONS.map((a) => (
-                    <th key={a} className="text-center py-3 px-4 font-semibold text-slate-700">
+                    <th key={a} className="text-center py-3 px-4 font-semibold text-foreground">
                       {ACTION_LABELS[a]}
                     </th>
                   ))}
@@ -278,8 +278,8 @@ export default function PermissionsPage() {
                   const p = rolePerm[mod] || { canView: false, canCreate: false, canEdit: false, canImport: false };
                   const allChecked = p.canView && p.canCreate && p.canEdit && p.canImport;
                   return (
-                    <tr key={mod} className="border-b border-slate-100 hover:bg-slate-50/50">
-                      <td className="py-3 px-4 font-medium text-slate-800">{MODULE_LABELS[mod] || mod}</td>
+                    <tr key={mod} className="border-b border-border hover:bg-background/50">
+                      <td className="py-3 px-4 font-medium text-foreground">{MODULE_LABELS[mod] || mod}</td>
                       <td className="py-3 px-4 text-center">
                         <Checkbox
                           checked={allChecked}
