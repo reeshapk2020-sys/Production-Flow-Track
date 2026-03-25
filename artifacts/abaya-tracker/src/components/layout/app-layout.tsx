@@ -77,7 +77,7 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
       <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 shadow-2xl z-20 hidden md:flex">
         <div className="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-950">
           <Package className="h-6 w-6 text-primary mr-3" />
-          <span className="font-display font-bold text-lg text-white tracking-wide">Production Management System</span>
+          <span className="font-display font-bold text-lg text-white tracking-wide">Reesha Production Management System</span>
         </div>
 
         <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1 custom-scrollbar">
