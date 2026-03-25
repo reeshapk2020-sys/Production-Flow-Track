@@ -575,7 +575,7 @@ export default function CuttingPage() {
               </div>
               <div className="col-span-2 sm:col-span-1">
                 <label className="text-sm font-medium block mb-1.5">Quantity Cut</label>
-                <input type="number" name="quantityCut" className="form-input-styled" min="1" defaultValue={editTarget.quantityCut || ""} disabled={!!(editTarget as any).isLocked} />
+                <input type="number" name="quantityCut" className="form-input-styled" min="1" defaultValue={editTarget.quantityCut || ""} />
               </div>
               <div className="col-span-2 sm:col-span-1">
                 <label className="text-sm font-medium block mb-1.5">Material 1</label>

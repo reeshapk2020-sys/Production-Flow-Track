@@ -322,13 +322,26 @@ router.put("/cutting/batches/:id", checkPermission("cutting", "edit"), async (re
   if (isLocked) {
     if (colorId !== undefined) return res.status(400).json({ error: "Cannot change color: allocations exist for this batch." });
     if (sizeId !== undefined) return res.status(400).json({ error: "Cannot change size: allocations exist for this batch." });
-    if (quantityCut !== undefined) return res.status(400).json({ error: "Cannot change quantity: allocations exist for this batch." });
   }
+
+  const [currentBatch] = await db.select({
+    quantityCut: cuttingBatchesTable.quantityCut,
+    availableForAllocation: cuttingBatchesTable.availableForAllocation,
+  }).from(cuttingBatchesTable).where(eq(cuttingBatchesTable.id, id));
+  if (!currentBatch) return res.status(404).json({ error: "Cutting batch not found." });
 
   const updates: Record<string, any> = {};
   if (!isLocked && colorId !== undefined) updates.colorId = colorId;
   if (!isLocked && sizeId !== undefined) updates.sizeId = sizeId;
-  if (!isLocked && quantityCut !== undefined) updates.quantityCut = quantityCut;
+  if (quantityCut !== undefined) {
+    const newQty = Number(quantityCut);
+    const totalAllocated = currentBatch.quantityCut - currentBatch.availableForAllocation;
+    if (newQty < totalAllocated) {
+      return res.status(400).json({ error: `Cannot reduce quantity below already allocated amount (${totalAllocated}).` });
+    }
+    updates.quantityCut = newQty;
+    updates.availableForAllocation = newQty - totalAllocated;
+  }
   if (cutter !== undefined) updates.cutter = cutter;
   if (cuttingDate) updates.cuttingDate = new Date(cuttingDate);
   if (remarks !== undefined) updates.remarks = remarks;
