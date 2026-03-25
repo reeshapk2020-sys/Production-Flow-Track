@@ -53,7 +53,7 @@ Comprehensive reports are available, including:
 -   **Batch Status**: Provides an overview of all batches and their current stages.
 
 **UI/UX and Interaction:**
-A reusable `FilterBar` component enables filtering across all production pages by date range, dropdowns, and text search. The system includes an "Edit Lock System" where upstream records become locked for editing once downstream processes begin, with visual cues in the UI. Receiving quality checks (`hasStain`, `hasDamage`, `needsWash`, `needsRework`) are integrated into the receiving process. Bulk CSV/Excel import functionality is provided for master data and fabric rolls.
+A reusable `FilterBar` component enables filtering across all production pages by date range, dropdowns, and text search. The system includes an "Edit Lock System" where upstream records become locked for editing once downstream processes begin, with visual cues in the UI. Receiving quality checks (`hasStain`, `hasDamage`, `needsWash`, `needsRework`) are integrated into the receiving process. Bulk CSV/Excel import functionality is provided for master data, fabric rolls, cutting batches, and dispatches. The cutting import supports `itemCode`-based lookup (format: `productCode-colorCode-materialCode-material2Code`), production source linking (`Reesha`/`PO`/`Order`), and row-level validation with detailed error reporting.
 
 ## External Dependencies
 

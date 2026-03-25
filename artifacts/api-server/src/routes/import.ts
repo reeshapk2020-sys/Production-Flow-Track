@@ -10,6 +10,9 @@ import {
   fabricRollsTable,
   fabricsTable,
   categoriesTable,
+  cuttingBatchesTable,
+  purchaseOrdersTable,
+  ordersTable,
 } from "@workspace/db/schema";
 import { eq, ilike } from "drizzle-orm";
 import { logAudit } from "../lib/audit.js";
@@ -374,6 +377,169 @@ router.post("/import/fabric-rolls", checkPermission("fabric-rolls", "import"), u
   res.json(result);
 });
 
+// ========== CUTTING BATCHES ==========
+router.post("/import/cutting-batches", checkPermission("cutting", "import"), upload.single("file"), async (req: Request, res: Response) => {
+  if (!req.file) return res.status(400).json({ error: "No file uploaded." });
+  const result: ImportResult = { total: 0, inserted: 0, failed: 0, errors: [] };
+
+  try {
+    const rawRows = parseFile(req.file.buffer, req.file.mimetype);
+    const rows = normalizeHeaders(rawRows);
+    result.total = rows.length;
+
+    const existingBatches = await db.select({ batchNumber: cuttingBatchesTable.batchNumber }).from(cuttingBatchesTable);
+    const existingBatchNumbers = new Set(existingBatches.map((b) => b.batchNumber.toUpperCase()));
+
+    const products = await db.select({ id: productsTable.id, code: productsTable.code, name: productsTable.name }).from(productsTable);
+    const productByCode = new Map(products.map((p) => [p.code.toUpperCase(), p]));
+    const productByName = new Map(products.map((p) => [p.name.toUpperCase(), p]));
+
+    const colors = await db.select({ id: colorsTable.id, name: colorsTable.name, code: colorsTable.code }).from(colorsTable);
+    const colorByName = new Map(colors.map((c) => [c.name.toUpperCase(), c.id]));
+    const colorByCode = new Map(colors.filter((c) => c.code).map((c) => [c.code!.toUpperCase(), c.id]));
+
+    const sizes = await db.select({ id: sizesTable.id, name: sizesTable.name }).from(sizesTable);
+    const sizeByName = new Map(sizes.map((s) => [s.name.toUpperCase(), s.id]));
+
+    const mats = await db.select({ id: materialsTable.id, code: materialsTable.code, name: materialsTable.name }).from(materialsTable);
+    const matByCode = new Map(mats.map((m) => [m.code.toUpperCase(), m.id]));
+    const matByName = new Map(mats.map((m) => [m.name.toUpperCase(), m.id]));
+
+    const pos = await db.select({ id: purchaseOrdersTable.id, poNumber: purchaseOrdersTable.poNumber }).from(purchaseOrdersTable);
+    const poByNumber = new Map(pos.map((p) => [p.poNumber.toUpperCase(), p.id]));
+
+    const ords = await db.select({ id: ordersTable.id, orderNumber: ordersTable.orderNumber }).from(ordersTable);
+    const orderByNumber = new Map(ords.map((o) => [o.orderNumber.toUpperCase(), o.id]));
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const batchNumber = row.batchnumber || row.batch || row.batchno || "";
+      const itemCode = row.itemcode || row.item_code || row.code || "";
+      const productName = row.productname || row.product || "";
+      const color = row.color || row.colorname || row.colorcode || "";
+      const size = row.size || row.sizename || "";
+      const quantity = row.quantity || row.qty || row.quantitycut || "";
+      const cutter = row.cutter || row.cuttername || "";
+      const dateStr = row.date || row.cuttingdate || "";
+      const remarks = row.remarks || row.remark || "";
+      const productionForRaw = row.productionfor || row.production || row.prodfor || "";
+      const poNumber = row.ponumber || row.po || "";
+      const orderNumber = row.ordernumber || row.order || "";
+
+      if (!batchNumber) { result.failed++; result.errors.push({ row: i + 2, reason: "Missing batch number" }); continue; }
+      if (!quantity || isNaN(Number(quantity)) || Number(quantity) <= 0) { result.failed++; result.errors.push({ row: i + 2, reason: "Missing or invalid quantity (must be positive)" }); continue; }
+      if (!size) { result.failed++; result.errors.push({ row: i + 2, reason: "Missing size" }); continue; }
+
+      if (existingBatchNumbers.has(batchNumber.toUpperCase())) {
+        result.failed++; result.errors.push({ row: i + 2, reason: `Duplicate batch number "${batchNumber}"` }); continue;
+      }
+
+      let productId: number | null = null;
+      let materialId: number | null = null;
+      let material2Id: number | null = null;
+
+      let resolvedColor = color;
+
+      if (itemCode) {
+        const parts = itemCode.split("-");
+        if (parts.length >= 1 && parts[0]) {
+          const p = productByCode.get(parts[0].toUpperCase());
+          if (p) productId = p.id;
+          else { result.failed++; result.errors.push({ row: i + 2, reason: `Product code "${parts[0]}" from itemCode not found` }); continue; }
+        }
+        if (parts.length >= 2 && parts[1]) {
+          if (!resolvedColor) {
+            resolvedColor = parts[1];
+          }
+        }
+        if (parts.length >= 3 && parts[2]) {
+          materialId = matByCode.get(parts[2].toUpperCase()) || null;
+        }
+        if (parts.length >= 4 && parts[3]) {
+          material2Id = matByCode.get(parts[3].toUpperCase()) || null;
+        }
+      } else if (productName) {
+        const p = productByName.get(productName.toUpperCase()) || productByCode.get(productName.toUpperCase());
+        if (p) productId = p.id;
+      }
+
+      if (!resolvedColor) { result.failed++; result.errors.push({ row: i + 2, reason: "Missing color (provide in color column or itemCode)" }); continue; }
+      const colorId = colorByCode.get(resolvedColor.toUpperCase()) || colorByName.get(resolvedColor.toUpperCase());
+      if (!colorId) { result.failed++; result.errors.push({ row: i + 2, reason: `Color "${resolvedColor}" not found` }); continue; }
+
+      const sizeId = sizeByName.get(size.toUpperCase());
+      if (!sizeId) { result.failed++; result.errors.push({ row: i + 2, reason: `Size "${size}" not found` }); continue; }
+
+      let productionFor = "reesha_stock";
+      let poId: number | null = null;
+      let orderId: number | null = null;
+
+      const pfLower = productionForRaw.toLowerCase().replace(/\s+/g, "_");
+      if (pfLower === "po" || pfLower === "purchase_order" || pfLower === "purchaseorder") {
+        productionFor = "purchase_order";
+      } else if (pfLower === "order" || pfLower === "customer_order" || pfLower === "customerorder") {
+        productionFor = "order";
+      } else if (pfLower === "reesha" || pfLower === "reesha_stock" || pfLower === "stock" || pfLower === "") {
+        productionFor = "reesha_stock";
+      } else {
+        result.failed++; result.errors.push({ row: i + 2, reason: `Invalid productionFor "${productionForRaw}". Use Reesha, PO, or Order.` }); continue;
+      }
+
+      if (productionFor === "purchase_order") {
+        if (!poNumber) { result.failed++; result.errors.push({ row: i + 2, reason: "PO number required when productionFor is PO" }); continue; }
+        poId = poByNumber.get(poNumber.toUpperCase()) || null;
+        if (!poId) { result.failed++; result.errors.push({ row: i + 2, reason: `Purchase order "${poNumber}" not found` }); continue; }
+      }
+      if (productionFor === "order") {
+        if (!orderNumber) { result.failed++; result.errors.push({ row: i + 2, reason: "Order number required when productionFor is Order" }); continue; }
+        orderId = orderByNumber.get(orderNumber.toUpperCase()) || null;
+        if (!orderId) { result.failed++; result.errors.push({ row: i + 2, reason: `Order "${orderNumber}" not found` }); continue; }
+      }
+      if (productionFor === "reesha_stock" && (poNumber || orderNumber)) {
+        result.failed++; result.errors.push({ row: i + 2, reason: "PO/Order number should be empty when productionFor is Reesha" }); continue;
+      }
+
+      let parsedDate: Date;
+      if (dateStr) {
+        parsedDate = new Date(dateStr);
+        if (isNaN(parsedDate.getTime())) { result.failed++; result.errors.push({ row: i + 2, reason: `Invalid date "${dateStr}"` }); continue; }
+      } else {
+        parsedDate = new Date();
+      }
+
+      try {
+        await db.insert(cuttingBatchesTable).values({
+          batchNumber: batchNumber.trim(),
+          productId,
+          fabricId: null,
+          materialId,
+          material2Id,
+          sizeId,
+          colorId,
+          quantityCut: Number(quantity),
+          availableForAllocation: Number(quantity),
+          cutter: cutter || null,
+          cuttingDate: parsedDate,
+          remarks: remarks || null,
+          productionFor,
+          poId,
+          orderId,
+          createdBy: (req as any).user?.username,
+        });
+        existingBatchNumbers.add(batchNumber.toUpperCase());
+        result.inserted++;
+      } catch (e: any) {
+        result.failed++;
+        result.errors.push({ row: i + 2, reason: e.message?.includes("unique") ? `Duplicate batch "${batchNumber}"` : "Database error" });
+      }
+    }
+    await logAudit(req, "IMPORT", "cutting_batches", "", `Imported ${result.inserted}/${result.total} cutting batches`);
+  } catch (e: any) {
+    return res.status(400).json({ error: `Failed to parse file: ${e.message}` });
+  }
+  res.json(result);
+});
+
 // ========== TEMPLATE DOWNLOADS ==========
 const TEMPLATES: Record<string, { columns: string[]; sample: Record<string, string>[] }> = {
   products: {
@@ -424,6 +590,14 @@ const TEMPLATES: Record<string, { columns: string[]; sample: Record<string, stri
     sample: [
       { rollNumber: "FR-001", fabric: "Nida", color: "Black", quantity: "100", unit: "meters", supplier: "Supplier A", costPerUnit: "15", receivedDate: "2026-01-15", remarks: "" },
       { rollNumber: "FR-002", fabric: "Crepe", color: "Navy Blue", quantity: "50", unit: "yards", supplier: "", costPerUnit: "", receivedDate: "2026-02-01", remarks: "Premium fabric" },
+    ],
+  },
+  "cutting-batches": {
+    columns: ["batchNumber", "itemCode", "productName", "color", "size", "quantity", "productionFor", "poNumber", "orderNumber", "cutter", "date", "remarks"],
+    sample: [
+      { batchNumber: "CB-001", itemCode: "101-BLK-LC01", productName: "", color: "Black", size: "52", quantity: "20", productionFor: "Reesha", poNumber: "", orderNumber: "", cutter: "Ahmed", date: "2026-03-15", remarks: "" },
+      { batchNumber: "CB-002", itemCode: "", productName: "Classic Abaya", color: "Navy Blue", size: "54", quantity: "15", productionFor: "PO", poNumber: "PO-001", orderNumber: "", cutter: "", date: "2026-03-16", remarks: "For customer order" },
+      { batchNumber: "CB-003", itemCode: "102-NVY", productName: "", color: "", size: "56", quantity: "10", productionFor: "Order", poNumber: "", orderNumber: "ORD-001", cutter: "Khalid", date: "", remarks: "Color from itemCode" },
     ],
   },
 };

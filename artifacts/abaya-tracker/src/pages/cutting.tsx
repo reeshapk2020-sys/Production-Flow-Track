@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertCircle, Plus, Loader2, Scissors, Pencil } from "lucide-react";
+import { AlertCircle, Plus, Loader2, Scissors, Pencil, Upload } from "lucide-react";
+import { ImportDialog } from "@/components/import-dialog";
 import { 
   useListCuttingBatches, useCreateCuttingBatch, getListCuttingBatchesQueryKey,
   useListProducts, useListSizes, useListColors, useListFabricRolls,
@@ -65,8 +66,10 @@ export default function CuttingPage() {
   const { user, can } = useAppAuth();
   const canCreate = can("cutting", "create");
   const canEdit = can("cutting", "edit");
+  const canImport = can("cutting", "import");
 
   const [open, setOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [batchNumber, setBatchNumber] = useState("");
   const [productionFor, setProductionFor] = useState("reesha_stock");
   const [selectedPoId, setSelectedPoId] = useState<number | undefined>();
@@ -221,6 +224,12 @@ export default function CuttingPage() {
             </CardTitle>
             <p className="text-sm text-slate-500 mt-1">Manage fabric cutting and batch creation.</p>
           </div>
+          <div className="flex gap-2">
+          {canImport && (
+            <Button variant="outline" className="rounded-xl gap-1.5" onClick={() => setImportOpen(true)}>
+              <Upload className="h-4 w-4" /> Import
+            </Button>
+          )}
           {canCreate && <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setBatchNumber(""); setSelectedRollId(null); setQuantityUsed(""); } }}>
             <DialogTrigger asChild>
               <Button className="rounded-xl shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5">
@@ -445,6 +454,7 @@ export default function CuttingPage() {
               </form>
             </DialogContent>
           </Dialog>}
+          </div>
         </CardHeader>
         <CardContent className="p-0 bg-white">
           <Table>
@@ -636,6 +646,14 @@ export default function CuttingPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <ImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        moduleName="Cutting Batches"
+        moduleKey="cutting-batches"
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: getListCuttingBatchesQueryKey() })}
+      />
     </AppLayout>
   );
 }
