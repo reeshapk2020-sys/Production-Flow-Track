@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Loader2, Send, Info, Pencil, AlertTriangle, Users, User } from "lucide-react";
+import { Plus, Loader2, Send, Info, Pencil, AlertTriangle, Users, User, Undo2 } from "lucide-react";
 import { SearchableSelect } from "@/components/searchable-select";
 import {
   useListAllocations, useCreateAllocation, getListAllocationsQueryKey,
@@ -77,6 +77,9 @@ export default function AllocationPage() {
   const [workType, setWorkType] = useState<"simple_stitch" | "outsource_required">("simple_stitch");
   const [editOpen, setEditOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<any>(null);
+  const [returnOpen, setReturnOpen] = useState(false);
+  const [returnTarget, setReturnTarget] = useState<any>(null);
+  const [returnSubmitting, setReturnSubmitting] = useState(false);
 
   const { mutate, isPending } = useCreateAllocation({
     mutation: {
@@ -164,6 +167,39 @@ export default function AllocationPage() {
       if (qi) payload.quantityIssued = Number(qi);
     }
     updateAllocation({ id: editTarget.id, data: payload });
+  };
+
+  const onReturnSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!returnTarget) return;
+    const fd = new FormData(e.currentTarget);
+    const qty = Number(fd.get("quantityReturned"));
+    if (!qty || qty <= 0) { toast({ title: "Quantity must be a positive number", variant: "destructive" }); return; }
+    setReturnSubmitting(true);
+    try {
+      const res = await fetch(`${import.meta.env.BASE_URL}api/allocation/return`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          allocationId: returnTarget.id,
+          quantityReturned: qty,
+          returnDate: fd.get("returnDate") as string,
+          remarks: fd.get("remarks") as string || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast({ title: "Error", description: data.error || "Return failed", variant: "destructive" }); return; }
+      queryClient.invalidateQueries({ queryKey: getListAllocationsQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getListCuttingBatchesQueryKey() });
+      setReturnOpen(false);
+      setReturnTarget(null);
+      toast({ title: `Returned ${qty} pieces successfully` });
+    } catch {
+      toast({ title: "Network error", variant: "destructive" });
+    } finally {
+      setReturnSubmitting(false);
+    }
   };
 
   const availableBatches = batches?.filter(b => (b.availableForAllocation || 0) > 0) || [];
@@ -458,14 +494,27 @@ export default function AllocationPage() {
                       </TableCell>
                       {canEdit && (
                         <TableCell>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => { setEditTarget(alloc); setEditOpen(true); }}
-                          >
-                            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => { setEditTarget(alloc); setEditOpen(true); }}
+                            >
+                              <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                            </Button>
+                            {pending > 0 && canCreate && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Return pieces"
+                                onClick={() => { setReturnTarget({ ...alloc, activePending: pending }); setReturnOpen(true); }}
+                              >
+                                <Undo2 className="h-3.5 w-3.5 text-amber-600" />
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       )}
                     </TableRow>
@@ -534,6 +583,45 @@ export default function AllocationPage() {
               <div className="mt-2">
                 <Button type="submit" disabled={isUpdating} className="w-full h-11 rounded-xl">
                   {isUpdating ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={returnOpen} onOpenChange={(v) => { setReturnOpen(v); if (!v) setReturnTarget(null); }}>
+        <DialogContent className="sm:max-w-[400px] rounded-2xl p-6 border-0 shadow-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-display">Return Allocated Pieces</DialogTitle>
+          </DialogHeader>
+          {returnTarget && (
+            <form onSubmit={onReturnSubmit} className="grid grid-cols-1 gap-4 pt-4">
+              <div className="bg-background rounded-xl p-3 text-sm text-muted-foreground">
+                <div className="font-semibold text-foreground">{returnTarget.batchNumber} — {returnTarget.allocationNumber}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {returnTarget.assigneeName || returnTarget.stitcherName} · {returnTarget.quantityIssued} issued · {returnTarget.activePending} pending
+                </div>
+              </div>
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
+                <Undo2 className="h-3.5 w-3.5 shrink-0" />
+                Returned pieces will be added back to the cutting batch&apos;s available quantity.
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1.5">Quantity to Return</label>
+                <input type="number" name="quantityReturned" className="form-input-styled" min="1" max={returnTarget.activePending} required placeholder={`Max: ${returnTarget.activePending}`} />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1.5">Return Date</label>
+                <input type="date" name="returnDate" className="form-input-styled" required defaultValue={new Date().toISOString().split('T')[0]} />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1.5">Remarks</label>
+                <input name="remarks" className="form-input-styled" placeholder="Reason for return..." />
+              </div>
+              <div className="mt-2">
+                <Button type="submit" disabled={returnSubmitting} className="w-full h-11 rounded-xl">
+                  {returnSubmitting ? "Returning..." : "Return Pieces"}
                 </Button>
               </div>
             </form>

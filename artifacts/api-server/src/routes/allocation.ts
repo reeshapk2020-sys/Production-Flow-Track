@@ -2,6 +2,7 @@ import { Router, type IRouter, type Request, type Response, type NextFunction } 
 import { db } from "@workspace/db";
 import {
   allocationsTable,
+  allocationReturnsTable,
   cuttingBatchesTable,
   stitchersTable,
   teamsTable,
@@ -259,6 +260,32 @@ router.post("/allocation", checkPermission("allocation", "create"), async (req, 
   res.status(201).json({ ...allocation, quantityPending: quantityIssued });
 });
 
+router.get("/allocation/returns", checkPermission("allocation", "view"), async (req, res) => {
+  const { allocationId } = req.query;
+  const conditions: any[] = [];
+  if (allocationId) conditions.push(eq(allocationReturnsTable.allocationId, Number(allocationId)));
+
+  let q = db.select({
+    id: allocationReturnsTable.id,
+    allocationId: allocationReturnsTable.allocationId,
+    allocationNumber: allocationsTable.allocationNumber,
+    batchNumber: cuttingBatchesTable.batchNumber,
+    quantityReturned: allocationReturnsTable.quantityReturned,
+    returnDate: allocationReturnsTable.returnDate,
+    remarks: allocationReturnsTable.remarks,
+    createdBy: allocationReturnsTable.createdBy,
+    createdAt: allocationReturnsTable.createdAt,
+  })
+    .from(allocationReturnsTable)
+    .leftJoin(allocationsTable, eq(allocationReturnsTable.allocationId, allocationsTable.id))
+    .leftJoin(cuttingBatchesTable, eq(allocationsTable.cuttingBatchId, cuttingBatchesTable.id));
+
+  if (conditions.length > 0) q = q.where(and(...conditions)) as typeof q;
+
+  const rows = await q.orderBy(sql`${allocationReturnsTable.createdAt} desc`);
+  res.json(rows);
+});
+
 router.get("/allocation/:id", checkPermission("allocation", "view"), async (req, res) => {
   const id = parseInt(req.params.id);
   const [row] = await allocJoins(
@@ -297,6 +324,68 @@ router.put("/allocation/:id", checkPermission("allocation", "edit"), async (req,
   if (!row) return res.status(404).json({ error: "Allocation not found." });
   await logAudit(req, "UPDATE", "allocations", String(id), `Updated allocation #${id}`);
   res.json({ ...row, isLocked });
+});
+
+router.post("/allocation/return", checkPermission("allocation", "create"), async (req, res) => {
+  const { allocationId, quantityReturned, returnDate, remarks } = req.body;
+
+  if (!allocationId || !quantityReturned || !returnDate) {
+    return res.status(400).json({ error: "allocationId, quantityReturned, and returnDate are required." });
+  }
+
+  const qty = Number(quantityReturned);
+  if (!Number.isInteger(qty) || qty <= 0) {
+    return res.status(400).json({ error: "Quantity must be a positive integer." });
+  }
+
+  const [alloc] = await db
+    .select({
+      id: allocationsTable.id,
+      cuttingBatchId: allocationsTable.cuttingBatchId,
+      quantityIssued: allocationsTable.quantityIssued,
+      quantityReceived: allocationsTable.quantityReceived,
+      quantityRejected: allocationsTable.quantityRejected,
+    })
+    .from(allocationsTable)
+    .where(eq(allocationsTable.id, Number(allocationId)));
+
+  if (!alloc) return res.status(404).json({ error: "Allocation not found." });
+
+  const activeAllocated = alloc.quantityIssued - alloc.quantityReceived - alloc.quantityRejected;
+
+  if (qty > activeAllocated) {
+    return res.status(400).json({ error: `Cannot return ${qty}. Only ${activeAllocated} pieces are actively allocated (issued: ${alloc.quantityIssued}, received: ${alloc.quantityReceived}, rejected: ${alloc.quantityRejected}).` });
+  }
+
+  const [returnRecord] = await db.transaction(async (tx) => {
+    const [record] = await tx
+      .insert(allocationReturnsTable)
+      .values({
+        allocationId: alloc.id,
+        quantityReturned: qty,
+        returnDate: new Date(returnDate),
+        remarks: remarks || null,
+        createdBy: (req as any).user?.username,
+      })
+      .returning();
+
+    await tx
+      .update(allocationsTable)
+      .set({ quantityIssued: sql`${allocationsTable.quantityIssued} - ${qty}` })
+      .where(eq(allocationsTable.id, alloc.id));
+
+    await tx
+      .update(cuttingBatchesTable)
+      .set({ availableForAllocation: sql`${cuttingBatchesTable.availableForAllocation} + ${qty}` })
+      .where(eq(cuttingBatchesTable.id, alloc.cuttingBatchId));
+
+    return [record];
+  });
+
+  await logAudit(req, "CREATE", "allocation_returns", String(returnRecord.id),
+    `Returned ${qty} pieces from allocation #${alloc.id}`);
+
+  res.status(201).json(returnRecord);
 });
 
 export default router;

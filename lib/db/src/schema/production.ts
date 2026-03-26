@@ -243,6 +243,20 @@ export const allocationsTable = pgTable("allocations", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// ===== ALLOCATION RETURNS =====
+
+export const allocationReturnsTable = pgTable("allocation_returns", {
+  id: serial("id").primaryKey(),
+  allocationId: integer("allocation_id")
+    .notNull()
+    .references(() => allocationsTable.id),
+  quantityReturned: integer("quantity_returned").notNull(),
+  returnDate: timestamp("return_date").notNull(),
+  remarks: text("remarks"),
+  createdBy: text("created_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // ===== OUTSOURCE TRANSFERS =====
 
 export const outsourceTransfersTable = pgTable("outsource_transfers", {
