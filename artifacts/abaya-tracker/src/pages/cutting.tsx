@@ -26,6 +26,7 @@ function BatchStatusBadge({ status }: { status: string }) {
     cutting:            { label: "Cutting",        cls: "bg-primary/10 text-primary border-primary/20" },
     allocated:          { label: "Allocated",      cls: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
     allocation:         { label: "Allocated",      cls: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
+    returned:           { label: "Returned",       cls: "bg-orange-500/10 text-orange-700 border-orange-500/20" },
     partially_received: { label: "Partial Recv",   cls: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20" },
     stitching:          { label: "Partial Recv",   cls: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20" },
     fully_received:     { label: "Fully Received", cls: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" },

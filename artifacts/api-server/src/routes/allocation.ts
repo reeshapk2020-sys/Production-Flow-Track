@@ -244,7 +244,7 @@ router.post("/allocation", checkPermission("allocation", "create"), async (req, 
     .update(cuttingBatchesTable)
     .set({
       availableForAllocation: sql`${cuttingBatchesTable.availableForAllocation} - ${quantityIssued}`,
-      status: "allocated",
+      status: sql`CASE WHEN ${cuttingBatchesTable.status} IN ('cutting', 'returned') THEN 'allocated'::"batch_status" ELSE ${cuttingBatchesTable.status} END`,
     })
     .where(eq(cuttingBatchesTable.id, cuttingBatchId));
 
@@ -374,10 +374,19 @@ router.post("/allocation/return", checkPermission("allocation", "create"), async
       .set({ quantityIssued: sql`${allocationsTable.quantityIssued} - ${qty}` })
       .where(eq(allocationsTable.id, alloc.id));
 
-    await tx
+    const [updatedBatch] = await tx
       .update(cuttingBatchesTable)
       .set({ availableForAllocation: sql`${cuttingBatchesTable.availableForAllocation} + ${qty}` })
-      .where(eq(cuttingBatchesTable.id, alloc.cuttingBatchId));
+      .where(eq(cuttingBatchesTable.id, alloc.cuttingBatchId))
+      .returning({ availableForAllocation: cuttingBatchesTable.availableForAllocation, quantityCut: cuttingBatchesTable.quantityCut, status: cuttingBatchesTable.status });
+
+    if (updatedBatch && updatedBatch.availableForAllocation >= updatedBatch.quantityCut
+        && !["partially_received", "fully_received", "in_finishing", "finished"].includes(updatedBatch.status)) {
+      await tx
+        .update(cuttingBatchesTable)
+        .set({ status: "returned" })
+        .where(eq(cuttingBatchesTable.id, alloc.cuttingBatchId));
+    }
 
     return [record];
   });
