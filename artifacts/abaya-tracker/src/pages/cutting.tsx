@@ -42,7 +42,7 @@ function BatchStatusBadge({ status }: { status: string }) {
 
 export default function CuttingPage() {
   const [filters, setFilters] = useState<Record<string, string>>({
-    startDate: "", endDate: "", productId: "", colorId: "", sizeId: "", batchNumber: ""
+    startDate: "", endDate: "", productId: "", colorId: "", sizeId: "", batchNumber: "", status: ""
   });
 
   const filterParams: Record<string, any> = {};
@@ -52,6 +52,7 @@ export default function CuttingPage() {
   if (filters.colorId) filterParams.colorId = Number(filters.colorId);
   if (filters.sizeId) filterParams.sizeId = Number(filters.sizeId);
   if (filters.batchNumber) filterParams.batchNumber = filters.batchNumber;
+  if (filters.status) filterParams.status = filters.status;
 
   const { data, isLoading } = useListCuttingBatches(filterParams);
   const { data: products } = useListProducts();
@@ -204,8 +205,19 @@ export default function CuttingPage() {
   const exceedsTolerance = selectedRoll && qtyUsedNum > Number(selectedRoll.availableQuantity) + TOLERANCE;
   const withinTolerance = selectedRoll && qtyUsedNum > Number(selectedRoll.availableQuantity) && qtyUsedNum <= Number(selectedRoll.availableQuantity) + TOLERANCE;
 
+  const cuttingStatusOptions = [
+    { value: "cutting", label: "Cutting" },
+    { value: "allocated", label: "Allocated" },
+    { value: "returned", label: "Returned" },
+    { value: "partially_received", label: "Partial Recv" },
+    { value: "fully_received", label: "Fully Received" },
+    { value: "in_finishing", label: "In Finishing" },
+    { value: "finished", label: "Finished" },
+  ];
+
   const filterFields = [
     { name: "batchNumber", label: "Batch Number", type: "text" as const, placeholder: "Search batch..." },
+    { name: "status", label: "Status", type: "select" as const, options: cuttingStatusOptions },
     { name: "startDate", label: "From Date", type: "date" as const },
     { name: "endDate", label: "To Date", type: "date" as const },
     { name: "productId", label: "Product", type: "select" as const, options: products?.filter((p: any) => p.isActive).map((p: any) => ({ value: p.id, label: `${p.code} - ${p.name}` })) || [] },
@@ -213,9 +225,31 @@ export default function CuttingPage() {
     { name: "sizeId", label: "Size", type: "select" as const, options: sizes?.filter((s: any) => s.isActive).map((s: any) => ({ value: s.id, label: s.name })) || [] },
   ];
 
+  const filteredTotals = data ? {
+    totalBatches: data.length,
+    totalQuantityCut: data.reduce((sum: number, b: any) => sum + (b.quantityCut || 0), 0),
+    totalAvailable: data.reduce((sum: number, b: any) => sum + (b.availableForAllocation || 0), 0),
+  } : null;
+
   return (
     <AppLayout title="Cutting Department">
       <FilterBar fields={filterFields} values={filters} onChange={setFilters} />
+      {filteredTotals && (
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="bg-card border border-border rounded-xl px-4 py-3">
+            <div className="text-xs text-muted-foreground font-medium">Batches</div>
+            <div className="text-lg font-bold text-foreground">{filteredTotals.totalBatches}</div>
+          </div>
+          <div className="bg-card border border-border rounded-xl px-4 py-3">
+            <div className="text-xs text-muted-foreground font-medium">Total Qty Cut</div>
+            <div className="text-lg font-bold text-foreground">{filteredTotals.totalQuantityCut.toLocaleString()}</div>
+          </div>
+          <div className="bg-card border border-border rounded-xl px-4 py-3">
+            <div className="text-xs text-muted-foreground font-medium">Available for Allocation</div>
+            <div className="text-lg font-bold text-foreground">{filteredTotals.totalAvailable.toLocaleString()}</div>
+          </div>
+        </div>
+      )}
       <Card className="shadow-lg border-border rounded-2xl overflow-hidden">
         <CardHeader className="bg-card border-b border-border flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">
           <div>

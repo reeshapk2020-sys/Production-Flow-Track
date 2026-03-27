@@ -43,7 +43,7 @@ function StatusBadge({ status }: { status: BatchStatus }) {
 
 export default function AllocationPage() {
   const [filters, setFilters] = useState<Record<string, string>>({
-    startDate: "", endDate: "", productId: "", colorId: "", sizeId: "", stitcherId: "", teamId: "", batchNumber: ""
+    startDate: "", endDate: "", productId: "", colorId: "", sizeId: "", stitcherId: "", teamId: "", batchNumber: "", status: ""
   });
 
   const filterParams: Record<string, any> = {};
@@ -55,6 +55,7 @@ export default function AllocationPage() {
   if (filters.stitcherId) filterParams.stitcherId = Number(filters.stitcherId);
   if (filters.batchNumber) filterParams.batchNumber = filters.batchNumber;
   if (filters.teamId) filterParams.teamId = Number(filters.teamId);
+  if (filters.status) filterParams.status = filters.status;
 
   const { data, isLoading } = useListAllocations(filterParams);
   const { data: batches } = useListCuttingBatches();
@@ -205,8 +206,17 @@ export default function AllocationPage() {
   const availableBatches = batches?.filter(b => (b.availableForAllocation || 0) > 0) || [];
   const activeTeams = teams?.filter((t: any) => t.isActive) || [];
 
+  const allocationStatusOptions = [
+    { value: "allocated", label: "Allocated" },
+    { value: "partially_received", label: "Partial Recv" },
+    { value: "fully_received", label: "Fully Received" },
+    { value: "in_finishing", label: "In Finishing" },
+    { value: "finished", label: "Finished" },
+  ];
+
   const filterFields = [
     { name: "batchNumber", label: "Batch Number", type: "text" as const, placeholder: "Search batch..." },
+    { name: "status", label: "Status", type: "select" as const, options: allocationStatusOptions },
     { name: "startDate", label: "From Date", type: "date" as const },
     { name: "endDate", label: "To Date", type: "date" as const },
     { name: "productId", label: "Product", type: "select" as const, options: products?.filter((p: any) => p.isActive).map((p: any) => ({ value: p.id, label: `${p.code} - ${p.name}` })) || [] },
@@ -215,9 +225,31 @@ export default function AllocationPage() {
     { name: "teamId", label: "Team", type: "select" as const, options: activeTeams.map((t: any) => ({ value: t.id, label: t.name })) },
   ];
 
+  const filteredAllocTotals = data ? {
+    totalAllocations: data.length,
+    totalIssued: data.reduce((sum: number, a: any) => sum + (a.quantityIssued || 0), 0),
+    totalPending: data.reduce((sum: number, a: any) => sum + (a.quantityPending ?? (a.quantityIssued - (a.quantityReceived || 0) - (a.quantityRejected || 0))), 0),
+  } : null;
+
   return (
     <AppLayout title="Allocation to Stitchers / Teams">
       <FilterBar fields={filterFields} values={filters} onChange={setFilters} />
+      {filteredAllocTotals && (
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="bg-card border border-border rounded-xl px-4 py-3">
+            <div className="text-xs text-muted-foreground font-medium">Allocations</div>
+            <div className="text-lg font-bold text-foreground">{filteredAllocTotals.totalAllocations}</div>
+          </div>
+          <div className="bg-card border border-border rounded-xl px-4 py-3">
+            <div className="text-xs text-muted-foreground font-medium">Total Issued</div>
+            <div className="text-lg font-bold text-foreground">{filteredAllocTotals.totalIssued.toLocaleString()}</div>
+          </div>
+          <div className="bg-card border border-border rounded-xl px-4 py-3">
+            <div className="text-xs text-muted-foreground font-medium">Total Pending</div>
+            <div className="text-lg font-bold text-amber-700">{filteredAllocTotals.totalPending.toLocaleString()}</div>
+          </div>
+        </div>
+      )}
 
       <Card className="shadow-lg border-border rounded-2xl overflow-hidden">
         <CardHeader className="bg-card border-b border-border flex flex-col sm:flex-row sm:items-center justify-between py-5 px-6 gap-4">

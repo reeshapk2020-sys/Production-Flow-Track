@@ -33,7 +33,7 @@ const mat1 = alias(materialsTable, "mat1");
 const mat2 = alias(materialsTable, "mat2");
 
 router.get("/cutting/batches", checkPermission("cutting", "view"), async (req, res) => {
-  const { startDate, endDate, productId, colorId, sizeId, batchNumber } = req.query;
+  const { startDate, endDate, productId, colorId, sizeId, batchNumber, status } = req.query;
   const conditions: any[] = [];
   if (startDate) conditions.push(gte(cuttingBatchesTable.cuttingDate, new Date(startDate as string)));
   if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); conditions.push(lte(cuttingBatchesTable.cuttingDate, ed)); }
@@ -41,6 +41,7 @@ router.get("/cutting/batches", checkPermission("cutting", "view"), async (req, r
   if (colorId) conditions.push(eq(cuttingBatchesTable.colorId, Number(colorId)));
   if (sizeId) conditions.push(eq(cuttingBatchesTable.sizeId, Number(sizeId)));
   if (batchNumber) conditions.push(ilike(cuttingBatchesTable.batchNumber, `%${batchNumber}%`));
+  if (status) conditions.push(eq(cuttingBatchesTable.status, status as string));
 
   let q = db
     .select({
