@@ -14,7 +14,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { fmtCode, fmtUTC, calcExpectedCompletion, calcWorkingMinutesBetween, formatMinutes, WORK_SLOTS, MINUTES_PER_POINT } from "@/lib/utils";
+import { fmtCode, fmtUTC, calcWorkingMinutesBetween, formatMinutes, computeTimingValues } from "@/lib/utils";
 import { useAppAuth } from "@/lib/auth-context";
 import { FilterBar } from "@/components/filter-bar";
 
@@ -261,37 +261,21 @@ export default function ReceivingPage() {
                 )}
 
                 {selectedAlloc && (() => {
+                  const t = computeTimingValues({
+                    issueDate: selectedAlloc.issueDate,
+                    pointsPerPiece: Number(selectedAlloc.pointsPerPiece) || 0,
+                    quantityIssued: selectedAlloc.quantityIssued || 0,
+                    outsourceSendDate: (selectedAlloc as any).outsourceSendDate,
+                    outsourceReturnDate: (selectedAlloc as any).outsourceReturnDate,
+                    outsourceSent: (selectedAlloc as any).outsourceSent || 0,
+                    outsourceReturned: (selectedAlloc as any).outsourceReturned || 0,
+                    outsourceDamaged: (selectedAlloc as any).outsourceDamaged || 0,
+                    priorityPauses: (selectedAlloc as any).priorityPauses,
+                  });
+                  const { totalPoints, totalMinutes, startDt, oSendDate, oReturnDate,
+                    hasOutsource, isInOutsource: isStillInOutsource,
+                    preOutsourceUsed, remainingMinutes, expectedEnd } = t;
                   const ppp = Number(selectedAlloc.pointsPerPiece) || 0;
-                  const qty = selectedAlloc.quantityIssued || 0;
-                  const totalPoints = ppp * qty;
-                  const totalMinutes = totalPoints * MINUTES_PER_POINT;
-                  const startDt = selectedAlloc.issueDate ? new Date(selectedAlloc.issueDate) : null;
-
-                  const oSendDate = (selectedAlloc as any).outsourceSendDate ? new Date((selectedAlloc as any).outsourceSendDate) : null;
-                  const oReturnDate = (selectedAlloc as any).outsourceReturnDate ? new Date((selectedAlloc as any).outsourceReturnDate) : null;
-                  const oSent = (selectedAlloc as any).outsourceSent || 0;
-                  const oReturned = (selectedAlloc as any).outsourceReturned || 0;
-                  const oDamaged = (selectedAlloc as any).outsourceDamaged || 0;
-                  const hasOutsource = oSendDate !== null && oSent > 0;
-                  const outsourcePending = oSent - oReturned - oDamaged;
-                  const isStillInOutsource = hasOutsource && outsourcePending > 0;
-                  const outsourceFullyReturned = hasOutsource && outsourcePending <= 0;
-
-                  let preOutsourceUsed = 0;
-                  let remainingMinutes = totalMinutes;
-                  let expectedEnd: Date | null = null;
-
-                  if (startDt && totalMinutes > 0) {
-                    if (hasOutsource && oSendDate) {
-                      preOutsourceUsed = calcWorkingMinutesBetween(startDt, oSendDate);
-                      remainingMinutes = Math.max(0, totalMinutes - preOutsourceUsed);
-                      if (outsourceFullyReturned && oReturnDate && remainingMinutes > 0) {
-                        expectedEnd = calcExpectedCompletion(oReturnDate, remainingMinutes);
-                      }
-                    } else {
-                      expectedEnd = calcExpectedCompletion(startDt, totalMinutes);
-                    }
-                  }
 
                   if (ppp === 0) {
                     return (
@@ -649,79 +633,26 @@ export default function ReceivingPage() {
             <DialogTitle className="text-xl font-display flex items-center gap-2"><Clock className="h-5 w-5" /> Saved Timing Details</DialogTitle>
           </DialogHeader>
           {timingTarget && (() => {
+            const t = computeTimingValues({
+              issueDate: timingTarget.issueDate,
+              pointsPerPiece: Number(timingTarget.pointsPerPiece) || 0,
+              quantityIssued: timingTarget.quantityIssued || 0,
+              outsourceSendDate: timingTarget.outsourceSendDate,
+              outsourceReturnDate: timingTarget.outsourceReturnDate,
+              outsourceSent: timingTarget.outsourceSent || 0,
+              outsourceReturned: timingTarget.outsourceReturned || 0,
+              outsourceDamaged: timingTarget.outsourceDamaged || 0,
+              priorityPauses: timingTarget.priorityPauses,
+              actualCompletionDate: timingTarget.receiveDate,
+            });
+            const { totalPoints, totalMinutes, startDt, oSendDate, oReturnDate, oSent,
+              hasOutsource, outsourceFullyReturned, preOutsourceUsed,
+              remainingMinutes, expectedEnd, actualCompletionDt: receiveDt, actualMinutes,
+              isPausedByOrder, hasPriorityPause, priorityPauses } = t;
             const ppp = Number(timingTarget.pointsPerPiece) || 0;
             const qty = timingTarget.quantityIssued || 0;
-            const totalPoints = ppp * qty;
-            const totalMinutes = totalPoints * MINUTES_PER_POINT;
-            const startDt = timingTarget.issueDate ? new Date(timingTarget.issueDate) : null;
-            const receiveDt = timingTarget.receiveDate ? new Date(timingTarget.receiveDate) : null;
-
-            const oSendDate = timingTarget.outsourceSendDate ? new Date(timingTarget.outsourceSendDate) : null;
-            const oReturnDate = timingTarget.outsourceReturnDate ? new Date(timingTarget.outsourceReturnDate) : null;
-            const oSent = timingTarget.outsourceSent || 0;
-            const hasOutsource = oSendDate !== null && oSent > 0;
-
-            const priorityPauses: any[] = timingTarget.priorityPauses || [];
-            const hasPriorityPause = priorityPauses.length > 0;
-
-            function mergePauseIntervals(pauses: { start: number; end: number }[]): { start: number; end: number }[] {
-              if (pauses.length === 0) return [];
-              const sorted = [...pauses].sort((a, b) => a.start - b.start);
-              const merged: { start: number; end: number }[] = [sorted[0]];
-              for (let i = 1; i < sorted.length; i++) {
-                const last = merged[merged.length - 1];
-                if (sorted[i].start <= last.end) {
-                  last.end = Math.max(last.end, sorted[i].end);
-                } else {
-                  merged.push(sorted[i]);
-                }
-              }
-              return merged;
-            }
-
-            const completedPauseIntervals = priorityPauses
-              .filter((p: any) => p.pauseStart && p.pauseEnd)
-              .map((p: any) => ({ start: new Date(p.pauseStart).getTime(), end: new Date(p.pauseEnd).getTime() }));
-            const allPauseIntervals: { start: number; end: number }[] = [...completedPauseIntervals];
             const oRet = timingTarget.outsourceReturned || 0;
             const oDmg = timingTarget.outsourceDamaged || 0;
-            const outsourceFullyReturned = hasOutsource && (oSent - oRet - oDmg) <= 0;
-            if (hasOutsource && oSendDate) {
-              const osEnd = outsourceFullyReturned && oReturnDate ? oReturnDate.getTime() : Date.now();
-              allPauseIntervals.push({ start: oSendDate.getTime(), end: osEnd });
-            }
-            const mergedPauses = mergePauseIntervals(allPauseIntervals);
-
-            function calcEffectiveWorked(from: Date, to: Date, pauses: { start: number; end: number }[]): number {
-              const totalWorked = calcWorkingMinutesBetween(from, to);
-              let pausedMinutes = 0;
-              for (const p of pauses) {
-                const pStart = Math.max(p.start, from.getTime());
-                const pEnd = Math.min(p.end, to.getTime());
-                if (pStart < pEnd) {
-                  pausedMinutes += calcWorkingMinutesBetween(new Date(pStart), new Date(pEnd));
-                }
-              }
-              return Math.max(0, totalWorked - pausedMinutes);
-            }
-
-            let preOutsourceUsed = 0;
-            let remainingMinutes = totalMinutes;
-            let expectedEnd: Date | null = null;
-
-            if (startDt && totalMinutes > 0) {
-              if (hasOutsource && oSendDate) {
-                preOutsourceUsed = calcWorkingMinutesBetween(startDt, oSendDate);
-                remainingMinutes = Math.max(0, totalMinutes - preOutsourceUsed);
-                if (outsourceFullyReturned && oReturnDate && remainingMinutes > 0) {
-                  expectedEnd = calcExpectedCompletion(oReturnDate, remainingMinutes);
-                }
-              } else {
-                expectedEnd = calcExpectedCompletion(startDt, totalMinutes);
-              }
-            }
-
-            const actualMinutes = startDt && receiveDt ? calcWorkingMinutesBetween(startDt, receiveDt) : 0;
 
             const rcvQty = timingTarget.quantityReceived || 0;
             const rejQty = timingTarget.quantityRejected || 0;
@@ -961,7 +892,9 @@ export default function ReceivingPage() {
                   )}
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Expected Completion</span>
-                    <span className="font-medium text-emerald-600">{expectedEnd ? fmtUTC(expectedEnd) : "—"}</span>
+                    <span className={`font-medium ${(t.isInOutsource || isPausedByOrder) ? "text-violet-600" : "text-emerald-600"}`}>
+                      {expectedEnd ? fmtUTC(expectedEnd) : "—"}{(t.isInOutsource || isPausedByOrder) && expectedEnd ? " (paused)" : ""}
+                    </span>
                   </div>
                 </div>
 

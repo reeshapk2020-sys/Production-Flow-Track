@@ -100,3 +100,137 @@ export function formatMinutes(m: number): string {
   if (hrs === 0) return `${mins} min`;
   return mins > 0 ? `${hrs} hr ${mins} min` : `${hrs} hr`;
 }
+
+export interface TimingInput {
+  issueDate?: string | Date | null;
+  pointsPerPiece?: number;
+  quantityIssued?: number;
+  outsourceSendDate?: string | Date | null;
+  outsourceReturnDate?: string | Date | null;
+  outsourceSent?: number;
+  outsourceReturned?: number;
+  outsourceDamaged?: number;
+  priorityPauses?: Array<{
+    pauseStart?: string | null;
+    pauseEnd?: string | null;
+    orderCompleted?: boolean;
+    orderBatchNumber?: string | null;
+    orderAllocationNumber?: string | null;
+  }>;
+  actualCompletionDate?: string | Date | null;
+}
+
+export interface TimingResult {
+  totalPoints: number;
+  totalMinutes: number;
+  startDt: Date | null;
+  oSendDate: Date | null;
+  oReturnDate: Date | null;
+  oSent: number;
+  oReturned: number;
+  oDamaged: number;
+  hasOutsource: boolean;
+  isInOutsource: boolean;
+  outsourceFullyReturned: boolean;
+  outsourcePending: number;
+  preOutsourceUsed: number;
+  remainingMinutes: number;
+  expectedEnd: Date | null;
+  actualCompletionDt: Date | null;
+  actualMinutes: number;
+  isPausedByOrder: boolean;
+  hasPriorityPause: boolean;
+  priorityPauses: TimingInput["priorityPauses"] & Array<any>;
+  mergedPauses: Array<{ start: number; end: number }>;
+}
+
+function mergePauseIntervals(pauses: { start: number; end: number }[]): { start: number; end: number }[] {
+  if (pauses.length === 0) return [];
+  const sorted = [...pauses].sort((a, b) => a.start - b.start);
+  const merged: { start: number; end: number }[] = [sorted[0]];
+  for (let i = 1; i < sorted.length; i++) {
+    const last = merged[merged.length - 1];
+    if (sorted[i].start <= last.end) {
+      last.end = Math.max(last.end, sorted[i].end);
+    } else {
+      merged.push(sorted[i]);
+    }
+  }
+  return merged;
+}
+
+export function computeTimingValues(input: TimingInput): TimingResult {
+  const ppp = Number(input.pointsPerPiece) || 0;
+  const qty = input.quantityIssued || 0;
+  const totalPoints = ppp * qty;
+  const totalMinutes = totalPoints * MINUTES_PER_POINT;
+  const startDt = input.issueDate ? new Date(input.issueDate) : null;
+
+  const oSendDate = input.outsourceSendDate ? new Date(input.outsourceSendDate) : null;
+  const oReturnDate = input.outsourceReturnDate ? new Date(input.outsourceReturnDate) : null;
+  const oSent = input.outsourceSent || 0;
+  const oReturned = input.outsourceReturned || 0;
+  const oDamaged = input.outsourceDamaged || 0;
+  const hasOutsource = oSendDate !== null && oSent > 0;
+  const outsourcePending = oSent - oReturned - oDamaged;
+  const isInOutsource = hasOutsource && outsourcePending > 0;
+  const outsourceFullyReturned = hasOutsource && outsourcePending <= 0;
+
+  const priorityPauses: any[] = input.priorityPauses || [];
+  const hasPriorityPause = priorityPauses.length > 0;
+  const activePriorityPause = priorityPauses.find((p: any) => !p.orderCompleted);
+  const isPausedByOrder = !!activePriorityPause;
+
+  const completedPauseIntervals = priorityPauses
+    .filter((p: any) => p.pauseStart && p.pauseEnd)
+    .map((p: any) => ({ start: new Date(p.pauseStart).getTime(), end: new Date(p.pauseEnd).getTime() }));
+  const allPauseIntervals: { start: number; end: number }[] = [...completedPauseIntervals];
+  if (hasOutsource && oSendDate) {
+    const osEnd = outsourceFullyReturned && oReturnDate ? oReturnDate.getTime() : Date.now();
+    allPauseIntervals.push({ start: oSendDate.getTime(), end: osEnd });
+  }
+  const mergedPauses = mergePauseIntervals(allPauseIntervals);
+
+  let preOutsourceUsed = 0;
+  let remainingMinutes = totalMinutes;
+  let expectedEnd: Date | null = null;
+
+  if (startDt && totalMinutes > 0) {
+    if (hasOutsource && oSendDate) {
+      preOutsourceUsed = calcWorkingMinutesBetween(startDt, oSendDate);
+      remainingMinutes = Math.max(0, totalMinutes - preOutsourceUsed);
+      if (outsourceFullyReturned && oReturnDate && remainingMinutes > 0) {
+        expectedEnd = calcExpectedCompletion(oReturnDate, remainingMinutes);
+      }
+    } else {
+      expectedEnd = calcExpectedCompletion(startDt, totalMinutes);
+    }
+  }
+
+  const actualCompletionDt = input.actualCompletionDate ? new Date(input.actualCompletionDate) : null;
+  const actualMinutes = startDt && actualCompletionDt ? calcWorkingMinutesBetween(startDt, actualCompletionDt) : 0;
+
+  return {
+    totalPoints,
+    totalMinutes,
+    startDt,
+    oSendDate,
+    oReturnDate,
+    oSent,
+    oReturned,
+    oDamaged,
+    hasOutsource,
+    isInOutsource,
+    outsourceFullyReturned,
+    outsourcePending,
+    preOutsourceUsed,
+    remainingMinutes,
+    expectedEnd,
+    actualCompletionDt,
+    actualMinutes,
+    isPausedByOrder,
+    hasPriorityPause,
+    priorityPauses,
+    mergedPauses,
+  };
+}
