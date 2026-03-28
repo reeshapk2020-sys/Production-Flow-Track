@@ -16,7 +16,7 @@ import {
   purchaseOrdersTable,
   ordersTable,
 } from "@workspace/db/schema";
-import { eq, sql, and, gte, lte, ilike } from "drizzle-orm";
+import { eq, sql, and, gte, lte, ilike, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit.js";
 import { checkPermission } from "./permissions.js";
@@ -179,6 +179,9 @@ router.get("/receiving", checkPermission("receiving", "view"), async (req, res) 
       colorCode: colorsTable.code,
       colorName: colorsTable.name,
       quantityIssued: allocationsTable.quantityIssued,
+      issueDate: allocationsTable.issueDate,
+      workType: allocationsTable.workType,
+      pointsPerPiece: productsTable.pointsPerPiece,
       quantityReceived: receivingsTable.quantityReceived,
       quantityRejected: receivingsTable.quantityRejected,
       quantityDamaged: receivingsTable.quantityDamaged,
@@ -228,11 +231,38 @@ router.get("/receiving", checkPermission("receiving", "view"), async (req, res) 
     .groupBy(finishingRecordsTable.cuttingBatchId)
   ).map((r: any) => r.cuttingBatchId) : []);
 
-  res.json(rows.map((r: any) => ({
-    ...r,
-    itemCode: computeItemCode(r.productCode, r.colorCode, r.materialCode, r.material2Code),
-    isLocked: finSet.has(batchIdMap.get(r.allocationId)),
-  })));
+  const outsourceAllocIds = [...new Set(rows.filter((r: any) => r.workType === "outsource_required").map((r: any) => r.allocationId).filter(Boolean))];
+  const outsourceMap = new Map<number, any>();
+  if (outsourceAllocIds.length > 0) {
+    const oSums = await db
+      .select({
+        allocationId: outsourceTransfersTable.allocationId,
+        totalSent: sql<number>`COALESCE(SUM(${outsourceTransfersTable.quantitySent}), 0)::int`,
+        totalReturned: sql<number>`COALESCE(SUM(${outsourceTransfersTable.quantityReturned}), 0)::int`,
+        totalDamaged: sql<number>`COALESCE(SUM(${outsourceTransfersTable.quantityDamaged}), 0)::int`,
+        earliestSendDate: sql<string>`MIN(${outsourceTransfersTable.sendDate})`,
+        latestReturnDate: sql<string>`MAX(${outsourceTransfersTable.returnDate})`,
+      })
+      .from(outsourceTransfersTable)
+      .where(inArray(outsourceTransfersTable.allocationId, outsourceAllocIds))
+      .groupBy(outsourceTransfersTable.allocationId);
+    oSums.forEach(o => outsourceMap.set(o.allocationId, o));
+  }
+
+  res.json(rows.map((r: any) => {
+    const o = outsourceMap.get(r.allocationId);
+    return {
+      ...r,
+      pointsPerPiece: r.pointsPerPiece ? Number(r.pointsPerPiece) : null,
+      itemCode: computeItemCode(r.productCode, r.colorCode, r.materialCode, r.material2Code),
+      isLocked: finSet.has(batchIdMap.get(r.allocationId)),
+      outsourceSendDate: o?.earliestSendDate || null,
+      outsourceReturnDate: o?.latestReturnDate || null,
+      outsourceSent: o?.totalSent || 0,
+      outsourceReturned: o?.totalReturned || 0,
+      outsourceDamaged: o?.totalDamaged || 0,
+    };
+  }));
 });
 
 router.post("/receiving", checkPermission("receiving", "create"), async (req, res) => {

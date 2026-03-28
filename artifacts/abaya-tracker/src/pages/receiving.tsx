@@ -141,6 +141,8 @@ export default function ReceivingPage() {
   const [rcvTime, setRcvTime] = useState(new Date().toTimeString().slice(0, 5));
   const [editOpen, setEditOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<any>(null);
+  const [timingOpen, setTimingOpen] = useState(false);
+  const [timingTarget, setTimingTarget] = useState<any>(null);
 
   const { mutate, isPending } = useCreateReceiving({
     mutation: {
@@ -621,14 +623,25 @@ export default function ReceivingPage() {
                     </TableCell>
                     {canEdit && (
                       <TableCell>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => { setEditTarget(rec); setEditOpen(true); }}
-                        >
-                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Timing Details"
+                            onClick={() => { setTimingTarget(rec); setTimingOpen(true); }}
+                          >
+                            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => { setEditTarget(rec); setEditOpen(true); }}
+                          >
+                            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>
@@ -697,6 +710,157 @@ export default function ReceivingPage() {
               </div>
             </form>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={timingOpen} onOpenChange={(v) => { setTimingOpen(v); if (!v) setTimingTarget(null); }}>
+        <DialogContent className="sm:max-w-[440px] rounded-2xl p-6 border-0 shadow-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-display flex items-center gap-2"><Clock className="h-5 w-5" /> Saved Timing Details</DialogTitle>
+          </DialogHeader>
+          {timingTarget && (() => {
+            const ppp = Number(timingTarget.pointsPerPiece) || 0;
+            const qty = timingTarget.quantityIssued || 0;
+            const totalPoints = ppp * qty;
+            const totalMinutes = totalPoints * MINUTES_PER_POINT;
+            const startDt = timingTarget.issueDate ? new Date(timingTarget.issueDate) : null;
+            const receiveDt = timingTarget.receiveDate ? new Date(timingTarget.receiveDate) : null;
+
+            const oSendDate = timingTarget.outsourceSendDate ? new Date(timingTarget.outsourceSendDate) : null;
+            const oReturnDate = timingTarget.outsourceReturnDate ? new Date(timingTarget.outsourceReturnDate) : null;
+            const oSent = timingTarget.outsourceSent || 0;
+            const hasOutsource = oSendDate !== null && oSent > 0;
+
+            let preOutsourceUsed = 0;
+            let remainingMinutes = totalMinutes;
+            let expectedEnd: Date | null = null;
+
+            if (startDt && totalMinutes > 0) {
+              if (hasOutsource && oSendDate) {
+                preOutsourceUsed = calcWorkingMinutesBetween(startDt, oSendDate);
+                remainingMinutes = Math.max(0, totalMinutes - preOutsourceUsed);
+                const oRet = timingTarget.outsourceReturned || 0;
+                const oDmg = timingTarget.outsourceDamaged || 0;
+                if ((oSent - oRet - oDmg) <= 0 && oReturnDate && remainingMinutes > 0) {
+                  expectedEnd = calcExpectedCompletion(oReturnDate, remainingMinutes);
+                }
+              } else {
+                expectedEnd = calcExpectedCompletion(startDt, totalMinutes);
+              }
+            }
+
+            const actualMinutes = startDt && receiveDt ? Math.round((receiveDt.getTime() - startDt.getTime()) / 60000) : 0;
+
+            if (ppp === 0) {
+              return (
+                <div className="space-y-3 pt-4">
+                  <div className="bg-background rounded-xl p-3 text-sm text-muted-foreground">
+                    <div className="font-semibold text-foreground">{timingTarget.batchNumber} — {timingTarget.allocationNumber}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{fmtCode(timingTarget.productCode, timingTarget.productName)} · {timingTarget.stitcherName}</div>
+                  </div>
+                  <div className="border-t border-border pt-3 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Allocation Start</span>
+                      <span className="font-medium">{startDt ? format(startDt, "MMM d, yyyy HH:mm") : "—"}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Actual Completion</span>
+                      <span className="font-medium text-emerald-600">{receiveDt ? format(receiveDt, "MMM d, yyyy HH:mm") : "—"}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground font-medium">Actual Time Taken</span>
+                      <span className="font-bold">{actualMinutes > 0 ? formatMinutes(actualMinutes) : "—"}</span>
+                    </div>
+                  </div>
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                    No points configured for this product. Set points in Product Master for full timing details.
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 gap-3 pt-4">
+                <div className="bg-background rounded-xl p-3 text-sm text-muted-foreground">
+                  <div className="font-semibold text-foreground">{timingTarget.batchNumber} — {timingTarget.allocationNumber}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{fmtCode(timingTarget.productCode, timingTarget.productName)} · {timingTarget.stitcherName}</div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-card border border-border rounded-xl p-3">
+                    <div className="text-xs text-muted-foreground mb-1">Points / Piece</div>
+                    <div className="text-lg font-bold text-foreground">{ppp}</div>
+                  </div>
+                  <div className="bg-card border border-border rounded-xl p-3">
+                    <div className="text-xs text-muted-foreground mb-1">Qty Issued</div>
+                    <div className="text-lg font-bold text-foreground">{qty}</div>
+                  </div>
+                  <div className="bg-card border border-border rounded-xl p-3">
+                    <div className="text-xs text-muted-foreground mb-1">Total Points</div>
+                    <div className="text-lg font-bold text-primary">{totalPoints}</div>
+                  </div>
+                  <div className="bg-card border border-border rounded-xl p-3">
+                    <div className="text-xs text-muted-foreground mb-1">Expected Time</div>
+                    <div className="text-lg font-bold text-primary">{formatMinutes(totalMinutes)}</div>
+                  </div>
+                </div>
+
+                <div className="border-t border-border pt-3 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Allocation Start</span>
+                    <span className="font-medium text-foreground">{startDt ? format(startDt, "MMM d, yyyy HH:mm") : "—"}</span>
+                  </div>
+                  {hasOutsource && (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Outsource Sent</span>
+                        <span className="font-medium text-orange-500">{oSendDate ? format(oSendDate, "MMM d, yyyy HH:mm") : "—"}</span>
+                      </div>
+                      {oReturnDate && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Outsource Returned</span>
+                          <span className="font-medium text-teal-600">{format(oReturnDate, "MMM d, yyyy HH:mm")}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Outsource Time Taken</span>
+                        <span className="font-medium text-foreground">
+                          {oSendDate && oReturnDate ? formatMinutes(Math.round((oReturnDate.getTime() - oSendDate.getTime()) / 60000)) : "In Progress"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Time Before Outsource</span>
+                        <span className="font-medium text-foreground">{formatMinutes(preOutsourceUsed)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Remaining Time</span>
+                        <span className="font-medium text-primary">{formatMinutes(remainingMinutes)}</span>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Expected Completion</span>
+                    <span className="font-medium text-emerald-600">{expectedEnd ? format(expectedEnd, "MMM d, yyyy HH:mm") : "—"}</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-border pt-3 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Actual Completion</span>
+                    <span className="font-medium text-emerald-600">{receiveDt ? format(receiveDt, "MMM d, yyyy HH:mm") : "—"}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground font-medium">Actual Time Taken</span>
+                    <span className="font-bold text-foreground">{actualMinutes > 0 ? formatMinutes(actualMinutes) : "—"}</span>
+                  </div>
+                </div>
+
+                <div className="text-xs text-muted-foreground mt-1">
+                  Working slots: 8:00–1:20 PM, 2:30–8:00 PM (4h30m eff.), 8:30–11:00 PM · 1 pt = 20 min
+                </div>
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </AppLayout>
