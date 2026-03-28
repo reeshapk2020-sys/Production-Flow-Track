@@ -165,6 +165,7 @@ router.get("/receiving", checkPermission("receiving", "view"), async (req, res) 
       id: receivingsTable.id,
       allocationId: receivingsTable.allocationId,
       allocationNumber: allocationsTable.allocationNumber,
+      stitcherId: allocationsTable.stitcherId,
       stitcherName: stitchersTable.name,
       batchNumber: cuttingBatchesTable.batchNumber,
       productCode: productsTable.code,
@@ -249,6 +250,65 @@ router.get("/receiving", checkPermission("receiving", "view"), async (req, res) 
     oSums.forEach(o => outsourceMap.set(o.allocationId, o));
   }
 
+  const stitcherIds = [...new Set(rows.map((r: any) => r.stitcherId).filter(Boolean))];
+  const priorityPauseMap = new Map<number, any[]>();
+  if (stitcherIds.length > 0) {
+    const orderAllocs = await db
+      .select({
+        id: allocationsTable.id,
+        allocationNumber: allocationsTable.allocationNumber,
+        stitcherId: allocationsTable.stitcherId,
+        issueDate: allocationsTable.issueDate,
+        quantityIssued: allocationsTable.quantityIssued,
+        quantityReceived: allocationsTable.quantityReceived,
+        quantityRejected: allocationsTable.quantityRejected,
+        batchNumber: cuttingBatchesTable.batchNumber,
+      })
+      .from(allocationsTable)
+      .leftJoin(cuttingBatchesTable, eq(allocationsTable.cuttingBatchId, cuttingBatchesTable.id))
+      .where(and(
+        inArray(allocationsTable.stitcherId, stitcherIds),
+        eq(cuttingBatchesTable.productionFor, "order"),
+      ));
+    const orderAllocIdSet = orderAllocs.map(o => o.id);
+    const orderRcvMap = new Map<number, string | null>();
+    if (orderAllocIdSet.length > 0) {
+      const rcvDates = await db
+        .select({
+          allocationId: receivingsTable.allocationId,
+          latestReceiveDate: sql<string>`MAX(${receivingsTable.receiveDate})`,
+        })
+        .from(receivingsTable)
+        .where(inArray(receivingsTable.allocationId, orderAllocIdSet))
+        .groupBy(receivingsTable.allocationId);
+      for (const r of rcvDates) orderRcvMap.set(r.allocationId, r.latestReceiveDate);
+    }
+    for (const row of rows) {
+      if (!row.stitcherId || !row.issueDate) continue;
+      const rowIssueTime = new Date(row.issueDate).getTime();
+      const pauses: any[] = [];
+      for (const oa of orderAllocs) {
+        if (oa.stitcherId !== row.stitcherId) continue;
+        if (oa.id === row.allocationId) continue;
+        const oaIssueTime = oa.issueDate ? new Date(oa.issueDate).getTime() : 0;
+        if (!oaIssueTime || oaIssueTime <= rowIssueTime) continue;
+        const oaCompleted = (oa.quantityReceived + oa.quantityRejected) >= oa.quantityIssued && oa.quantityIssued > 0;
+        const rcvDate = orderRcvMap.get(oa.id) || null;
+        pauses.push({
+          orderAllocationId: oa.id,
+          orderAllocationNumber: oa.allocationNumber,
+          orderBatchNumber: oa.batchNumber,
+          pauseStart: oa.issueDate,
+          pauseEnd: oaCompleted && rcvDate ? rcvDate : null,
+          orderCompleted: oaCompleted,
+        });
+      }
+      if (pauses.length > 0) {
+        priorityPauseMap.set(row.allocationId, pauses);
+      }
+    }
+  }
+
   res.json(rows.map((r: any) => {
     const o = outsourceMap.get(r.allocationId);
     return {
@@ -261,6 +321,7 @@ router.get("/receiving", checkPermission("receiving", "view"), async (req, res) 
       outsourceSent: o?.totalSent || 0,
       outsourceReturned: o?.totalReturned || 0,
       outsourceDamaged: o?.totalDamaged || 0,
+      priorityPauses: priorityPauseMap.get(r.allocationId) || null,
     };
   }));
 });

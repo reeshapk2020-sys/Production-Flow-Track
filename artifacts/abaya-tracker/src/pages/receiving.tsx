@@ -731,6 +731,50 @@ export default function ReceivingPage() {
             const oSent = timingTarget.outsourceSent || 0;
             const hasOutsource = oSendDate !== null && oSent > 0;
 
+            const priorityPauses: any[] = timingTarget.priorityPauses || [];
+            const hasPriorityPause = priorityPauses.length > 0;
+
+            function mergePauseIntervals(pauses: { start: number; end: number }[]): { start: number; end: number }[] {
+              if (pauses.length === 0) return [];
+              const sorted = [...pauses].sort((a, b) => a.start - b.start);
+              const merged: { start: number; end: number }[] = [sorted[0]];
+              for (let i = 1; i < sorted.length; i++) {
+                const last = merged[merged.length - 1];
+                if (sorted[i].start <= last.end) {
+                  last.end = Math.max(last.end, sorted[i].end);
+                } else {
+                  merged.push(sorted[i]);
+                }
+              }
+              return merged;
+            }
+
+            const completedPauseIntervals = priorityPauses
+              .filter((p: any) => p.pauseStart && p.pauseEnd)
+              .map((p: any) => ({ start: new Date(p.pauseStart).getTime(), end: new Date(p.pauseEnd).getTime() }));
+            const allPauseIntervals: { start: number; end: number }[] = [...completedPauseIntervals];
+            const oRet = timingTarget.outsourceReturned || 0;
+            const oDmg = timingTarget.outsourceDamaged || 0;
+            const outsourceFullyReturned = hasOutsource && (oSent - oRet - oDmg) <= 0;
+            if (hasOutsource && oSendDate) {
+              const osEnd = outsourceFullyReturned && oReturnDate ? oReturnDate.getTime() : Date.now();
+              allPauseIntervals.push({ start: oSendDate.getTime(), end: osEnd });
+            }
+            const mergedPauses = mergePauseIntervals(allPauseIntervals);
+
+            function calcEffectiveWorked(from: Date, to: Date, pauses: { start: number; end: number }[]): number {
+              const totalWorked = calcWorkingMinutesBetween(from, to);
+              let pausedMinutes = 0;
+              for (const p of pauses) {
+                const pStart = Math.max(p.start, from.getTime());
+                const pEnd = Math.min(p.end, to.getTime());
+                if (pStart < pEnd) {
+                  pausedMinutes += calcWorkingMinutesBetween(new Date(pStart), new Date(pEnd));
+                }
+              }
+              return Math.max(0, totalWorked - pausedMinutes);
+            }
+
             let preOutsourceUsed = 0;
             let remainingMinutes = totalMinutes;
             let expectedEnd: Date | null = null;
@@ -738,13 +782,14 @@ export default function ReceivingPage() {
             if (startDt && totalMinutes > 0) {
               if (hasOutsource && oSendDate) {
                 preOutsourceUsed = calcWorkingMinutesBetween(startDt, oSendDate);
-                remainingMinutes = Math.max(0, totalMinutes - preOutsourceUsed);
-                const oRet = timingTarget.outsourceReturned || 0;
-                const oDmg = timingTarget.outsourceDamaged || 0;
-                if ((oSent - oRet - oDmg) <= 0 && oReturnDate && remainingMinutes > 0) {
-                  expectedEnd = calcExpectedCompletion(oReturnDate, remainingMinutes);
-                }
-              } else {
+              }
+              const refTime = receiveDt || new Date();
+              const effectiveWorked = calcEffectiveWorked(startDt, refTime, mergedPauses);
+              remainingMinutes = Math.max(0, totalMinutes - effectiveWorked);
+              if (remainingMinutes > 0 && mergedPauses.length > 0) {
+                const lastPauseEnd = Math.max(...mergedPauses.map(p => p.end));
+                expectedEnd = calcExpectedCompletion(new Date(lastPauseEnd), remainingMinutes);
+              } else if (remainingMinutes > 0) {
                 expectedEnd = calcExpectedCompletion(startDt, totalMinutes);
               }
             }
@@ -837,6 +882,43 @@ export default function ReceivingPage() {
                         <span className="font-medium text-primary">{formatMinutes(remainingMinutes)}</span>
                       </div>
                     </>
+                  )}
+                  {hasPriorityPause && (
+                    <>
+                      {priorityPauses.map((p: any, idx: number) => (
+                        <div key={idx} className="bg-violet-500/10 border border-violet-500/20 rounded-xl px-4 py-2 text-xs space-y-1 mt-1">
+                          <div className="font-semibold text-violet-700 flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3 shrink-0" />
+                            Priority Order Pause{priorityPauses.length > 1 ? ` #${idx + 1}` : ""}
+                          </div>
+                          <div className="text-muted-foreground">
+                            Order: {p.orderBatchNumber || p.orderAllocationNumber || "—"}
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Pause Start</span>
+                            <span className="font-medium text-violet-600">{p.pauseStart ? format(new Date(p.pauseStart), "MMM d, yyyy HH:mm") : "—"}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Resume</span>
+                            <span className={`font-medium ${p.pauseEnd ? "text-teal-600" : "text-violet-600"}`}>
+                              {p.pauseEnd ? format(new Date(p.pauseEnd), "MMM d, yyyy HH:mm") : "Pending"}
+                            </span>
+                          </div>
+                          {p.pauseStart && p.pauseEnd && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Paused Duration</span>
+                              <span className="font-medium text-foreground">{formatMinutes(calcWorkingMinutesBetween(new Date(p.pauseStart), new Date(p.pauseEnd)))}</span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </>
+                  )}
+                  {!hasOutsource && hasPriorityPause && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Remaining Time</span>
+                      <span className="font-medium text-primary">{formatMinutes(remainingMinutes)}</span>
+                    </div>
                   )}
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Expected Completion</span>

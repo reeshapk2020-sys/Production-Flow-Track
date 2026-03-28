@@ -43,6 +43,9 @@ The system provides real-time inventory tracking across all production stages. A
 **Outsource Workflow:**
 A dedicated workflow manages outsourced production, distinguishing between `simple_stitch` and `outsource_required` allocations. It tracks items sent to and returned from vendors, with validations to ensure quantity accuracy.
 
+**Priority Order Pause Logic:**
+When an Order batch is allocated to a stitcher who already has an active batch, the timing of the previous batch pauses from the Order batch's allocation time. Timing resumes when the Order batch is received/completed. The backend queries all Order-type allocations per stitcher (independent of list filters) and attaches `priorityPauses` array to each affected allocation. The frontend uses merged pause intervals (combining outsource + priority pauses) to avoid double-counting overlapping windows. Pause details (start, resume, duration) are shown in violet-themed cards in the timing popup.
+
 **Reporting and Analytics:**
 Comprehensive reports are available, including:
 -   **Stitcher & Team Performance**: Metrics on issued, received, pending, rejected quantities, and efficiency.

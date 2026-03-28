@@ -786,19 +786,77 @@ export default function AllocationPage() {
             const isInOutsource = hasOutsource && outsourcePending > 0;
             const outsourceFullyReturned = hasOutsource && outsourcePending <= 0;
 
+            const priorityPauses: any[] = detailTarget.priorityPauses || [];
+            const hasPriorityPause = priorityPauses.length > 0;
+            const activePriorityPause = priorityPauses.find((p: any) => !p.orderCompleted);
+            const isPausedByOrder = !!activePriorityPause;
+
+            function mergePauseIntervals(pauses: { start: number; end: number }[]): { start: number; end: number }[] {
+              if (pauses.length === 0) return [];
+              const sorted = [...pauses].sort((a, b) => a.start - b.start);
+              const merged: { start: number; end: number }[] = [sorted[0]];
+              for (let i = 1; i < sorted.length; i++) {
+                const last = merged[merged.length - 1];
+                if (sorted[i].start <= last.end) {
+                  last.end = Math.max(last.end, sorted[i].end);
+                } else {
+                  merged.push(sorted[i]);
+                }
+              }
+              return merged;
+            }
+
+            const completedPauseIntervals = priorityPauses
+              .filter((p: any) => p.pauseStart && p.pauseEnd)
+              .map((p: any) => ({ start: new Date(p.pauseStart).getTime(), end: new Date(p.pauseEnd).getTime() }));
+
+            const allPauseIntervals: { start: number; end: number }[] = [...completedPauseIntervals];
+            if (hasOutsource && oSendDate) {
+              const osEnd = outsourceFullyReturned && oReturnDate ? oReturnDate.getTime() : Date.now();
+              allPauseIntervals.push({ start: oSendDate.getTime(), end: osEnd });
+            }
+            const mergedPauses = mergePauseIntervals(allPauseIntervals);
+
+            function calcEffectiveWorked(from: Date, to: Date, pauses: { start: number; end: number }[]): number {
+              const totalWorked = calcWorkingMinutesBetween(from, to);
+              let pausedMinutes = 0;
+              for (const p of pauses) {
+                const pStart = Math.max(p.start, from.getTime());
+                const pEnd = Math.min(p.end, to.getTime());
+                if (pStart < pEnd) {
+                  pausedMinutes += calcWorkingMinutesBetween(new Date(pStart), new Date(pEnd));
+                }
+              }
+              return Math.max(0, totalWorked - pausedMinutes);
+            }
+
             let preOutsourceUsed = 0;
             let remainingMinutes = totalMinutes;
             let expectedEnd: Date | null = null;
 
             if (startDt && totalMinutes > 0) {
+              const now = new Date();
+              const refTime = now;
+              const effectiveWorked = calcEffectiveWorked(startDt, refTime, mergedPauses);
+              remainingMinutes = Math.max(0, totalMinutes - effectiveWorked);
+
               if (hasOutsource && oSendDate) {
                 preOutsourceUsed = calcWorkingMinutesBetween(startDt, oSendDate);
-                remainingMinutes = Math.max(0, totalMinutes - preOutsourceUsed);
-                if (outsourceFullyReturned && oReturnDate && remainingMinutes > 0) {
-                  expectedEnd = calcExpectedCompletion(oReturnDate, remainingMinutes);
+              }
+
+              if (isInOutsource || isPausedByOrder) {
+                expectedEnd = null;
+              } else if (remainingMinutes > 0) {
+                let latestResumeTime = startDt;
+                if (mergedPauses.length > 0) {
+                  const lastPauseEnd = Math.max(...mergedPauses.map(p => p.end));
+                  if (lastPauseEnd > latestResumeTime.getTime()) {
+                    latestResumeTime = new Date(lastPauseEnd);
+                  }
                 }
+                expectedEnd = calcExpectedCompletion(latestResumeTime, remainingMinutes);
               } else {
-                expectedEnd = calcExpectedCompletion(startDt, totalMinutes);
+                expectedEnd = null;
               }
             }
 
@@ -866,10 +924,53 @@ export default function AllocationPage() {
                       Timing paused — batch is currently in outsource
                     </div>
                   )}
+                  {hasPriorityPause && (
+                    <>
+                      {priorityPauses.map((p: any, idx: number) => (
+                        <div key={idx} className="bg-violet-500/10 border border-violet-500/20 rounded-xl px-4 py-2 text-xs space-y-1 mt-1">
+                          <div className="font-semibold text-violet-700 flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3 shrink-0" />
+                            Priority Order Pause{priorityPauses.length > 1 ? ` #${idx + 1}` : ""}
+                          </div>
+                          <div className="text-muted-foreground">
+                            Order: {p.orderBatchNumber || p.orderAllocationNumber || "—"}
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Pause Start</span>
+                            <span className="font-medium text-violet-600">{p.pauseStart ? format(new Date(p.pauseStart), "MMM d, yyyy HH:mm") : "—"}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Resume</span>
+                            <span className={`font-medium ${p.pauseEnd ? "text-teal-600" : "text-violet-600"}`}>
+                              {p.pauseEnd ? format(new Date(p.pauseEnd), "MMM d, yyyy HH:mm") : "Pending"}
+                            </span>
+                          </div>
+                          {p.pauseStart && p.pauseEnd && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Paused Duration</span>
+                              <span className="font-medium text-foreground">{formatMinutes(calcWorkingMinutesBetween(new Date(p.pauseStart), new Date(p.pauseEnd)))}</span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {isPausedByOrder && (
+                        <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl px-4 py-2 text-xs text-violet-700 flex items-center gap-2 mt-1">
+                          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                          Timing paused — priority Order batch in progress
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {!hasOutsource && hasPriorityPause && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Remaining Time</span>
+                      <span className="font-medium text-primary">{formatMinutes(remainingMinutes)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Expected Completion</span>
-                    <span className={`font-medium ${isInOutsource ? "text-orange-500" : "text-emerald-600"}`}>
-                      {isInOutsource ? "Paused" : expectedEnd ? format(expectedEnd, "MMM d, yyyy HH:mm") : "—"}
+                    <span className={`font-medium ${(isInOutsource || isPausedByOrder) ? "text-violet-600" : "text-emerald-600"}`}>
+                      {(isInOutsource || isPausedByOrder) ? "Paused" : expectedEnd ? format(expectedEnd, "MMM d, yyyy HH:mm") : "—"}
                     </span>
                   </div>
                 </div>

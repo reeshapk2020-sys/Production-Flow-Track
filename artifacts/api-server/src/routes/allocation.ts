@@ -202,6 +202,69 @@ router.get("/allocation", checkPermission("allocation", "view"), async (req, res
     }
   }
 
+  const relevantStitcherIds = [...new Set(finalRows.filter(r => r.stitcherId).map(r => r.stitcherId!))];
+  if (relevantStitcherIds.length > 0) {
+    const allOrderAllocs = await db
+      .select({
+        id: allocationsTable.id,
+        allocationNumber: allocationsTable.allocationNumber,
+        stitcherId: allocationsTable.stitcherId,
+        issueDate: allocationsTable.issueDate,
+        quantityIssued: allocationsTable.quantityIssued,
+        quantityReceived: allocationsTable.quantityReceived,
+        quantityRejected: allocationsTable.quantityRejected,
+        batchNumber: cuttingBatchesTable.batchNumber,
+      })
+      .from(allocationsTable)
+      .leftJoin(cuttingBatchesTable, eq(allocationsTable.cuttingBatchId, cuttingBatchesTable.id))
+      .where(and(
+        inArray(allocationsTable.stitcherId, relevantStitcherIds),
+        eq(cuttingBatchesTable.productionFor, "order"),
+      ));
+
+    const orderRcvMap = new Map<number, string | null>();
+    const orderIds = allOrderAllocs.map(o => o.id);
+    if (orderIds.length > 0) {
+      const rcvDates = await db
+        .select({
+          allocationId: receivingsTable.allocationId,
+          latestReceiveDate: sql<string>`MAX(${receivingsTable.receiveDate})`,
+        })
+        .from(receivingsTable)
+        .where(inArray(receivingsTable.allocationId, orderIds))
+        .groupBy(receivingsTable.allocationId);
+      for (const r of rcvDates) orderRcvMap.set(r.allocationId, r.latestReceiveDate);
+    }
+
+    for (const row of finalRows) {
+      if (!row.stitcherId || !row.issueDate) continue;
+      if (row.productionFor === "order") continue;
+      const received = row.quantityReceived + row.quantityRejected;
+      if (received >= row.quantityIssued && row.quantityIssued > 0) continue;
+      const rowIssueTime = new Date(row.issueDate).getTime();
+      const rawPauses: any[] = [];
+      for (const oa of allOrderAllocs) {
+        if (oa.stitcherId !== row.stitcherId) continue;
+        if (oa.id === row.id) continue;
+        const oaIssueTime = oa.issueDate ? new Date(oa.issueDate).getTime() : 0;
+        if (!oaIssueTime || oaIssueTime <= rowIssueTime) continue;
+        const oaCompleted = (oa.quantityReceived + oa.quantityRejected) >= oa.quantityIssued && oa.quantityIssued > 0;
+        const rcvDate = orderRcvMap.get(oa.id) || null;
+        rawPauses.push({
+          orderAllocationId: oa.id,
+          orderAllocationNumber: oa.allocationNumber,
+          orderBatchNumber: oa.batchNumber,
+          pauseStart: oa.issueDate,
+          pauseEnd: oaCompleted && rcvDate ? rcvDate : null,
+          orderCompleted: oaCompleted,
+        });
+      }
+      if (rawPauses.length > 0) {
+        (row as any).priorityPauses = rawPauses;
+      }
+    }
+  }
+
   res.json(finalRows);
 });
 
