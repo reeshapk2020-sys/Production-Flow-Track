@@ -55,6 +55,7 @@ Comprehensive reports are available, including:
 -   **Stitcher & Team Points**: Product-wise point breakdown based on completed quantity.
 -   **Daily Production**: Day-wise breakdown of production stages.
 -   **Outsource Summary**: Aggregated stats and transfer details.
+-   **Efficiency Report**: Time-based efficiency analysis per stitcher and team, computed from allocation-level data (expected time = points × 20 min vs actual effective time = elapsed − outsource). Shows efficiency %, performance rating (A+/A/B/C), on-time/late status, top performer highlight, and efficiency trend chart. Backend endpoint `/reports/efficiency` aggregates at allocation level first to avoid double-counting for partial receivings, then rolls up to stitcher/team/daily.
 -   **Stage Pending**: Identifies bottlenecks in the production flow.
 -   **Batch Status**: Provides an overview of all batches and their current stages.
 

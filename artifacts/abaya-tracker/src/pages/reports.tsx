@@ -14,7 +14,8 @@ import { format } from "date-fns";
 import { fmtCode, fmtUTC } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { FilterBar } from "@/components/filter-bar";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { TrendingUp, Award, Clock, Zap } from "lucide-react";
 
 function useProductOptions() {
   const { data: products } = useListProducts();
@@ -33,6 +34,7 @@ export default function ReportsPage() {
             <TabsTrigger value="outsource" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-violet-600 data-[state=active]:text-white">Outsource Summary</TabsTrigger>
             <TabsTrigger value="stitcher-points" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-amber-600 data-[state=active]:text-white">Stitcher Points</TabsTrigger>
             <TabsTrigger value="team-points" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-amber-600 data-[state=active]:text-white">Team Points</TabsTrigger>
+            <TabsTrigger value="efficiency" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-cyan-600 data-[state=active]:text-white">Efficiency</TabsTrigger>
             <TabsTrigger value="pending" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white">Stage Pending</TabsTrigger>
             <TabsTrigger value="batch" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white">Batch Status</TabsTrigger>
           </TabsList>
@@ -44,6 +46,7 @@ export default function ReportsPage() {
         <TabsContent value="team-points" className="mt-0 outline-none"><TeamPointsReport /></TabsContent>
         <TabsContent value="daily" className="mt-0 outline-none"><DailyProductionReport /></TabsContent>
         <TabsContent value="outsource" className="mt-0 outline-none"><OutsourceSummaryReport /></TabsContent>
+        <TabsContent value="efficiency" className="mt-0 outline-none"><EfficiencyReport /></TabsContent>
         <TabsContent value="pending" className="mt-0 outline-none"><PendingReport /></TabsContent>
         <TabsContent value="batch" className="mt-0 outline-none"><BatchReport /></TabsContent>
       </Tabs>
@@ -886,6 +889,204 @@ function TeamPointsReport() {
             </TableBody>
           </Table>
         </ReportCard>
+      )}
+    </>
+  );
+}
+
+function fmtMinutes(mins: number) {
+  if (!mins || mins <= 0) return "—";
+  const h = Math.floor(mins / 60);
+  const m = Math.round(mins % 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+function getRatingColor(rating: string) {
+  if (rating === "A+") return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+  if (rating === "A") return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+  if (rating === "B") return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+  return "bg-red-500/20 text-red-400 border-red-500/30";
+}
+
+function getEfficiencyColor(eff: number) {
+  if (eff >= 120) return "text-emerald-400";
+  if (eff >= 100) return "text-blue-400";
+  if (eff >= 80) return "text-amber-400";
+  return "text-red-400";
+}
+
+function EfficiencyReport() {
+  const [filters, setFilters] = useState<Record<string, string>>({ startDate: "", endDate: "", productId: "" });
+  const productOptions = useProductOptions();
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [view, setView] = useState<"stitcher" | "team">("stitcher");
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (filters.startDate) params.set("startDate", filters.startDate);
+    if (filters.endDate) params.set("endDate", filters.endDate);
+    if (filters.productId) params.set("productId", filters.productId);
+    setLoading(true);
+    fetch(`${import.meta.env.BASE_URL}api/reports/efficiency?${params}`, { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setData(d); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [filters.startDate, filters.endDate, filters.productId]);
+
+  const filterFields = [
+    { name: "startDate", label: "From Date", type: "date" as const },
+    { name: "endDate", label: "To Date", type: "date" as const },
+    { name: "productId", label: "Product", type: "select" as const, options: productOptions },
+  ];
+
+  const rows = view === "stitcher" ? (data?.stitchers || []) : (data?.teams || []);
+  const topPerformer = rows.length > 0 ? rows[0] : null;
+  const trend = data?.trend || [];
+
+  const avgEfficiency = rows.length > 0
+    ? Math.round(rows.reduce((s: number, r: any) => s + r.efficiency, 0) / rows.length)
+    : 0;
+  const totalOnTime = rows.reduce((s: number, r: any) => s + (r.onTimeCount || 0), 0);
+  const totalLate = rows.reduce((s: number, r: any) => s + (r.lateCount || 0), 0);
+
+  return (
+    <>
+      <FilterBar fields={filterFields} values={filters} onChange={setFilters} />
+
+      <div className="flex gap-2 mb-4">
+        <button
+          onClick={() => setView("stitcher")}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${view === "stitcher" ? "bg-cyan-600 text-white" : "bg-card border border-border text-muted-foreground hover:border-cyan-500/50"}`}
+        >
+          Stitcher-wise
+        </button>
+        <button
+          onClick={() => setView("team")}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${view === "team" ? "bg-cyan-600 text-white" : "bg-card border border-border text-muted-foreground hover:border-cyan-500/50"}`}
+        >
+          Team-wise
+        </button>
+      </div>
+
+      {loading && <div className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></div>}
+
+      {!loading && data && (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <Card className="bg-cyan-500/10 border-cyan-500/20 rounded-xl">
+              <CardContent className="p-3 text-center">
+                <Zap className="h-5 w-5 mx-auto mb-1 text-cyan-400" />
+                <div className="text-2xl font-display font-bold text-cyan-400">{avgEfficiency}%</div>
+                <div className="text-xs text-muted-foreground">Avg Efficiency</div>
+              </CardContent>
+            </Card>
+            <Card className="bg-emerald-500/10 border-emerald-500/20 rounded-xl">
+              <CardContent className="p-3 text-center">
+                <Clock className="h-5 w-5 mx-auto mb-1 text-emerald-400" />
+                <div className="text-2xl font-display font-bold text-emerald-400">{totalOnTime}</div>
+                <div className="text-xs text-muted-foreground">On Time</div>
+              </CardContent>
+            </Card>
+            <Card className="bg-red-500/10 border-red-500/20 rounded-xl">
+              <CardContent className="p-3 text-center">
+                <Clock className="h-5 w-5 mx-auto mb-1 text-red-400" />
+                <div className="text-2xl font-display font-bold text-red-400">{totalLate}</div>
+                <div className="text-xs text-muted-foreground">Late</div>
+              </CardContent>
+            </Card>
+            {topPerformer && (
+              <Card className="bg-amber-500/10 border-amber-500/20 rounded-xl">
+                <CardContent className="p-3 text-center">
+                  <Award className="h-5 w-5 mx-auto mb-1 text-amber-400" />
+                  <div className="text-lg font-display font-bold text-amber-400 truncate">{topPerformer.name}</div>
+                  <div className="text-xs text-muted-foreground">Top Performer ({topPerformer.efficiency}%)</div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          <ReportCard title={`${view === "stitcher" ? "Stitcher" : "Team"} Efficiency Report`}>
+            <Table>
+              <TableHeader className="bg-background">
+                <TableRow>
+                  <TableHead>{view === "stitcher" ? "Stitcher" : "Team"}</TableHead>
+                  <TableHead className="text-right">Points</TableHead>
+                  <TableHead className="text-right">Expected</TableHead>
+                  <TableHead className="text-right">Effective</TableHead>
+                  <TableHead className="text-right">Outsource</TableHead>
+                  <TableHead className="text-right">Efficiency</TableHead>
+                  <TableHead className="text-center">Rating</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {!rows.length ? (
+                  <TableRow><TableCell colSpan={8} className="text-center py-12 text-muted-foreground">No completed receiving data found</TableCell></TableRow>
+                ) : rows.map((row: any, i: number) => {
+                  const isTop = i === 0;
+                  return (
+                    <TableRow key={row.id} className={isTop ? "bg-amber-500/5" : ""}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {isTop && <Award className="h-4 w-4 text-amber-400 flex-shrink-0" />}
+                          <div>
+                            <div className="font-semibold">{row.name}</div>
+                            {view === "stitcher" && row.teamName && <div className="text-xs text-muted-foreground">{row.teamName}</div>}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-sm">{row.totalPoints}</TableCell>
+                      <TableCell className="text-right text-sm">{fmtMinutes(row.expectedMinutes)}</TableCell>
+                      <TableCell className="text-right text-sm">{fmtMinutes(row.effectiveMinutes)}</TableCell>
+                      <TableCell className="text-right text-sm text-violet-400">{row.outsourceMinutes > 0 ? fmtMinutes(row.outsourceMinutes) : "—"}</TableCell>
+                      <TableCell className="text-right">
+                        <span className={`font-bold text-sm ${getEfficiencyColor(row.efficiency)}`}>
+                          {row.efficiency}%
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold border ${getRatingColor(row.rating)}`}>
+                          {row.rating}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {(row.onTimeCount > 0 || row.lateCount > 0) ? (
+                          <div className="flex items-center justify-center gap-1">
+                            {row.onTimeCount > 0 && <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400">{row.onTimeCount} On Time</span>}
+                            {row.lateCount > 0 && <span className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 text-red-400">{row.lateCount} Late</span>}
+                          </div>
+                        ) : <span className="text-muted-foreground text-xs">—</span>}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </ReportCard>
+
+          {trend.length > 1 && (
+            <div className="bg-card border border-border rounded-xl p-4 mt-4">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp className="h-4 w-4 text-cyan-400" />
+                <h3 className="text-sm font-semibold text-foreground">Efficiency Trend</h3>
+              </div>
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={trend} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} domain={[0, "auto"]} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                    formatter={(value: any) => [`${value}%`, "Efficiency"]}
+                  />
+                  <Line type="monotone" dataKey="efficiency" stroke="hsl(188, 78%, 46%)" strokeWidth={2} dot={{ r: 4, fill: "hsl(188, 78%, 46%)" }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </>
       )}
     </>
   );

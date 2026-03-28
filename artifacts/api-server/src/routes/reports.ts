@@ -504,4 +504,197 @@ router.get("/reports/team-points", checkPermission("reports", "view"), async (re
   res.json(result);
 });
 
+router.get("/reports/efficiency", checkPermission("reports", "view"), async (req, res) => {
+  const { startDate, endDate, productId } = req.query;
+  const conditions: any[] = [];
+  if (startDate) conditions.push(gte(receivingsTable.receiveDate, new Date(startDate as string)));
+  if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); conditions.push(lte(receivingsTable.receiveDate, ed)); }
+  if (productId) conditions.push(eq(cuttingBatchesTable.productId, Number(productId)));
+
+  const rows = await db
+    .select({
+      receivingId: receivingsTable.id,
+      allocationId: allocationsTable.id,
+      stitcherId: allocationsTable.stitcherId,
+      stitcherName: stitchersTable.name,
+      teamId: stitchersTable.teamId,
+      teamName: teamsTable.name,
+      allocationType: allocationsTable.allocationType,
+      allocTeamId: allocationsTable.teamId,
+      allocTeamName: sql<string>`(SELECT name FROM teams WHERE id = ${allocationsTable.teamId})`,
+      quantityReceived: receivingsTable.quantityReceived,
+      pointsPerPiece: productsTable.pointsPerPiece,
+      issueDate: allocationsTable.issueDate,
+      receiveDate: receivingsTable.receiveDate,
+      workType: allocationsTable.workType,
+    })
+    .from(receivingsTable)
+    .innerJoin(allocationsTable, eq(receivingsTable.allocationId, allocationsTable.id))
+    .innerJoin(cuttingBatchesTable, eq(allocationsTable.cuttingBatchId, cuttingBatchesTable.id))
+    .innerJoin(productsTable, eq(cuttingBatchesTable.productId, productsTable.id))
+    .leftJoin(stitchersTable, eq(allocationsTable.stitcherId, stitchersTable.id))
+    .leftJoin(teamsTable, eq(stitchersTable.teamId, teamsTable.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined);
+
+  const allocIds = [...new Set(rows.map(r => r.allocationId))];
+  let outsourceMap: Record<number, number> = {};
+  if (allocIds.length > 0) {
+    const oRows = await db
+      .select({
+        allocationId: outsourceTransfersTable.allocationId,
+        outsourceMinutes: sql<number>`COALESCE(SUM(EXTRACT(EPOCH FROM (COALESCE(${outsourceTransfersTable.returnDate}, NOW()) - ${outsourceTransfersTable.sendDate})) / 60), 0)::int`,
+      })
+      .from(outsourceTransfersTable)
+      .where(sql`${outsourceTransfersTable.allocationId} IN (${sql.join(allocIds.map(id => sql`${id}`), sql`, `)})`)
+      .groupBy(outsourceTransfersTable.allocationId);
+    for (const o of oRows) outsourceMap[o.allocationId] = o.outsourceMinutes;
+  }
+
+  interface AllocRecord {
+    allocationId: number;
+    stitcherId: number | null;
+    stitcherName: string | null;
+    teamName: string | null;
+    allocationType: string | null;
+    allocTeamId: number | null;
+    allocTeamName: string | null;
+    totalPoints: number;
+    expectedMinutes: number;
+    issueDate: Date | null;
+    lastReceiveDate: Date | null;
+    lastReceiveDateKey: string;
+  }
+  const allocMap: Record<number, AllocRecord> = {};
+
+  for (const r of rows) {
+    const ppp = Number(r.pointsPerPiece) || 0;
+    const pts = ppp * (r.quantityReceived || 0);
+    const expectedMin = pts * 20;
+    const dateKey = r.receiveDate ? new Date(r.receiveDate).toISOString().slice(0, 10) : "";
+
+    if (!allocMap[r.allocationId]) {
+      allocMap[r.allocationId] = {
+        allocationId: r.allocationId,
+        stitcherId: r.stitcherId,
+        stitcherName: r.stitcherName,
+        teamName: r.teamName,
+        allocationType: r.allocationType,
+        allocTeamId: r.allocTeamId,
+        allocTeamName: r.allocTeamName,
+        totalPoints: 0,
+        expectedMinutes: 0,
+        issueDate: r.issueDate,
+        lastReceiveDate: r.receiveDate,
+        lastReceiveDateKey: dateKey,
+      };
+    }
+    const a = allocMap[r.allocationId];
+    a.totalPoints += pts;
+    a.expectedMinutes += expectedMin;
+    if (r.receiveDate && (!a.lastReceiveDate || new Date(r.receiveDate) > new Date(a.lastReceiveDate))) {
+      a.lastReceiveDate = r.receiveDate;
+      a.lastReceiveDateKey = dateKey;
+    }
+  }
+
+  interface AggEntry {
+    name: string; code?: string; teamName?: string;
+    totalPoints: number; expectedMinutes: number;
+    totalElapsedMinutes: number; outsourceMinutes: number;
+    onTimeCount: number; lateCount: number;
+    allocCount: number;
+  }
+  const stitcherAgg: Record<number, AggEntry> = {};
+  const teamAgg: Record<number, AggEntry> = {};
+  const dailyAgg: Record<string, { date: string; totalExpected: number; totalEffective: number; count: number }> = {};
+
+  for (const a of Object.values(allocMap)) {
+    const elapsedMin = a.issueDate && a.lastReceiveDate
+      ? Math.max(0, Math.round((new Date(a.lastReceiveDate).getTime() - new Date(a.issueDate).getTime()) / 60000))
+      : 0;
+    const osMin = outsourceMap[a.allocationId] || 0;
+    const effectiveMin = Math.max(0, elapsedMin - osMin);
+    const isOnTime = a.expectedMinutes > 0 && effectiveMin > 0 ? effectiveMin <= a.expectedMinutes : true;
+
+    if (a.allocationType === "individual" && a.stitcherId) {
+      if (!stitcherAgg[a.stitcherId]) {
+        stitcherAgg[a.stitcherId] = {
+          name: a.stitcherName || "Unknown", teamName: a.teamName || undefined,
+          totalPoints: 0, expectedMinutes: 0, totalElapsedMinutes: 0, outsourceMinutes: 0,
+          onTimeCount: 0, lateCount: 0, allocCount: 0,
+        };
+      }
+      const s = stitcherAgg[a.stitcherId];
+      s.totalPoints += a.totalPoints;
+      s.expectedMinutes += a.expectedMinutes;
+      s.totalElapsedMinutes += elapsedMin;
+      s.outsourceMinutes += osMin;
+      s.allocCount++;
+      if (a.expectedMinutes > 0 && effectiveMin > 0) { isOnTime ? s.onTimeCount++ : s.lateCount++; }
+    }
+
+    const tId = a.allocationType === "team" ? a.allocTeamId : null;
+    const tName = a.allocationType === "team" ? (a.allocTeamName || "Unknown") : null;
+    if (tId && tName) {
+      if (!teamAgg[tId]) {
+        teamAgg[tId] = {
+          name: tName, totalPoints: 0, expectedMinutes: 0,
+          totalElapsedMinutes: 0, outsourceMinutes: 0,
+          onTimeCount: 0, lateCount: 0, allocCount: 0,
+        };
+      }
+      const t = teamAgg[tId];
+      t.totalPoints += a.totalPoints;
+      t.expectedMinutes += a.expectedMinutes;
+      t.totalElapsedMinutes += elapsedMin;
+      t.outsourceMinutes += osMin;
+      t.allocCount++;
+      if (a.expectedMinutes > 0 && effectiveMin > 0) { isOnTime ? t.onTimeCount++ : t.lateCount++; }
+    }
+
+    if (a.lastReceiveDateKey) {
+      const dk = a.lastReceiveDateKey;
+      if (!dailyAgg[dk]) dailyAgg[dk] = { date: dk, totalExpected: 0, totalEffective: 0, count: 0 };
+      dailyAgg[dk].totalExpected += a.expectedMinutes;
+      dailyAgg[dk].totalEffective += effectiveMin;
+      dailyAgg[dk].count++;
+    }
+  }
+
+  function buildResult(agg: Record<number, AggEntry>) {
+    return Object.entries(agg)
+      .map(([id, v]) => {
+        const effectiveMin = Math.max(0, v.totalElapsedMinutes - v.outsourceMinutes);
+        const efficiency = effectiveMin > 0 ? Math.round((v.expectedMinutes / effectiveMin) * 100) : 0;
+        const rating = efficiency >= 120 ? "A+" : efficiency >= 100 ? "A" : efficiency >= 80 ? "B" : "C";
+        return {
+          id: Number(id), name: v.name, teamName: v.teamName, code: v.code,
+          totalPoints: Math.round(v.totalPoints * 100) / 100,
+          expectedMinutes: v.expectedMinutes,
+          effectiveMinutes: effectiveMin,
+          outsourceMinutes: v.outsourceMinutes,
+          totalElapsedMinutes: v.totalElapsedMinutes,
+          efficiency, rating,
+          onTimeCount: v.onTimeCount, lateCount: v.lateCount,
+          completedBatches: v.allocCount,
+        };
+      })
+      .sort((a, b) => b.efficiency - a.efficiency);
+  }
+
+  const trend = Object.values(dailyAgg)
+    .map(d => ({
+      date: d.date,
+      efficiency: d.totalEffective > 0 ? Math.round((d.totalExpected / d.totalEffective) * 100) : 0,
+      count: d.count,
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  res.json({
+    stitchers: buildResult(stitcherAgg),
+    teams: buildResult(teamAgg),
+    trend,
+  });
+});
+
 export default router;
