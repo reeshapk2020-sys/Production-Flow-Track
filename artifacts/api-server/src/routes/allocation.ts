@@ -44,6 +44,7 @@ const allocSelect = {
   batchNumber: cuttingBatchesTable.batchNumber,
   productCode: productsTable.code,
   productName: productsTable.name,
+  pointsPerPiece: productsTable.pointsPerPiece,
   fabricId: cuttingBatchesTable.fabricId,
   fabricCode: fabricsTable.code,
   fabricName: fabricsTable.name,

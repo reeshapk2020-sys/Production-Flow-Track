@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Loader2, Send, Info, Pencil, AlertTriangle, Users, User, Undo2 } from "lucide-react";
+import { Plus, Loader2, Send, Info, Pencil, AlertTriangle, Users, User, Undo2, Clock } from "lucide-react";
 import { SearchableSelect } from "@/components/searchable-select";
 import {
   useListAllocations, useCreateAllocation, getListAllocationsQueryKey,
@@ -33,6 +33,54 @@ function StatusBadge({ status }: { status: BatchStatus }) {
   };
   const { label, cls } = map[status] || { label: status, cls: "bg-muted text-muted-foreground border-border" };
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}>{label}</span>;
+}
+
+interface WorkSlot { start: number; end: number; }
+const WORK_SLOTS: WorkSlot[] = [
+  { start: 8 * 60, end: 13 * 60 + 20 },
+  { start: 14 * 60 + 30, end: 19 * 60 },
+  { start: 20 * 60 + 30, end: 23 * 60 },
+];
+const MINUTES_PER_POINT = 20;
+
+function calcExpectedCompletion(startDateTime: Date, totalMinutes: number) {
+  let remaining = totalMinutes;
+  let current = new Date(startDateTime);
+
+  const dayStart = (d: Date) => {
+    const r = new Date(d); r.setHours(0, 0, 0, 0); return r;
+  };
+  const minuteOfDay = (d: Date) => d.getHours() * 60 + d.getMinutes();
+
+  for (let guard = 0; guard < 365 && remaining > 0; guard++) {
+    const todayBase = dayStart(current);
+    const curMinute = minuteOfDay(current);
+
+    for (const slot of WORK_SLOTS) {
+      if (remaining <= 0) break;
+      const effectiveStart = Math.max(curMinute, slot.start);
+      if (effectiveStart >= slot.end) continue;
+      const available = slot.end - effectiveStart;
+      if (remaining <= available) {
+        current = new Date(todayBase.getTime() + (effectiveStart + remaining) * 60000);
+        remaining = 0;
+        break;
+      }
+      remaining -= available;
+    }
+    if (remaining > 0) {
+      current = new Date(todayBase.getTime() + 24 * 60 * 60000);
+      current.setHours(0, 0, 0, 0);
+    }
+  }
+  return current;
+}
+
+function formatMinutes(m: number) {
+  const hrs = Math.floor(m / 60);
+  const mins = Math.round(m % 60);
+  if (hrs === 0) return `${mins} min`;
+  return mins > 0 ? `${hrs} hr ${mins} min` : `${hrs} hr`;
 }
 
 export default function AllocationPage() {
@@ -75,6 +123,8 @@ export default function AllocationPage() {
   const [returnOpen, setReturnOpen] = useState(false);
   const [returnTarget, setReturnTarget] = useState<any>(null);
   const [returnSubmitting, setReturnSubmitting] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailTarget, setDetailTarget] = useState<any>(null);
 
   const { mutate, isPending } = useCreateAllocation({
     mutation: {
@@ -533,6 +583,15 @@ export default function AllocationPage() {
                               size="sm"
                               variant="ghost"
                               className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => { setDetailTarget(alloc); setDetailOpen(true); }}
+                              title="Points / Time"
+                            >
+                              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                               onClick={() => { setEditTarget(alloc); setEditOpen(true); }}
                             >
                               <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
@@ -624,6 +683,67 @@ export default function AllocationPage() {
               </div>
             </form>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={detailOpen} onOpenChange={(v) => { setDetailOpen(v); if (!v) setDetailTarget(null); }}>
+        <DialogContent className="sm:max-w-[440px] rounded-2xl p-6 border-0 shadow-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-display flex items-center gap-2"><Clock className="h-5 w-5" /> Points / Time</DialogTitle>
+          </DialogHeader>
+          {detailTarget && (() => {
+            const ppp = Number(detailTarget.pointsPerPiece) || 0;
+            const qty = detailTarget.quantityIssued || 0;
+            const totalPoints = ppp * qty;
+            const totalMinutes = totalPoints * MINUTES_PER_POINT;
+            const startDt = detailTarget.issueDate ? new Date(detailTarget.issueDate) : null;
+            const expectedEnd = startDt && totalMinutes > 0 ? calcExpectedCompletion(startDt, totalMinutes) : null;
+            return (
+              <div className="grid grid-cols-1 gap-3 pt-4">
+                <div className="bg-background rounded-xl p-3 text-sm text-muted-foreground">
+                  <div className="font-semibold text-foreground">{detailTarget.batchNumber} — {detailTarget.allocationNumber}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{detailTarget.productName || detailTarget.productCode || "—"} · {detailTarget.assigneeName || detailTarget.stitcherName}</div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-card border border-border rounded-xl p-3">
+                    <div className="text-xs text-muted-foreground mb-1">Points / Piece</div>
+                    <div className="text-lg font-bold text-foreground">{ppp}</div>
+                  </div>
+                  <div className="bg-card border border-border rounded-xl p-3">
+                    <div className="text-xs text-muted-foreground mb-1">Allocated Qty</div>
+                    <div className="text-lg font-bold text-foreground">{qty}</div>
+                  </div>
+                  <div className="bg-card border border-border rounded-xl p-3">
+                    <div className="text-xs text-muted-foreground mb-1">Total Points</div>
+                    <div className="text-lg font-bold text-primary">{totalPoints}</div>
+                  </div>
+                  <div className="bg-card border border-border rounded-xl p-3">
+                    <div className="text-xs text-muted-foreground mb-1">Expected Time</div>
+                    <div className="text-lg font-bold text-primary">{formatMinutes(totalMinutes)}</div>
+                  </div>
+                </div>
+                <div className="border-t border-border pt-3 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Allocation Start</span>
+                    <span className="font-medium text-foreground">{startDt ? format(startDt, "MMM d, yyyy HH:mm") : "—"}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Expected Completion</span>
+                    <span className="font-medium text-emerald-600">{expectedEnd ? format(expectedEnd, "MMM d, yyyy HH:mm") : "—"}</span>
+                  </div>
+                </div>
+                {ppp === 0 && (
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                    No points configured for this product. Update the Product Master to set points per piece.
+                  </div>
+                )}
+                <div className="text-xs text-muted-foreground mt-1">
+                  Working slots: 8:00–1:20 PM, 2:30–7:00 PM, 8:30–11:00 PM · 1 point = 20 min
+                </div>
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
