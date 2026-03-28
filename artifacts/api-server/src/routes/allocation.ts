@@ -115,8 +115,6 @@ router.get("/allocation", checkPermission("allocation", "view"), async (req, res
   if (stitcherId) conditions.push(eq(allocationsTable.stitcherId, Number(stitcherId)));
   if (teamId) conditions.push(eq(allocationsTable.teamId, Number(teamId)));
   if (batchNumber) conditions.push(ilike(cuttingBatchesTable.batchNumber, `%${batchNumber}%`));
-  if (status) conditions.push(eq(allocationsTable.status, status as string));
-
   let q = allocJoins(db.select(allocSelect).from(allocationsTable));
   if (conditions.length > 0) q = q.where(and(...conditions));
   const rows = await q.orderBy(sql`${allocationsTable.createdAt} desc`);
@@ -146,7 +144,28 @@ router.get("/allocation", checkPermission("allocation", "view"), async (req, res
     }
   }
 
-  const allocIds = mapped.map((r: any) => r.id);
+  for (const row of mapped) {
+    const received = row.quantityReceived + row.quantityRejected;
+    const issued = row.quantityIssued;
+    const oSent = (row as any).outsourceSent || 0;
+    const oReturned = (row as any).outsourceReturned || 0;
+    let computedStatus = "pending";
+    if (received >= issued && issued > 0) {
+      computedStatus = "completed";
+    } else if (received > 0 && received < issued) {
+      computedStatus = "partially_received";
+    } else if (row.workType === "outsource_required" && oSent > 0 && oReturned < oSent) {
+      computedStatus = "pending_in_outsource";
+    } else if (row.workType === "outsource_required" && oSent > 0 && oReturned >= oSent && received < issued) {
+      computedStatus = "pending_returned_outsource";
+    }
+    (row as any).computedStatus = computedStatus;
+  }
+
+  const statusFilter = status as string | undefined;
+  const finalRows = statusFilter ? mapped.filter((r: any) => r.computedStatus === statusFilter) : mapped;
+
+  const allocIds = finalRows.map((r: any) => r.id);
   if (allocIds.length > 0) {
     const recvSet = new Set((await db
       .select({ allocationId: receivingsTable.allocationId })
@@ -160,12 +179,12 @@ router.get("/allocation", checkPermission("allocation", "view"), async (req, res
       .where(sql`${outsourceTransfersTable.allocationId} IN (${sql.join(allocIds.map((id: number) => sql`${id}`), sql`, `)})`)
       .groupBy(outsourceTransfersTable.allocationId)
     ).map((r: any) => r.allocationId));
-    for (const row of mapped) {
+    for (const row of finalRows) {
       (row as any).isLocked = recvSet.has(row.id) || outSet.has(row.id);
     }
   }
 
-  res.json(mapped);
+  res.json(finalRows);
 });
 
 router.post("/allocation", checkPermission("allocation", "create"), async (req, res) => {

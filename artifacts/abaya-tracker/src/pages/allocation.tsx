@@ -24,18 +24,11 @@ type BatchStatus = string;
 
 function StatusBadge({ status }: { status: BatchStatus }) {
   const map: Record<string, { label: string; cls: string }> = {
-    cutting:            { label: "Cutting",           cls: "bg-primary/10 text-primary border-primary/20" },
-    allocated:          { label: "Allocated",         cls: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
-    allocation:         { label: "Allocated",         cls: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
-    partially_received: { label: "Partial Recv",      cls: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20" },
-    stitching:          { label: "Partial Recv",      cls: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20" },
-    fully_received:     { label: "Fully Received",    cls: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" },
-    in_finishing:       { label: "In Finishing",      cls: "bg-purple-500/10 text-purple-700 border-purple-500/20" },
-    finishing:          { label: "In Finishing",      cls: "bg-purple-500/10 text-purple-700 border-purple-500/20" },
-    finished:           { label: "Finished",          cls: "bg-muted text-muted-foreground border-border" },
-    pending:            { label: "Pending",           cls: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
-    partial:            { label: "Partial Recv",      cls: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20" },
-    completed:          { label: "Completed",         cls: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" },
+    pending:                    { label: "Pending",                    cls: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
+    completed:                  { label: "Completed",                  cls: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" },
+    partially_received:         { label: "Partially Received",         cls: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20" },
+    pending_in_outsource:       { label: "Pending / In Outsource",     cls: "bg-orange-500/10 text-orange-700 border-orange-500/20" },
+    pending_returned_outsource: { label: "Pending / Returned from Outsource", cls: "bg-purple-500/10 text-purple-700 border-purple-500/20" },
   };
   const { label, cls } = map[status] || { label: status, cls: "bg-muted text-muted-foreground border-border" };
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}>{label}</span>;
@@ -207,11 +200,11 @@ export default function AllocationPage() {
   const activeTeams = teams?.filter((t: any) => t.isActive) || [];
 
   const allocationStatusOptions = [
-    { value: "allocated", label: "Allocated" },
-    { value: "partially_received", label: "Partial Recv" },
-    { value: "fully_received", label: "Fully Received" },
-    { value: "in_finishing", label: "In Finishing" },
-    { value: "finished", label: "Finished" },
+    { value: "pending", label: "Pending" },
+    { value: "completed", label: "Completed" },
+    { value: "partially_received", label: "Partially Received" },
+    { value: "pending_in_outsource", label: "Pending / In Outsource" },
+    { value: "pending_returned_outsource", label: "Pending / Returned from Outsource" },
   ];
 
   const filterFields = [
@@ -519,7 +512,7 @@ export default function AllocationPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <StatusBadge status={alloc.status || "pending"} />
+                        <StatusBadge status={(alloc as any).computedStatus || "pending"} />
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {alloc.issueDate ? format(new Date(alloc.issueDate), 'MMM d, yyyy') : '-'}
