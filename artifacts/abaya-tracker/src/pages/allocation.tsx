@@ -35,10 +35,10 @@ function StatusBadge({ status }: { status: BatchStatus }) {
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}>{label}</span>;
 }
 
-interface WorkSlot { start: number; end: number; }
+interface WorkSlot { start: number; end: number; effective?: number; }
 const WORK_SLOTS: WorkSlot[] = [
   { start: 8 * 60, end: 13 * 60 + 20 },
-  { start: 14 * 60 + 30, end: 19 * 60 },
+  { start: 14 * 60 + 30, end: 20 * 60, effective: 270 },
   { start: 20 * 60 + 30, end: 23 * 60 },
 ];
 const MINUTES_PER_POINT = 20;
@@ -60,9 +60,14 @@ function calcExpectedCompletion(startDateTime: Date, totalMinutes: number) {
       if (remaining <= 0) break;
       const effectiveStart = Math.max(curMinute, slot.start);
       if (effectiveStart >= slot.end) continue;
-      const available = slot.end - effectiveStart;
+      const rawAvail = slot.end - effectiveStart;
+      const slotTotal = slot.end - slot.start;
+      const effectiveTotal = slot.effective || slotTotal;
+      const ratio = effectiveTotal / slotTotal;
+      const available = Math.floor(rawAvail * ratio);
       if (remaining <= available) {
-        current = new Date(todayBase.getTime() + (effectiveStart + remaining) * 60000);
+        const rawNeeded = Math.ceil(remaining / ratio);
+        current = new Date(todayBase.getTime() + (effectiveStart + rawNeeded) * 60000);
         remaining = 0;
         break;
       }
@@ -125,6 +130,10 @@ export default function AllocationPage() {
   const [returnSubmitting, setReturnSubmitting] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailTarget, setDetailTarget] = useState<any>(null);
+  const [formQty, setFormQty] = useState(0);
+  const [formDate, setFormDate] = useState(new Date().toISOString().split('T')[0]);
+  const [formTime, setFormTime] = useState(new Date().toTimeString().slice(0, 5));
+  const [formProductOverride, setFormProductOverride] = useState<number | null>(null);
 
   const { mutate, isPending } = useCreateAllocation({
     mutation: {
@@ -134,6 +143,8 @@ export default function AllocationPage() {
         setOpen(false);
         setSelectedBatch(null);
         setAllocType("individual");
+        setFormQty(0);
+        setFormProductOverride(null);
         toast({ title: "Allocation created successfully" });
       },
       onError: (e: any) => {
@@ -160,6 +171,14 @@ export default function AllocationPage() {
   const batchNeedsProduct = selectedBatch && !selectedBatch.productId;
   const batchNeedsMaterial = selectedBatch && !selectedBatch.materialId;
   const batchNeedsCompletion = batchNeedsProduct || batchNeedsMaterial;
+
+  const formProductId = selectedBatch?.productId || formProductOverride;
+  const formProduct = formProductId ? products?.find((p: any) => p.id === formProductId) : null;
+  const formPPP = formProduct ? Number(formProduct.pointsPerPiece) || 0 : 0;
+  const formTotalPoints = formPPP * formQty;
+  const formTotalMinutes = formTotalPoints * MINUTES_PER_POINT;
+  const formStartDt = formDate ? new Date(`${formDate}T${formTime || "08:00"}`) : null;
+  const formExpectedEnd = formStartDt && formTotalMinutes > 0 ? calcExpectedCompletion(formStartDt, formTotalMinutes) : null;
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -309,7 +328,7 @@ export default function AllocationPage() {
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">Issue cut pieces to individual stitchers or teams.</p>
           </div>
-          {canCreate && <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setSelectedBatch(null); setAllocType("individual"); setWorkType("simple_stitch"); } }}>
+          {canCreate && <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setSelectedBatch(null); setAllocType("individual"); setWorkType("simple_stitch"); setFormQty(0); setFormProductOverride(null); } }}>
             <DialogTrigger asChild>
               <Button className="rounded-xl shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5">
                 <Plus className="h-4 w-4 mr-2" /> Issue Batch
@@ -360,7 +379,7 @@ export default function AllocationPage() {
                             {batchNeedsProduct && (
                               <div>
                                 <label className="text-sm font-medium block mb-1">Product / Design <span className="text-red-500">*</span></label>
-                                <select name="batchProductId" className="form-input-styled bg-card" required>
+                                <select name="batchProductId" className="form-input-styled bg-card" required onChange={e => setFormProductOverride(Number(e.target.value) || null)}>
                                   <option value="">Select Product...</option>
                                   {products?.filter((p: any) => p.isActive).map((p: any) => (
                                     <option key={p.id} value={p.id}>{p.code} - {p.name}</option>
@@ -461,6 +480,7 @@ export default function AllocationPage() {
                       min={1}
                       max={selectedBatch?.availableForAllocation}
                       placeholder="0"
+                      onChange={e => setFormQty(Number(e.target.value) || 0)}
                     />
                     {selectedBatch && (
                       <p className="text-xs text-muted-foreground mt-1">Max: {selectedBatch.availableForAllocation}</p>
@@ -469,11 +489,38 @@ export default function AllocationPage() {
                   <div>
                     <label className="text-sm font-medium block mb-1.5">Issue Date & Time</label>
                     <div className="flex gap-2">
-                      <input type="date" name="issueDate" className="form-input-styled flex-1" required defaultValue={new Date().toISOString().split('T')[0]} />
-                      <input type="time" name="issueTime" className="form-input-styled w-28" defaultValue={new Date().toTimeString().slice(0,5)} />
+                      <input type="date" name="issueDate" className="form-input-styled flex-1" required value={formDate} onChange={e => setFormDate(e.target.value)} />
+                      <input type="time" name="issueTime" className="form-input-styled w-28" value={formTime} onChange={e => setFormTime(e.target.value)} />
                     </div>
                   </div>
                 </div>
+
+                {selectedBatch && formQty > 0 && formPPP === 0 && (
+                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-center gap-2 text-xs text-amber-600">
+                    <Clock className="h-4 w-4 shrink-0" />
+                    No points configured for this product. Set points in Product Master to see expected completion time.
+                  </div>
+                )}
+                {formQty > 0 && formPPP > 0 && (
+                  <div className="bg-card border border-border rounded-xl p-3 space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
+                      <Clock className="h-4 w-4 text-primary" /> Expected Completion
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="text-muted-foreground">Points / Piece</div>
+                      <div className="font-semibold text-right">{formPPP}</div>
+                      <div className="text-muted-foreground">Total Points</div>
+                      <div className="font-semibold text-right text-primary">{formTotalPoints}</div>
+                      <div className="text-muted-foreground">Expected Time</div>
+                      <div className="font-semibold text-right text-primary">{formatMinutes(formTotalMinutes)}</div>
+                      <div className="text-muted-foreground">Completion</div>
+                      <div className="font-semibold text-right text-emerald-600">{formExpectedEnd ? format(formExpectedEnd, "MMM d, yyyy HH:mm") : "—"}</div>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Working slots: 8:00–1:20 PM, 2:30–8:00 PM (4h30m effective), 8:30–11:00 PM · 1 point = 20 min
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="text-sm font-medium block mb-1.5">Remarks / Instructions</label>
@@ -739,7 +786,7 @@ export default function AllocationPage() {
                   </div>
                 )}
                 <div className="text-xs text-muted-foreground mt-1">
-                  Working slots: 8:00–1:20 PM, 2:30–7:00 PM, 8:30–11:00 PM · 1 point = 20 min
+                  Working slots: 8:00–1:20 PM, 2:30–8:00 PM (4h30m effective), 8:30–11:00 PM · 1 point = 20 min
                 </div>
               </div>
             );
