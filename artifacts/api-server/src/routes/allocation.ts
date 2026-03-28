@@ -144,13 +144,26 @@ router.get("/allocation", checkPermission("allocation", "view"), async (req, res
     }
   }
 
+  const allAllocIds = mapped.map((r: any) => r.id);
+  const returnedSet = new Set<number>();
+  if (allAllocIds.length > 0) {
+    const returnSums = await db
+      .select({ allocationId: allocationReturnsTable.allocationId })
+      .from(allocationReturnsTable)
+      .where(sql`${allocationReturnsTable.allocationId} IN (${sql.join(allAllocIds.map((id: number) => sql`${id}`), sql`, `)})`)
+      .groupBy(allocationReturnsTable.allocationId);
+    for (const r of returnSums) returnedSet.add(r.allocationId);
+  }
+
   for (const row of mapped) {
     const received = row.quantityReceived + row.quantityRejected;
     const issued = row.quantityIssued;
     const oSent = (row as any).outsourceSent || 0;
     const oReturned = (row as any).outsourceReturned || 0;
     let computedStatus = "pending";
-    if (received >= issued && issued > 0) {
+    if (returnedSet.has(row.id) && issued === 0 && received === 0) {
+      computedStatus = "returned";
+    } else if (received >= issued && issued > 0) {
       computedStatus = "completed";
     } else if (received > 0 && received < issued) {
       computedStatus = "partially_received";

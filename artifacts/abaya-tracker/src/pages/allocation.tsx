@@ -29,6 +29,7 @@ function StatusBadge({ status }: { status: BatchStatus }) {
     partially_received:         { label: "Partially Received",         cls: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20" },
     pending_in_outsource:       { label: "Pending / In Outsource",     cls: "bg-orange-500/10 text-orange-700 border-orange-500/20" },
     pending_returned_outsource: { label: "Pending / Returned from Outsource", cls: "bg-purple-500/10 text-purple-700 border-purple-500/20" },
+    returned:                   { label: "Returned",                       cls: "bg-red-500/10 text-red-700 border-red-500/20" },
   };
   const { label, cls } = map[status] || { label: status, cls: "bg-muted text-muted-foreground border-border" };
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}>{label}</span>;
@@ -205,6 +206,7 @@ export default function AllocationPage() {
     { value: "partially_received", label: "Partially Received" },
     { value: "pending_in_outsource", label: "Pending / In Outsource" },
     { value: "pending_returned_outsource", label: "Pending / Returned from Outsource" },
+    { value: "returned", label: "Returned" },
   ];
 
   const filterFields = [
