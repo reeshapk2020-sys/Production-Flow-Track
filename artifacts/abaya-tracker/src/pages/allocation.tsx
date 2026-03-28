@@ -835,28 +835,17 @@ export default function AllocationPage() {
             let expectedEnd: Date | null = null;
 
             if (startDt && totalMinutes > 0) {
-              const now = new Date();
-              const refTime = now;
-              const effectiveWorked = calcEffectiveWorked(startDt, refTime, mergedPauses);
-              remainingMinutes = Math.max(0, totalMinutes - effectiveWorked);
-
               if (hasOutsource && oSendDate) {
                 preOutsourceUsed = calcWorkingMinutesBetween(startDt, oSendDate);
               }
-
-              if (isInOutsource || isPausedByOrder) {
-                expectedEnd = null;
+              const refTime = new Date();
+              const effectiveWorked = calcEffectiveWorked(startDt, refTime, mergedPauses);
+              remainingMinutes = Math.max(0, totalMinutes - effectiveWorked);
+              if (remainingMinutes > 0 && mergedPauses.length > 0) {
+                const lastPauseEnd = Math.max(...mergedPauses.map(p => p.end));
+                expectedEnd = calcExpectedCompletion(new Date(lastPauseEnd), remainingMinutes);
               } else if (remainingMinutes > 0) {
-                let latestResumeTime = startDt;
-                if (mergedPauses.length > 0) {
-                  const lastPauseEnd = Math.max(...mergedPauses.map(p => p.end));
-                  if (lastPauseEnd > latestResumeTime.getTime()) {
-                    latestResumeTime = new Date(lastPauseEnd);
-                  }
-                }
-                expectedEnd = calcExpectedCompletion(latestResumeTime, remainingMinutes);
-              } else {
-                expectedEnd = null;
+                expectedEnd = calcExpectedCompletion(startDt, totalMinutes);
               }
             }
 
@@ -1017,7 +1006,7 @@ export default function AllocationPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Expected Completion</span>
                     <span className={`font-medium ${(isInOutsource || isPausedByOrder) ? "text-violet-600" : "text-emerald-600"}`}>
-                      {(isInOutsource || isPausedByOrder) ? "Paused" : expectedEnd ? fmtUTC(expectedEnd) : "—"}
+                      {expectedEnd ? fmtUTC(expectedEnd) : "—"}{(isInOutsource || isPausedByOrder) && expectedEnd ? " (paused)" : ""}
                     </span>
                   </div>
                 </div>
