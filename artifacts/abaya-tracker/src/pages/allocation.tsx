@@ -845,6 +845,12 @@ export default function AllocationPage() {
                         </div>
                       )}
                       <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Outsource Time Taken</span>
+                        <span className={`font-medium ${isInOutsource ? "text-orange-500" : "text-foreground"}`}>
+                          {isInOutsource ? "In Progress" : oSendDate && oReturnDate ? formatMinutes(Math.round((oReturnDate.getTime() - oSendDate.getTime()) / 60000)) : "—"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Time Before Outsource</span>
                         <span className="font-medium text-foreground">{formatMinutes(preOutsourceUsed)}</span>
                       </div>
