@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Loader2, Inbox, AlertCircle, CheckCircle2, Pencil } from "lucide-react";
+import { Plus, Loader2, Inbox, AlertCircle, CheckCircle2, Pencil, Clock, AlertTriangle } from "lucide-react";
 import { SearchableSelect } from "@/components/searchable-select";
 import {
   useListReceivings, useCreateReceiving, getListReceivingsQueryKey,
@@ -17,6 +17,82 @@ import { format } from "date-fns";
 import { fmtCode } from "@/lib/utils";
 import { useAppAuth } from "@/lib/auth-context";
 import { FilterBar } from "@/components/filter-bar";
+
+interface WorkSlot { start: number; end: number; effective?: number; }
+const WORK_SLOTS: WorkSlot[] = [
+  { start: 8 * 60, end: 13 * 60 + 20 },
+  { start: 14 * 60 + 30, end: 20 * 60, effective: 270 },
+  { start: 20 * 60 + 30, end: 23 * 60 },
+];
+const MINUTES_PER_POINT = 20;
+
+function calcExpectedCompletion(startDateTime: Date, totalMinutes: number) {
+  let remaining = totalMinutes;
+  let current = new Date(startDateTime);
+  const dayStart = (d: Date) => { const r = new Date(d); r.setHours(0, 0, 0, 0); return r; };
+  const minuteOfDay = (d: Date) => d.getHours() * 60 + d.getMinutes();
+  for (let guard = 0; guard < 365 && remaining > 0; guard++) {
+    const todayBase = dayStart(current);
+    const curMinute = minuteOfDay(current);
+    for (const slot of WORK_SLOTS) {
+      if (remaining <= 0) break;
+      const effectiveStart = Math.max(curMinute, slot.start);
+      if (effectiveStart >= slot.end) continue;
+      const rawAvail = slot.end - effectiveStart;
+      const slotTotal = slot.end - slot.start;
+      const effectiveTotal = slot.effective || slotTotal;
+      const ratio = effectiveTotal / slotTotal;
+      const available = Math.floor(rawAvail * ratio);
+      if (remaining <= available) {
+        const rawNeeded = Math.ceil(remaining / ratio);
+        current = new Date(todayBase.getTime() + (effectiveStart + rawNeeded) * 60000);
+        remaining = 0;
+        break;
+      }
+      remaining -= available;
+    }
+    if (remaining > 0) {
+      current = new Date(todayBase.getTime() + 24 * 60 * 60000);
+      current.setHours(0, 0, 0, 0);
+    }
+  }
+  return current;
+}
+
+function calcWorkingMinutesBetween(startDt: Date, endDt: Date): number {
+  let total = 0;
+  let current = new Date(startDt);
+  const dayStart = (d: Date) => { const r = new Date(d); r.setHours(0, 0, 0, 0); return r; };
+  const minuteOfDay = (d: Date) => d.getHours() * 60 + d.getMinutes();
+  const endMinuteOfDay = minuteOfDay(endDt);
+  const endDayStart = dayStart(endDt).getTime();
+  for (let guard = 0; guard < 365; guard++) {
+    const todayBase = dayStart(current);
+    const isEndDay = todayBase.getTime() === endDayStart;
+    const curMinute = minuteOfDay(current);
+    for (const slot of WORK_SLOTS) {
+      const effectiveStart = Math.max(curMinute, slot.start);
+      const slotEnd = isEndDay ? Math.min(slot.end, endMinuteOfDay) : slot.end;
+      if (effectiveStart >= slotEnd) continue;
+      const rawAvail = slotEnd - effectiveStart;
+      const slotTotal = slot.end - slot.start;
+      const effectiveTotal = slot.effective || slotTotal;
+      const ratio = effectiveTotal / slotTotal;
+      total += Math.floor(rawAvail * ratio);
+    }
+    if (isEndDay) break;
+    current = new Date(todayBase.getTime() + 24 * 60 * 60000);
+    current.setHours(0, 0, 0, 0);
+  }
+  return total;
+}
+
+function formatMinutes(m: number) {
+  const hrs = Math.floor(m / 60);
+  const mins = Math.round(m % 60);
+  if (hrs === 0) return `${mins} min`;
+  return mins > 0 ? `${hrs} hr ${mins} min` : `${hrs} hr`;
+}
 
 function BatchStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
@@ -61,6 +137,8 @@ export default function ReceivingPage() {
   const [qtyRejected, setQtyRejected] = useState(0);
   const [qtyDamaged, setQtyDamaged] = useState(0);
   const [formError, setFormError] = useState("");
+  const [rcvDate, setRcvDate] = useState(new Date().toISOString().split('T')[0]);
+  const [rcvTime, setRcvTime] = useState(new Date().toTimeString().slice(0, 5));
   const [editOpen, setEditOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<any>(null);
 
@@ -99,6 +177,8 @@ export default function ReceivingPage() {
     setQtyRejected(0);
     setQtyDamaged(0);
     setFormError("");
+    setRcvDate(new Date().toISOString().split('T')[0]);
+    setRcvTime(new Date().toTimeString().slice(0, 5));
   }
 
   const selectedAlloc = allocations?.find(a => a.id === selectedAllocationId) ?? null;
@@ -254,6 +334,126 @@ export default function ReceivingPage() {
                   </div>
                 )}
 
+                {selectedAlloc && (() => {
+                  const ppp = Number(selectedAlloc.pointsPerPiece) || 0;
+                  const qty = selectedAlloc.quantityIssued || 0;
+                  const totalPoints = ppp * qty;
+                  const totalMinutes = totalPoints * MINUTES_PER_POINT;
+                  const startDt = selectedAlloc.issueDate ? new Date(selectedAlloc.issueDate) : null;
+
+                  const oSendDate = (selectedAlloc as any).outsourceSendDate ? new Date((selectedAlloc as any).outsourceSendDate) : null;
+                  const oReturnDate = (selectedAlloc as any).outsourceReturnDate ? new Date((selectedAlloc as any).outsourceReturnDate) : null;
+                  const oSent = (selectedAlloc as any).outsourceSent || 0;
+                  const oReturned = (selectedAlloc as any).outsourceReturned || 0;
+                  const oDamaged = (selectedAlloc as any).outsourceDamaged || 0;
+                  const hasOutsource = oSendDate !== null && oSent > 0;
+                  const outsourcePending = oSent - oReturned - oDamaged;
+                  const isStillInOutsource = hasOutsource && outsourcePending > 0;
+                  const outsourceFullyReturned = hasOutsource && outsourcePending <= 0;
+
+                  let preOutsourceUsed = 0;
+                  let remainingMinutes = totalMinutes;
+                  let expectedEnd: Date | null = null;
+
+                  if (startDt && totalMinutes > 0) {
+                    if (hasOutsource && oSendDate) {
+                      preOutsourceUsed = calcWorkingMinutesBetween(startDt, oSendDate);
+                      remainingMinutes = Math.max(0, totalMinutes - preOutsourceUsed);
+                      if (outsourceFullyReturned && oReturnDate && remainingMinutes > 0) {
+                        expectedEnd = calcExpectedCompletion(oReturnDate, remainingMinutes);
+                      }
+                    } else {
+                      expectedEnd = calcExpectedCompletion(startDt, totalMinutes);
+                    }
+                  }
+
+                  if (ppp === 0) {
+                    return (
+                      <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-center gap-2 text-xs text-amber-600">
+                        <AlertTriangle className="h-4 w-4 shrink-0" />
+                        No points configured for this product. Set points in Product Master to see timing details.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="bg-card border border-border rounded-xl p-3 space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
+                        <Clock className="h-4 w-4 text-primary" /> Timing Details
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="bg-background rounded-lg p-2">
+                          <div className="text-sm font-bold text-foreground">{ppp}</div>
+                          <div className="text-[10px] text-muted-foreground">Pts/Piece</div>
+                        </div>
+                        <div className="bg-background rounded-lg p-2">
+                          <div className="text-sm font-bold text-primary">{totalPoints}</div>
+                          <div className="text-[10px] text-muted-foreground">Total Points</div>
+                        </div>
+                        <div className="bg-background rounded-lg p-2">
+                          <div className="text-sm font-bold text-primary">{formatMinutes(totalMinutes)}</div>
+                          <div className="text-[10px] text-muted-foreground">Expected Time</div>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Allocation Start</span>
+                          <span className="font-medium text-foreground">{startDt ? format(startDt, "MMM d, yyyy HH:mm") : "—"}</span>
+                        </div>
+                        {hasOutsource && (
+                          <>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">Outsource Sent</span>
+                              <span className="font-medium text-orange-500">{oSendDate ? format(oSendDate, "MMM d, yyyy HH:mm") : "—"}</span>
+                            </div>
+                            {oReturnDate && (
+                              <div className="flex justify-between text-xs">
+                                <span className="text-muted-foreground">Outsource Returned</span>
+                                <span className="font-medium text-teal-600">{format(oReturnDate, "MMM d, yyyy HH:mm")}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">Outsource Time Taken</span>
+                              <span className={`font-medium ${isStillInOutsource ? "text-orange-500" : "text-foreground"}`}>
+                                {isStillInOutsource ? "In Progress" : oSendDate && oReturnDate ? formatMinutes(Math.round((oReturnDate.getTime() - oSendDate.getTime()) / 60000)) : "—"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">Time Before Outsource</span>
+                              <span className="font-medium text-foreground">{formatMinutes(preOutsourceUsed)}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">Remaining Time</span>
+                              <span className="font-medium text-primary">{formatMinutes(remainingMinutes)}</span>
+                            </div>
+                          </>
+                        )}
+                        {isStillInOutsource && (
+                          <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 py-1.5 text-[10px] text-orange-600 flex items-center gap-1.5">
+                            <AlertTriangle className="h-3 w-3 shrink-0" />
+                            Timing paused — batch is currently in outsource
+                          </div>
+                        )}
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Expected Completion</span>
+                          <span className={`font-medium ${isStillInOutsource ? "text-orange-500" : "text-emerald-600"}`}>
+                            {isStillInOutsource ? "Paused" : expectedEnd ? format(expectedEnd, "MMM d, yyyy HH:mm") : "—"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-xs border-t border-border pt-1.5">
+                          <span className="text-muted-foreground font-medium">Actual Time Taken</span>
+                          <span className="font-bold text-foreground">
+                            {startDt && rcvDate ? (() => { const m = Math.round((new Date(`${rcvDate}T${rcvTime || "00:00"}`).getTime() - startDt.getTime()) / 60000); return m > 0 ? formatMinutes(m) : "—"; })() : "—"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        Working slots: 8:00–1:20 PM, 2:30–8:00 PM (4h30m eff.), 8:30–11:00 PM · 1 pt = 20 min
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2 sm:col-span-1">
                     <label className="text-sm font-medium block mb-1.5">Good Qty Received</label>
@@ -272,8 +472,8 @@ export default function ReceivingPage() {
                   <div className="col-span-2 sm:col-span-1">
                     <label className="text-sm font-medium block mb-1.5">Receive Date & Time</label>
                     <div className="flex gap-2">
-                      <input type="date" name="receiveDate" className="form-input-styled flex-1" required defaultValue={new Date().toISOString().split('T')[0]} />
-                      <input type="time" name="receiveTime" className="form-input-styled w-28" defaultValue={new Date().toTimeString().slice(0,5)} />
+                      <input type="date" name="receiveDate" className="form-input-styled flex-1" required value={rcvDate} onChange={e => setRcvDate(e.target.value)} />
+                      <input type="time" name="receiveTime" className="form-input-styled w-28" value={rcvTime} onChange={e => setRcvTime(e.target.value)} />
                     </div>
                   </div>
                 </div>
