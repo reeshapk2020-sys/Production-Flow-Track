@@ -77,6 +77,7 @@ const allocSelect = {
   poNumber: purchaseOrdersTable.poNumber,
   orderNumber: ordersTable.orderNumber,
   createdAt: allocationsTable.createdAt,
+  lastReceiveDate: sql<string>`(SELECT MAX(r.receive_date) FROM receivings r WHERE r.allocation_id = ${allocationsTable.id})`,
 };
 
 function allocJoins(q: any) {

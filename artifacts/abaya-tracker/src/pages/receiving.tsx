@@ -29,11 +29,11 @@ const MINUTES_PER_POINT = 20;
 function calcExpectedCompletion(startDateTime: Date, totalMinutes: number) {
   let remaining = totalMinutes;
   let current = new Date(startDateTime);
-  const dayStart = (d: Date) => { const r = new Date(d); r.setHours(0, 0, 0, 0); return r; };
-  const minuteOfDay = (d: Date) => d.getHours() * 60 + d.getMinutes();
+  const dayStartUTC = (d: Date) => { const r = new Date(d); r.setUTCHours(0, 0, 0, 0); return r; };
+  const minuteOfDayUTC = (d: Date) => d.getUTCHours() * 60 + d.getUTCMinutes();
   for (let guard = 0; guard < 365 && remaining > 0; guard++) {
-    const todayBase = dayStart(current);
-    const curMinute = minuteOfDay(current);
+    const todayBase = dayStartUTC(current);
+    const curMinute = minuteOfDayUTC(current);
     for (const slot of WORK_SLOTS) {
       if (remaining <= 0) break;
       const effectiveStart = Math.max(curMinute, slot.start);
@@ -53,7 +53,7 @@ function calcExpectedCompletion(startDateTime: Date, totalMinutes: number) {
     }
     if (remaining > 0) {
       current = new Date(todayBase.getTime() + 24 * 60 * 60000);
-      current.setHours(0, 0, 0, 0);
+      current.setUTCHours(0, 0, 0, 0);
     }
   }
   return current;
@@ -62,14 +62,14 @@ function calcExpectedCompletion(startDateTime: Date, totalMinutes: number) {
 function calcWorkingMinutesBetween(startDt: Date, endDt: Date): number {
   let total = 0;
   let current = new Date(startDt);
-  const dayStart = (d: Date) => { const r = new Date(d); r.setHours(0, 0, 0, 0); return r; };
-  const minuteOfDay = (d: Date) => d.getHours() * 60 + d.getMinutes();
-  const endMinuteOfDay = minuteOfDay(endDt);
-  const endDayStart = dayStart(endDt).getTime();
+  const dayStartUTC = (d: Date) => { const r = new Date(d); r.setUTCHours(0, 0, 0, 0); return r; };
+  const minuteOfDayUTC = (d: Date) => d.getUTCHours() * 60 + d.getUTCMinutes();
+  const endMinuteOfDay = minuteOfDayUTC(endDt);
+  const endDayStart = dayStartUTC(endDt).getTime();
   for (let guard = 0; guard < 365; guard++) {
-    const todayBase = dayStart(current);
+    const todayBase = dayStartUTC(current);
     const isEndDay = todayBase.getTime() === endDayStart;
-    const curMinute = minuteOfDay(current);
+    const curMinute = minuteOfDayUTC(current);
     for (const slot of WORK_SLOTS) {
       const effectiveStart = Math.max(curMinute, slot.start);
       const slotEnd = isEndDay ? Math.min(slot.end, endMinuteOfDay) : slot.end;
@@ -82,7 +82,7 @@ function calcWorkingMinutesBetween(startDt: Date, endDt: Date): number {
     }
     if (isEndDay) break;
     current = new Date(todayBase.getTime() + 24 * 60 * 60000);
-    current.setHours(0, 0, 0, 0);
+    current.setUTCHours(0, 0, 0, 0);
   }
   return total;
 }
@@ -442,10 +442,16 @@ export default function ReceivingPage() {
                             {isStillInOutsource ? "Paused" : expectedEnd ? fmtUTC(expectedEnd) : "—"}
                           </span>
                         </div>
-                        <div className="flex justify-between text-xs border-t border-border pt-1.5">
+                        {startDt && rcvDate && (
+                          <div className="flex justify-between text-xs border-t border-border pt-1.5">
+                            <span className="text-muted-foreground">Actual Completion</span>
+                            <span className="font-medium text-foreground">{fmtUTC(new Date(`${rcvDate}T${rcvTime || "00:00"}:00Z`))}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-xs">
                           <span className="text-muted-foreground font-medium">Actual Time Taken</span>
                           <span className="font-bold text-foreground">
-                            {startDt && rcvDate ? (() => { const m = Math.round((new Date(`${rcvDate}T${rcvTime || "00:00"}`).getTime() - startDt.getTime()) / 60000); return m > 0 ? formatMinutes(m) : "—"; })() : "—"}
+                            {startDt && rcvDate ? (() => { const m = Math.round((new Date(`${rcvDate}T${rcvTime || "00:00"}:00Z`).getTime() - startDt.getTime()) / 60000); return m > 0 ? formatMinutes(m) : "—"; })() : "—"}
                           </span>
                         </div>
                       </div>
