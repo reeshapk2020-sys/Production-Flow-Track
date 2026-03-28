@@ -141,7 +141,7 @@ export default function OutsourcePage() {
         quantitySent: Number(fd.get("quantitySent")),
         outsourceCategory: (fd.get("outsourceCategory") as string) || selectedAlloc.outsourceCategory || "",
         vendorName: fd.get("vendorName") as string,
-        sendDate: fd.get("sendDate") as string,
+        sendDate: (fd.get("sendTime") ? `${fd.get("sendDate")}T${fd.get("sendTime")}` : fd.get("sendDate")) as string,
         remarks: fd.get("remarks") as string,
       },
     });
@@ -156,7 +156,7 @@ export default function OutsourcePage() {
         outsourceTransferId: selectedTransfer.id,
         quantityReturned: Number(fd.get("quantityReturned")),
         quantityDamaged: Number(fd.get("quantityDamaged") || 0),
-        returnDate: fd.get("returnDate") as string,
+        returnDate: (fd.get("returnTime") ? `${fd.get("returnDate")}T${fd.get("returnTime")}` : fd.get("returnDate")) as string,
         remarks: fd.get("remarks") as string,
       },
     });
@@ -282,8 +282,11 @@ export default function OutsourcePage() {
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium block mb-1.5">Send Date</label>
-                        <input type="date" name="sendDate" className="form-input-styled" required defaultValue={new Date().toISOString().split("T")[0]} />
+                        <label className="text-sm font-medium block mb-1.5">Send Date & Time</label>
+                        <div className="flex gap-2">
+                          <input type="date" name="sendDate" className="form-input-styled flex-1" required defaultValue={new Date().toISOString().split("T")[0]} />
+                          <input type="time" name="sendTime" className="form-input-styled w-28" defaultValue={new Date().toTimeString().slice(0,5)} />
+                        </div>
                       </div>
                     </div>
                     <div>
@@ -426,8 +429,11 @@ export default function OutsourcePage() {
                       </div>
                     </div>
                     <div>
-                      <label className="text-sm font-medium block mb-1.5">Return Date</label>
-                      <input type="date" name="returnDate" className="form-input-styled" required defaultValue={new Date().toISOString().split("T")[0]} />
+                      <label className="text-sm font-medium block mb-1.5">Return Date & Time</label>
+                      <div className="flex gap-2">
+                        <input type="date" name="returnDate" className="form-input-styled flex-1" required defaultValue={new Date().toISOString().split("T")[0]} />
+                        <input type="time" name="returnTime" className="form-input-styled w-28" defaultValue={new Date().toTimeString().slice(0,5)} />
+                      </div>
                     </div>
                     <div>
                       <label className="text-sm font-medium block mb-1.5">Remarks</label>
@@ -476,7 +482,7 @@ export default function OutsourcePage() {
                       <TableCell className="text-right font-semibold text-red-500">{t.quantityDamaged || 0}</TableCell>
                       <TableCell className="text-right font-bold text-amber-700">{pending}</TableCell>
                       <TableCell><TransferStatusBadge status={t.status || "sent"} /></TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{t.sendDate ? format(new Date(t.sendDate), "MMM d, yyyy") : "-"}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{t.sendDate ? format(new Date(t.sendDate), "MMM d, yyyy HH:mm") : "-"}</TableCell>
                     </TableRow>
                   );
                 })}
@@ -533,8 +539,8 @@ export default function OutsourcePage() {
                     <TableCell className="text-right font-semibold text-emerald-600">{t.quantityReturned || 0}</TableCell>
                     <TableCell className="text-right font-semibold text-red-500">{t.quantityDamaged || 0}</TableCell>
                     <TableCell><TransferStatusBadge status={t.status || "sent"} /></TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{t.sendDate ? format(new Date(t.sendDate), "MMM d, yyyy") : "-"}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{t.returnDate ? format(new Date(t.returnDate), "MMM d, yyyy") : "-"}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{t.sendDate ? format(new Date(t.sendDate), "MMM d, yyyy HH:mm") : "-"}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{t.returnDate ? format(new Date(t.returnDate), "MMM d, yyyy HH:mm") : "-"}</TableCell>
                     {canEdit && (
                       <TableCell>
                         <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => { setEditTarget({ ...t, isLocked: ((t.quantityReturned || 0) > 0 || (t.quantityDamaged || 0) > 0) }); setEditOpen(true); }}>
