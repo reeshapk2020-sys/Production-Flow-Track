@@ -129,7 +129,7 @@ export default function ReceivingPage() {
         quantityReceived: Number(fd.get("quantityReceived")),
         quantityRejected: Number(fd.get("quantityRejected")) || 0,
         quantityDamaged: Number(fd.get("quantityDamaged")) || 0,
-        receiveDate: fd.get("receiveDate") as string,
+        receiveDate: (fd.get("receiveTime") ? `${fd.get("receiveDate")}T${fd.get("receiveTime")}` : fd.get("receiveDate")) as string,
         remarks: fd.get("remarks") as string,
         hasStain: !!fd.get("hasStain"),
         hasDamage: !!fd.get("hasDamage"),
@@ -146,7 +146,7 @@ export default function ReceivingPage() {
     updateReceiving({
       id: editTarget.id,
       data: {
-        receiveDate: fd.get("receiveDate") as string,
+        receiveDate: (fd.get("receiveTime") ? `${fd.get("receiveDate")}T${fd.get("receiveTime")}` : fd.get("receiveDate")) as string,
         remarks: fd.get("remarks") as string || undefined,
         hasStain: !!fd.get("hasStain"),
         hasDamage: !!fd.get("hasDamage"),
@@ -270,8 +270,11 @@ export default function ReceivingPage() {
                     />
                   </div>
                   <div className="col-span-2 sm:col-span-1">
-                    <label className="text-sm font-medium block mb-1.5">Receive Date</label>
-                    <input type="date" name="receiveDate" className="form-input-styled" required defaultValue={new Date().toISOString().split('T')[0]} />
+                    <label className="text-sm font-medium block mb-1.5">Receive Date & Time</label>
+                    <div className="flex gap-2">
+                      <input type="date" name="receiveDate" className="form-input-styled flex-1" required defaultValue={new Date().toISOString().split('T')[0]} />
+                      <input type="time" name="receiveTime" className="form-input-styled w-28" defaultValue={new Date().toTimeString().slice(0,5)} />
+                    </div>
                   </div>
                 </div>
 
@@ -414,7 +417,7 @@ export default function ReceivingPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {rec.receiveDate ? format(new Date(rec.receiveDate), 'MMM d, yyyy') : '-'}
+                      {rec.receiveDate ? format(new Date(rec.receiveDate), 'MMM d, yyyy HH:mm') : '-'}
                     </TableCell>
                     {canEdit && (
                       <TableCell>
@@ -458,8 +461,11 @@ export default function ReceivingPage() {
                 </div>
               )}
               <div>
-                <label className="text-sm font-medium block mb-1.5">Receive Date</label>
-                <input type="date" name="receiveDate" className="form-input-styled" required defaultValue={editTarget.receiveDate?.split('T')[0] || ""} />
+                <label className="text-sm font-medium block mb-1.5">Receive Date & Time</label>
+                <div className="flex gap-2">
+                  <input type="date" name="receiveDate" className="form-input-styled flex-1" required defaultValue={editTarget.receiveDate?.split('T')[0] || ""} />
+                  <input type="time" name="receiveTime" className="form-input-styled w-28" defaultValue={editTarget.receiveDate ? new Date(editTarget.receiveDate).toTimeString().slice(0,5) : ""} />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
                 <label className="col-span-2 text-sm font-medium text-foreground">Quality Checks</label>

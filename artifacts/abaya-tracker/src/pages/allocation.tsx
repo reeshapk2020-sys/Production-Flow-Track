@@ -115,11 +115,13 @@ export default function AllocationPage() {
     e.preventDefault();
     if (!selectedBatch) { toast({ title: "Please select a cutting batch", variant: "destructive" }); return; }
     const fd = new FormData(e.currentTarget);
+    const dateVal = fd.get("issueDate") as string;
+    const timeVal = fd.get("issueTime") as string;
     const payload: any = {
       cuttingBatchId: selectedBatch.id,
       allocationType: allocType,
       quantityIssued: Number(fd.get("quantityIssued")),
-      issueDate: fd.get("issueDate") as string,
+      issueDate: timeVal ? `${dateVal}T${timeVal}` : dateVal,
       remarks: fd.get("remarks") as string,
       workType,
       outsourceCategory: workType === "outsource_required" ? (fd.get("outsourceCategory") as string) : undefined,
@@ -149,8 +151,10 @@ export default function AllocationPage() {
     if (!editTarget) return;
     const fd = new FormData(e.currentTarget);
     const locked = !!(editTarget as any).isLocked;
+    const editDateVal = fd.get("issueDate") as string;
+    const editTimeVal = fd.get("issueTime") as string;
     const payload: Record<string, any> = {
-      issueDate: fd.get("issueDate") as string,
+      issueDate: editTimeVal ? `${editDateVal}T${editTimeVal}` : editDateVal,
       remarks: fd.get("remarks") as string || undefined,
     };
     const stId = fd.get("stitcherId");
@@ -413,8 +417,11 @@ export default function AllocationPage() {
                     )}
                   </div>
                   <div>
-                    <label className="text-sm font-medium block mb-1.5">Issue Date</label>
-                    <input type="date" name="issueDate" className="form-input-styled" required defaultValue={new Date().toISOString().split('T')[0]} />
+                    <label className="text-sm font-medium block mb-1.5">Issue Date & Time</label>
+                    <div className="flex gap-2">
+                      <input type="date" name="issueDate" className="form-input-styled flex-1" required defaultValue={new Date().toISOString().split('T')[0]} />
+                      <input type="time" name="issueTime" className="form-input-styled w-28" defaultValue={new Date().toTimeString().slice(0,5)} />
+                    </div>
                   </div>
                 </div>
 
@@ -517,7 +524,7 @@ export default function AllocationPage() {
                         <StatusBadge status={(alloc as any).computedStatus || "pending"} />
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {alloc.issueDate ? format(new Date(alloc.issueDate), 'MMM d, yyyy') : '-'}
+                        {alloc.issueDate ? format(new Date(alloc.issueDate), 'MMM d, yyyy HH:mm') : '-'}
                       </TableCell>
                       {canEdit && (
                         <TableCell>
@@ -600,8 +607,11 @@ export default function AllocationPage() {
                 <input type="number" name="quantityIssued" className="form-input-styled" min="1" defaultValue={editTarget.quantityIssued || ""} disabled={!!(editTarget as any).isLocked} />
               </div>
               <div>
-                <label className="text-sm font-medium block mb-1.5">Issue Date</label>
-                <input type="date" name="issueDate" className="form-input-styled" required defaultValue={editTarget.issueDate?.split('T')[0] || ""} />
+                <label className="text-sm font-medium block mb-1.5">Issue Date & Time</label>
+                <div className="flex gap-2">
+                  <input type="date" name="issueDate" className="form-input-styled flex-1" required defaultValue={editTarget.issueDate?.split('T')[0] || ""} />
+                  <input type="time" name="issueTime" className="form-input-styled w-28" defaultValue={editTarget.issueDate ? new Date(editTarget.issueDate).toTimeString().slice(0,5) : ""} />
+                </div>
               </div>
               <div>
                 <label className="text-sm font-medium block mb-1.5">Remarks</label>
