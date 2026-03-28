@@ -753,14 +753,11 @@ export default function AllocationPage() {
             if (startDt && totalMinutes > 0) {
               if (hasOutsource && oSendDate) {
                 preOutsourceUsed = calcWorkingMinutesBetween(startDt, oSendDate);
-              }
-              const refTime = new Date();
-              const effectiveWorked = calcEffectiveWorked(startDt, refTime, mergedPauses);
-              remainingMinutes = Math.max(0, totalMinutes - effectiveWorked);
-              if (remainingMinutes > 0 && mergedPauses.length > 0) {
-                const lastPauseEnd = Math.max(...mergedPauses.map(p => p.end));
-                expectedEnd = calcExpectedCompletion(new Date(lastPauseEnd), remainingMinutes);
-              } else if (remainingMinutes > 0) {
+                remainingMinutes = Math.max(0, totalMinutes - preOutsourceUsed);
+                if (outsourceFullyReturned && oReturnDate && remainingMinutes > 0) {
+                  expectedEnd = calcExpectedCompletion(oReturnDate, remainingMinutes);
+                }
+              } else {
                 expectedEnd = calcExpectedCompletion(startDt, totalMinutes);
               }
             }
