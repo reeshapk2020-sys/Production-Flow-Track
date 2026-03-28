@@ -144,8 +144,8 @@ router.get("/allocation", checkPermission("allocation", "view"), async (req, res
         (row as any).outsourceSent = o.totalSent;
         (row as any).outsourceReturned = o.totalReturned;
         (row as any).outsourceDamaged = o.totalDamaged;
-        (row as any).outsourceSendDate = o.earliestSendDate || null;
-        (row as any).outsourceReturnDate = o.latestReturnDate || null;
+        (row as any).outsourceSendDate = o.earliestSendDate ? new Date(o.earliestSendDate).toISOString() : null;
+        (row as any).outsourceReturnDate = o.latestReturnDate ? new Date(o.latestReturnDate).toISOString() : null;
       }
     }
   }
