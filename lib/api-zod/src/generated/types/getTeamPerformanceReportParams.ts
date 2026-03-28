@@ -10,4 +10,5 @@ export type GetTeamPerformanceReportParams = {
   startDate?: string;
   endDate?: string;
   teamId?: number;
+  productId?: number;
 };

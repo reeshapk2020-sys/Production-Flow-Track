@@ -1445,6 +1445,10 @@ paths:
           in: query
           schema:
             type: integer
+        - name: productId
+          in: query
+          schema:
+            type: integer
       responses:
         "200":
           description: Stitcher performance report
@@ -1470,6 +1474,10 @@ paths:
           schema:
             type: string
         - name: teamId
+          in: query
+          schema:
+            type: integer
+        - name: productId
           in: query
           schema:
             type: integer
@@ -1501,6 +1509,10 @@ paths:
           in: query
           schema:
             type: integer
+        - name: productId
+          in: query
+          schema:
+            type: integer
       responses:
         "200":
           description: Stitcher points report
@@ -1526,6 +1538,10 @@ paths:
           schema:
             type: string
         - name: teamId
+          in: query
+          schema:
+            type: integer
+        - name: productId
           in: query
           schema:
             type: integer
@@ -1557,6 +1573,10 @@ paths:
           in: query
           schema:
             type: string
+        - name: productId
+          in: query
+          schema:
+            type: integer
       responses:
         "200":
           description: Daily production report
@@ -1566,6 +1586,36 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/DailyProductionReport"
+
+  /reports/daily-production-detail:
+    get:
+      operationId: getDailyProductionDetail
+      tags: [reports]
+      summary: Daily production detail with team and stitcher breakdown
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+        - name: productId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Team and stitcher breakdown
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyProductionDetail"
 
   /reports/stage-pending:
     get:
@@ -1600,6 +1650,10 @@ paths:
           in: query
           schema:
             type: string
+        - name: productId
+          in: query
+          schema:
+            type: integer
       responses:
         "200":
           description: Batch status report
@@ -3634,7 +3688,46 @@ components:
           type: integer
         finished:
           type: integer
+        outsource_sent:
+          type: integer
+        outsource_returned:
+          type: integer
+        finishing_input:
+          type: integer
       required: [cutting, allocated, received, finished]
+
+    DailyProductionDetail:
+      type: object
+      properties:
+        teams:
+          type: array
+          items:
+            type: object
+            properties:
+              teamId:
+                type: integer
+              teamName:
+                type: string
+              totalAllocated:
+                type: integer
+              totalReceived:
+                type: integer
+        stitchers:
+          type: array
+          items:
+            type: object
+            properties:
+              stitcherId:
+                type: integer
+              stitcherName:
+                type: string
+              teamName:
+                type: string
+              totalAllocated:
+                type: integer
+              totalReceived:
+                type: integer
+      required: [teams, stitchers]
 
     StagePending:
       type: object

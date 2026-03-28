@@ -10,4 +10,5 @@ export type GetStitcherPerformanceReportParams = {
   startDate?: string;
   endDate?: string;
   stitcherId?: number;
+  productId?: number;
 };

@@ -45,6 +45,7 @@ import type {
   CreateUserBody,
   CuttingBatch,
   CuttingBatchDetail,
+  DailyProductionDetail,
   DailyProductionReport,
   DashboardData,
   DispatchAvailableStock,
@@ -63,6 +64,7 @@ import type {
   GetAuditLogParams,
   GetBatchStatusReportParams,
   GetCurrentAuthUserResponse,
+  GetDailyProductionDetailParams,
   GetDailyProductionReportParams,
   GetDispatchReportByItemParams,
   GetDispatchReportSummaryParams,
@@ -6312,6 +6314,112 @@ export function useGetDailyProductionReport<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetDailyProductionReportQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Daily production detail with team and stitcher breakdown
+ */
+export const getGetDailyProductionDetailUrl = (
+  params?: GetDailyProductionDetailParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/reports/daily-production-detail?${stringifiedParams}`
+    : `/api/reports/daily-production-detail`;
+};
+
+export const getDailyProductionDetail = async (
+  params?: GetDailyProductionDetailParams,
+  options?: RequestInit,
+): Promise<DailyProductionDetail> => {
+  return customFetch<DailyProductionDetail>(
+    getGetDailyProductionDetailUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetDailyProductionDetailQueryKey = (
+  params?: GetDailyProductionDetailParams,
+) => {
+  return [
+    `/api/reports/daily-production-detail`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetDailyProductionDetailQueryOptions = <
+  TData = Awaited<ReturnType<typeof getDailyProductionDetail>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetDailyProductionDetailParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDailyProductionDetail>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetDailyProductionDetailQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getDailyProductionDetail>>
+  > = ({ signal }) =>
+    getDailyProductionDetail(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getDailyProductionDetail>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetDailyProductionDetailQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getDailyProductionDetail>>
+>;
+export type GetDailyProductionDetailQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Daily production detail with team and stitcher breakdown
+ */
+
+export function useGetDailyProductionDetail<
+  TData = Awaited<ReturnType<typeof getDailyProductionDetail>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetDailyProductionDetailParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDailyProductionDetail>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetDailyProductionDetailQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

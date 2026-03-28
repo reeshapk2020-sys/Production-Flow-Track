@@ -821,6 +821,29 @@ export interface DailyProductionReport {
   received: number;
   finishing?: number;
   finished: number;
+  outsource_sent?: number;
+  outsource_returned?: number;
+  finishing_input?: number;
+}
+
+export type DailyProductionDetailTeamsItem = {
+  teamId?: number;
+  teamName?: string;
+  totalAllocated?: number;
+  totalReceived?: number;
+};
+
+export type DailyProductionDetailStitchersItem = {
+  stitcherId?: number;
+  stitcherName?: string;
+  teamName?: string;
+  totalAllocated?: number;
+  totalReceived?: number;
+};
+
+export interface DailyProductionDetail {
+  teams: DailyProductionDetailTeamsItem[];
+  stitchers: DailyProductionDetailStitchersItem[];
 }
 
 export interface BatchStatus {
@@ -1148,36 +1171,49 @@ export type GetStitcherPerformanceReportParams = {
   startDate?: string;
   endDate?: string;
   stitcherId?: number;
+  productId?: number;
 };
 
 export type GetTeamPerformanceReportParams = {
   startDate?: string;
   endDate?: string;
   teamId?: number;
+  productId?: number;
 };
 
 export type GetStitcherPointsReportParams = {
   startDate?: string;
   endDate?: string;
   stitcherId?: number;
+  productId?: number;
 };
 
 export type GetTeamPointsReportParams = {
   startDate?: string;
   endDate?: string;
   teamId?: number;
+  productId?: number;
 };
 
 export type GetDailyProductionReportParams = {
   date?: string;
   startDate?: string;
   endDate?: string;
+  productId?: number;
+};
+
+export type GetDailyProductionDetailParams = {
+  date?: string;
+  startDate?: string;
+  endDate?: string;
+  productId?: number;
 };
 
 export type GetBatchStatusReportParams = {
   startDate?: string;
   endDate?: string;
   batchNumber?: string;
+  productId?: number;
 };
 
 export type GetAuditLogParams = {

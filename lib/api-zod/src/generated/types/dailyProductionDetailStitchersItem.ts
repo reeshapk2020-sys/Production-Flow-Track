@@ -6,9 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type GetStitcherPointsReportParams = {
-  startDate?: string;
-  endDate?: string;
+export type DailyProductionDetailStitchersItem = {
   stitcherId?: number;
-  productId?: number;
+  stitcherName?: string;
+  teamName?: string;
+  totalAllocated?: number;
+  totalReceived?: number;
 };

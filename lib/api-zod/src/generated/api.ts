@@ -1648,6 +1648,7 @@ export const GetStitcherPerformanceReportQueryParams = zod.object({
   startDate: zod.coerce.string().optional(),
   endDate: zod.coerce.string().optional(),
   stitcherId: zod.coerce.number().optional(),
+  productId: zod.coerce.number().optional(),
 });
 
 export const GetStitcherPerformanceReportResponseItem = zod.object({
@@ -1671,6 +1672,7 @@ export const GetTeamPerformanceReportQueryParams = zod.object({
   startDate: zod.coerce.string().optional(),
   endDate: zod.coerce.string().optional(),
   teamId: zod.coerce.number().optional(),
+  productId: zod.coerce.number().optional(),
 });
 
 export const GetTeamPerformanceReportResponseItem = zod.object({
@@ -1695,6 +1697,7 @@ export const GetStitcherPointsReportQueryParams = zod.object({
   startDate: zod.coerce.string().optional(),
   endDate: zod.coerce.string().optional(),
   stitcherId: zod.coerce.number().optional(),
+  productId: zod.coerce.number().optional(),
 });
 
 export const GetStitcherPointsReportResponseItem = zod.object({
@@ -1720,6 +1723,7 @@ export const GetTeamPointsReportQueryParams = zod.object({
   startDate: zod.coerce.string().optional(),
   endDate: zod.coerce.string().optional(),
   teamId: zod.coerce.number().optional(),
+  productId: zod.coerce.number().optional(),
 });
 
 export const GetTeamPointsReportResponseItem = zod.object({
@@ -1745,6 +1749,7 @@ export const GetDailyProductionReportQueryParams = zod.object({
   date: zod.coerce.string().optional(),
   startDate: zod.coerce.string().optional(),
   endDate: zod.coerce.string().optional(),
+  productId: zod.coerce.number().optional(),
 });
 
 export const GetDailyProductionReportResponseItem = zod.object({
@@ -1756,10 +1761,43 @@ export const GetDailyProductionReportResponseItem = zod.object({
   received: zod.number(),
   finishing: zod.number().optional(),
   finished: zod.number(),
+  outsource_sent: zod.number().optional(),
+  outsource_returned: zod.number().optional(),
+  finishing_input: zod.number().optional(),
 });
 export const GetDailyProductionReportResponse = zod.array(
   GetDailyProductionReportResponseItem,
 );
+
+/**
+ * @summary Daily production detail with team and stitcher breakdown
+ */
+export const GetDailyProductionDetailQueryParams = zod.object({
+  date: zod.coerce.string().optional(),
+  startDate: zod.coerce.string().optional(),
+  endDate: zod.coerce.string().optional(),
+  productId: zod.coerce.number().optional(),
+});
+
+export const GetDailyProductionDetailResponse = zod.object({
+  teams: zod.array(
+    zod.object({
+      teamId: zod.number().optional(),
+      teamName: zod.string().optional(),
+      totalAllocated: zod.number().optional(),
+      totalReceived: zod.number().optional(),
+    }),
+  ),
+  stitchers: zod.array(
+    zod.object({
+      stitcherId: zod.number().optional(),
+      stitcherName: zod.string().optional(),
+      teamName: zod.string().optional(),
+      totalAllocated: zod.number().optional(),
+      totalReceived: zod.number().optional(),
+    }),
+  ),
+});
 
 /**
  * @summary Stage-wise pending report
@@ -1780,6 +1818,7 @@ export const GetBatchStatusReportQueryParams = zod.object({
   startDate: zod.coerce.string().optional(),
   endDate: zod.coerce.string().optional(),
   batchNumber: zod.coerce.string().optional(),
+  productId: zod.coerce.number().optional(),
 });
 
 export const GetBatchStatusReportResponseItem = zod.object({

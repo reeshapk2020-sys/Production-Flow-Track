@@ -10,4 +10,5 @@ export type GetDailyProductionReportParams = {
   date?: string;
   startDate?: string;
   endDate?: string;
+  productId?: number;
 };

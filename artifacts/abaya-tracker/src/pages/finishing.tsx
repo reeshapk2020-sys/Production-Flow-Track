@@ -72,13 +72,15 @@ function FinishingView() {
   const qtyError: string | null =
     !selectedBatchId
       ? null
+      : input < 0
+      ? "Input must not be negative."
       : input > 0 && available === 0
       ? `No pieces available for this batch (all ${batchInfo?.totalReceived ?? 0} received pieces are already finished).`
-      : input > 0 && input > available
+      : input > available
       ? `Input (${input}) exceeds available pieces from Receiving (${available} available).`
-      : input > 0 && output > input
+      : output > input
       ? `Output (${output}) cannot exceed input (${input}).`
-      : input > 0 && output + defective > input
+      : output + defective > input
       ? `Output (${output}) + Defective (${defective}) = ${output + defective} exceeds input (${input}).`
       : null;
 
@@ -244,7 +246,7 @@ function FinishingView() {
                     {available > 0 && <span className="text-xs text-muted-foreground ml-1">(max {available})</span>}
                   </label>
                   <input
-                    type="number" name="inputQuantity" min="1" max={available || undefined}
+                    type="number" name="inputQuantity" min="0" max={available || undefined}
                     required placeholder="0"
                     className={`form-input-styled ${qtyError && input > available ? "border-red-500/40 bg-red-500/10" : ""}`}
                     value={inputQty}

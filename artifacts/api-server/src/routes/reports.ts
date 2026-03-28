@@ -12,6 +12,7 @@ import {
   sizesTable,
   colorsTable,
   auditLogsTable,
+  outsourceTransfersTable,
 } from "@workspace/db/schema";
 import { eq, sql, and, gte, lte, ilike } from "drizzle-orm";
 import { checkPermission } from "./permissions.js";
@@ -138,7 +139,7 @@ router.get("/dashboard", checkPermission("reports", "view"), async (_req, res) =
 });
 
 router.get("/reports/stitcher-performance", checkPermission("reports", "view"), async (req, res) => {
-  const { startDate, endDate, stitcherId, teamId } = req.query;
+  const { startDate, endDate, stitcherId, teamId, productId } = req.query;
   const joinConditions: any[] = [
     eq(allocationsTable.stitcherId, stitchersTable.id),
     eq(allocationsTable.allocationType, "individual"),
@@ -150,6 +151,7 @@ router.get("/reports/stitcher-performance", checkPermission("reports", "view"), 
   const whereConditions: any[] = [];
   if (stitcherId) whereConditions.push(eq(stitchersTable.id, Number(stitcherId)));
   if (teamId) whereConditions.push(eq(stitchersTable.teamId, Number(teamId)));
+  if (productId) whereConditions.push(eq(cuttingBatchesTable.productId, Number(productId)));
 
   let q = db
     .select({
@@ -164,6 +166,7 @@ router.get("/reports/stitcher-performance", checkPermission("reports", "view"), 
     .from(stitchersTable)
     .leftJoin(teamsTable, eq(stitchersTable.teamId, teamsTable.id))
     .leftJoin(allocationsTable, and(...joinConditions))
+    .leftJoin(cuttingBatchesTable, eq(allocationsTable.cuttingBatchId, cuttingBatchesTable.id))
     .$dynamic();
   if (whereConditions.length > 0) q = q.where(and(...whereConditions)) as any;
   const rows = await q
@@ -178,7 +181,7 @@ router.get("/reports/stitcher-performance", checkPermission("reports", "view"), 
 });
 
 router.get("/reports/team-performance", checkPermission("reports", "view"), async (req, res) => {
-  const { startDate, endDate, teamId } = req.query;
+  const { startDate, endDate, teamId, productId } = req.query;
   const joinConditions: any[] = [
     eq(allocationsTable.teamId, teamsTable.id),
     eq(allocationsTable.allocationType, "team"),
@@ -189,6 +192,7 @@ router.get("/reports/team-performance", checkPermission("reports", "view"), asyn
 
   const whereConditions: any[] = [eq(teamsTable.isActive, true)];
   if (teamId) whereConditions.push(eq(teamsTable.id, Number(teamId)));
+  if (productId) whereConditions.push(eq(cuttingBatchesTable.productId, Number(productId)));
 
   const rows = await db
     .select({
@@ -203,6 +207,7 @@ router.get("/reports/team-performance", checkPermission("reports", "view"), asyn
     })
     .from(teamsTable)
     .leftJoin(allocationsTable, and(...joinConditions))
+    .leftJoin(cuttingBatchesTable, eq(allocationsTable.cuttingBatchId, cuttingBatchesTable.id))
     .where(and(...whereConditions))
     .groupBy(teamsTable.id, teamsTable.name, teamsTable.code)
     .orderBy(sql`COALESCE(SUM(${allocationsTable.quantityIssued}), 0) desc`);
@@ -217,6 +222,10 @@ router.get("/reports/team-performance", checkPermission("reports", "view"), asyn
 router.get("/reports/daily-production", checkPermission("reports", "view"), async (req, res) => {
   const startStr = (req.query.startDate as string) || (req.query.date as string) || new Date().toISOString().split("T")[0];
   const endStr = (req.query.endDate as string) || startStr;
+  const productId = req.query.productId ? Number(req.query.productId) : null;
+
+  const pFilter = productId ? sql`AND cb.product_id = ${productId}` : sql``;
+  const pFilterAlloc = productId ? sql`AND cb2.product_id = ${productId}` : sql``;
 
   const rows = await db.execute(sql`
     WITH date_series AS (
@@ -225,16 +234,85 @@ router.get("/reports/daily-production", checkPermission("reports", "view"), asyn
     )
     SELECT
       ds.day::text AS date,
-      COALESCE((SELECT SUM(quantity_cut)::int FROM cutting_batches WHERE cutting_date::date = ds.day), 0) AS cutting,
-      COALESCE((SELECT SUM(quantity_issued)::int FROM allocations WHERE issue_date::date = ds.day), 0) AS allocated,
-      COALESCE((SELECT SUM(quantity_received)::int FROM receivings WHERE receive_date::date = ds.day), 0) AS received,
-      COALESCE((SELECT SUM(output_quantity)::int FROM finishing_records WHERE process_date::date = ds.day), 0) AS finishing,
-      COALESCE((SELECT SUM(quantity)::int FROM finished_goods WHERE entry_date::date = ds.day), 0) AS finished
+      COALESCE((SELECT SUM(cb.quantity_cut)::int FROM cutting_batches cb WHERE cb.cutting_date::date = ds.day ${pFilter}), 0) AS cutting,
+      COALESCE((SELECT SUM(a.quantity_issued)::int FROM allocations a JOIN cutting_batches cb2 ON a.cutting_batch_id = cb2.id WHERE a.issue_date::date = ds.day ${pFilterAlloc}), 0) AS allocated,
+      COALESCE((SELECT SUM(r.quantity_received)::int FROM receivings r JOIN allocations a2 ON r.allocation_id = a2.id JOIN cutting_batches cb3 ON a2.cutting_batch_id = cb3.id WHERE r.receive_date::date = ds.day ${productId ? sql`AND cb3.product_id = ${productId}` : sql``}), 0) AS received,
+      COALESCE((SELECT SUM(f.output_quantity)::int FROM finishing_records f JOIN cutting_batches cb4 ON f.cutting_batch_id = cb4.id WHERE f.process_date::date = ds.day ${productId ? sql`AND cb4.product_id = ${productId}` : sql``}), 0) AS finishing,
+      COALESCE((SELECT SUM(fg.quantity)::int FROM finished_goods fg JOIN cutting_batches cb5 ON fg.cutting_batch_id = cb5.id WHERE fg.entry_date::date = ds.day ${productId ? sql`AND cb5.product_id = ${productId}` : sql``}), 0) AS finished,
+      COALESCE((SELECT SUM(ot.quantity_sent)::int FROM outsource_transfers ot JOIN allocations a3 ON ot.allocation_id = a3.id JOIN cutting_batches cb6 ON a3.cutting_batch_id = cb6.id WHERE ot.send_date::date = ds.day ${productId ? sql`AND cb6.product_id = ${productId}` : sql``}), 0) AS outsource_sent,
+      COALESCE((SELECT SUM(ot2.quantity_returned)::int FROM outsource_transfers ot2 JOIN allocations a4 ON ot2.allocation_id = a4.id JOIN cutting_batches cb7 ON a4.cutting_batch_id = cb7.id WHERE ot2.return_date::date = ds.day ${productId ? sql`AND cb7.product_id = ${productId}` : sql``}), 0) AS outsource_returned,
+      COALESCE((SELECT SUM(f2.input_quantity)::int FROM finishing_records f2 JOIN cutting_batches cb8 ON f2.cutting_batch_id = cb8.id WHERE f2.process_date::date = ds.day ${productId ? sql`AND cb8.product_id = ${productId}` : sql``}), 0) AS finishing_input
     FROM date_series ds
     ORDER BY ds.day
   `);
 
   res.json(rows.rows);
+});
+
+router.get("/reports/daily-production-detail", checkPermission("reports", "view"), async (req, res) => {
+  const startStr = (req.query.startDate as string) || (req.query.date as string) || new Date().toISOString().split("T")[0];
+  const endStr = (req.query.endDate as string) || startStr;
+  const productId = req.query.productId ? Number(req.query.productId) : null;
+
+  const dateConditions: any[] = [
+    gte(allocationsTable.issueDate, new Date(startStr)),
+  ];
+  const ed = new Date(endStr); ed.setDate(ed.getDate() + 1);
+  dateConditions.push(lte(allocationsTable.issueDate, ed));
+
+  const teamWhereConditions: any[] = [eq(teamsTable.isActive, true)];
+  if (productId) teamWhereConditions.push(eq(cuttingBatchesTable.productId, productId));
+
+  const teamRows = await db
+    .select({
+      teamId: teamsTable.id,
+      teamName: teamsTable.name,
+      totalAllocated: sql<number>`COALESCE(SUM(${allocationsTable.quantityIssued}), 0)::int`,
+      totalReceived: sql<number>`COALESCE(SUM(${allocationsTable.quantityReceived}), 0)::int`,
+    })
+    .from(teamsTable)
+    .leftJoin(allocationsTable, and(
+      eq(allocationsTable.teamId, teamsTable.id),
+      eq(allocationsTable.allocationType, "team"),
+      ...dateConditions
+    ))
+    .leftJoin(cuttingBatchesTable, eq(allocationsTable.cuttingBatchId, cuttingBatchesTable.id))
+    .where(and(...teamWhereConditions))
+    .groupBy(teamsTable.id, teamsTable.name)
+    .orderBy(sql`COALESCE(SUM(${allocationsTable.quantityIssued}), 0) desc`);
+
+  const stitcherDateConditions: any[] = [
+    gte(allocationsTable.issueDate, new Date(startStr)),
+    lte(allocationsTable.issueDate, ed),
+  ];
+
+  const stitcherWhereConditions: any[] = [eq(stitchersTable.isActive, true)];
+  if (productId) stitcherWhereConditions.push(eq(cuttingBatchesTable.productId, productId));
+
+  const stitcherRows = await db
+    .select({
+      stitcherId: stitchersTable.id,
+      stitcherName: stitchersTable.name,
+      teamName: teamsTable.name,
+      totalAllocated: sql<number>`COALESCE(SUM(${allocationsTable.quantityIssued}), 0)::int`,
+      totalReceived: sql<number>`COALESCE(SUM(${allocationsTable.quantityReceived}), 0)::int`,
+    })
+    .from(stitchersTable)
+    .leftJoin(teamsTable, eq(stitchersTable.teamId, teamsTable.id))
+    .leftJoin(allocationsTable, and(
+      eq(allocationsTable.stitcherId, stitchersTable.id),
+      eq(allocationsTable.allocationType, "individual"),
+      ...stitcherDateConditions
+    ))
+    .leftJoin(cuttingBatchesTable, eq(allocationsTable.cuttingBatchId, cuttingBatchesTable.id))
+    .where(and(...stitcherWhereConditions))
+    .groupBy(stitchersTable.id, stitchersTable.name, teamsTable.name)
+    .orderBy(sql`COALESCE(SUM(${allocationsTable.quantityIssued}), 0) desc`);
+
+  res.json({
+    teams: teamRows.filter(t => t.totalAllocated > 0 || t.totalReceived > 0),
+    stitchers: stitcherRows.filter(s => s.totalAllocated > 0 || s.totalReceived > 0),
+  });
 });
 
 router.get("/reports/stage-pending", checkPermission("reports", "view"), async (_req, res) => {
@@ -263,9 +341,10 @@ router.get("/reports/stage-pending", checkPermission("reports", "view"), async (
 });
 
 router.get("/reports/batch-status", checkPermission("reports", "view"), async (req, res) => {
-  const { batchNumber } = req.query;
+  const { batchNumber, productId } = req.query;
   const conditions: any[] = [];
   if (batchNumber) conditions.push(ilike(cuttingBatchesTable.batchNumber, `%${batchNumber}%`));
+  if (productId) conditions.push(eq(cuttingBatchesTable.productId, Number(productId)));
 
   let q = db
     .select({
@@ -339,11 +418,12 @@ router.get("/reports/audit-log", checkPermission("reports", "view"), async (req,
 });
 
 router.get("/reports/stitcher-points", checkPermission("reports", "view"), async (req, res) => {
-  const { startDate, endDate, stitcherId } = req.query;
+  const { startDate, endDate, stitcherId, productId } = req.query;
   const conditions: any[] = [];
   if (startDate) conditions.push(gte(receivingsTable.receiveDate, new Date(startDate as string)));
   if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); conditions.push(lte(receivingsTable.receiveDate, ed)); }
   if (stitcherId) conditions.push(eq(allocationsTable.stitcherId, Number(stitcherId)));
+  if (productId) conditions.push(eq(cuttingBatchesTable.productId, Number(productId)));
 
   const rows = await db
     .select({
@@ -382,11 +462,12 @@ router.get("/reports/stitcher-points", checkPermission("reports", "view"), async
 });
 
 router.get("/reports/team-points", checkPermission("reports", "view"), async (req, res) => {
-  const { startDate, endDate, teamId } = req.query;
+  const { startDate, endDate, teamId, productId } = req.query;
   const conditions: any[] = [eq(allocationsTable.allocationType, "team")];
   if (startDate) conditions.push(gte(receivingsTable.receiveDate, new Date(startDate as string)));
   if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); conditions.push(lte(receivingsTable.receiveDate, ed)); }
   if (teamId) conditions.push(eq(allocationsTable.teamId, Number(teamId)));
+  if (productId) conditions.push(eq(cuttingBatchesTable.productId, Number(productId)));
 
   const rows = await db
     .select({

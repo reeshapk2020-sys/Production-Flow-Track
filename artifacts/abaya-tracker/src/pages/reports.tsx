@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,12 +8,18 @@ import {
   useGetStitcherPerformanceReport, useGetStagePendingReport, useGetBatchStatusReport,
   useGetTeamPerformanceReport, useGetDailyProductionReport,
   useGetStitcherPointsReport, useGetTeamPointsReport,
-  useListTeams, useListOutsourceTransfers
+  useListTeams, useListOutsourceTransfers, useListProducts
 } from "@workspace/api-client-react";
 import { format } from "date-fns";
 import { fmtCode } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { FilterBar } from "@/components/filter-bar";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+
+function useProductOptions() {
+  const { data: products } = useListProducts();
+  return products?.filter((p: any) => p.isActive).map((p: any) => ({ value: p.id, label: `${p.code} - ${p.name}` })) || [];
+}
 
 export default function ReportsPage() {
   return (
@@ -46,17 +52,20 @@ export default function ReportsPage() {
 }
 
 function StitcherReport() {
-  const [filters, setFilters] = useState<Record<string, string>>({ startDate: "", endDate: "" });
+  const [filters, setFilters] = useState<Record<string, string>>({ startDate: "", endDate: "", productId: "" });
+  const productOptions = useProductOptions();
 
   const filterParams: Record<string, any> = {};
   if (filters.startDate) filterParams.startDate = filters.startDate;
   if (filters.endDate) filterParams.endDate = filters.endDate;
+  if (filters.productId) filterParams.productId = Number(filters.productId);
 
   const { data, isLoading } = useGetStitcherPerformanceReport(filterParams);
 
   const filterFields = [
     { name: "startDate", label: "From Date", type: "date" as const },
     { name: "endDate", label: "To Date", type: "date" as const },
+    { name: "productId", label: "Product", type: "select" as const, options: productOptions },
   ];
 
   return (
@@ -100,19 +109,22 @@ function StitcherReport() {
 }
 
 function TeamReport() {
-  const [filters, setFilters] = useState<Record<string, string>>({ startDate: "", endDate: "", teamId: "" });
+  const [filters, setFilters] = useState<Record<string, string>>({ startDate: "", endDate: "", teamId: "", productId: "" });
   const { data: teams } = useListTeams();
+  const productOptions = useProductOptions();
 
   const filterParams: Record<string, any> = {};
   if (filters.startDate) filterParams.startDate = filters.startDate;
   if (filters.endDate) filterParams.endDate = filters.endDate;
   if (filters.teamId) filterParams.teamId = Number(filters.teamId);
+  if (filters.productId) filterParams.productId = Number(filters.productId);
 
   const { data, isLoading } = useGetTeamPerformanceReport(filterParams);
 
   const filterFields = [
     { name: "startDate", label: "From Date", type: "date" as const },
     { name: "endDate", label: "To Date", type: "date" as const },
+    { name: "productId", label: "Product", type: "select" as const, options: productOptions },
     { name: "teamId", label: "Team", type: "select" as const, options: teams?.filter((t: any) => t.isActive).map((t: any) => ({ value: t.id, label: `${t.code} - ${t.name}` })) || [] },
   ];
 
@@ -164,51 +176,204 @@ function TeamReport() {
 }
 
 function DailyProductionReport() {
-  const [filters, setFilters] = useState<Record<string, string>>({ startDate: "", endDate: "" });
+  const [filters, setFilters] = useState<Record<string, string>>({ startDate: "", endDate: "", productId: "" });
+  const [targets, setTargets] = useState<Record<string, string>>({
+    cutting: "", allocated: "", received: "", finishing: "", finished: "",
+    outsource_sent: "", outsource_returned: "", finishing_input: "",
+  });
+  const [showTargets, setShowTargets] = useState(false);
+  const productOptions = useProductOptions();
 
   const filterParams: Record<string, any> = {};
   if (filters.startDate) filterParams.startDate = filters.startDate;
   if (filters.endDate) filterParams.endDate = filters.endDate;
+  if (filters.productId) filterParams.productId = Number(filters.productId);
 
   const { data, isLoading } = useGetDailyProductionReport(filterParams);
+
+  const [detailData, setDetailData] = useState<{ teams: any[]; stitchers: any[] } | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  useEffect(() => {
+    if (!filters.startDate) return;
+    setDetailLoading(true);
+    const params = new URLSearchParams();
+    params.set("startDate", filters.startDate);
+    if (filters.endDate) params.set("endDate", filters.endDate);
+    if (filters.productId) params.set("productId", filters.productId);
+    fetch(`${import.meta.env.BASE_URL}api/reports/daily-production-detail?${params}`, { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setDetailData(d); })
+      .catch(() => {})
+      .finally(() => setDetailLoading(false));
+  }, [filters.startDate, filters.endDate, filters.productId]);
 
   const filterFields = [
     { name: "startDate", label: "From Date", type: "date" as const },
     { name: "endDate", label: "To Date", type: "date" as const },
+    { name: "productId", label: "Product", type: "select" as const, options: productOptions },
   ];
 
   const rows = Array.isArray(data) ? data : data ? [data] : [];
 
+  const totals = useMemo(() => rows.reduce((acc: any, r: any) => ({
+    cutting: acc.cutting + (Number(r.cutting) || 0),
+    allocated: acc.allocated + (Number(r.allocated) || 0),
+    received: acc.received + (Number(r.received) || 0),
+    finishing: acc.finishing + (Number(r.finishing) || 0),
+    finished: acc.finished + (Number(r.finished) || 0),
+    outsource_sent: acc.outsource_sent + (Number(r.outsource_sent) || 0),
+    outsource_returned: acc.outsource_returned + (Number(r.outsource_returned) || 0),
+    finishing_input: acc.finishing_input + (Number(r.finishing_input) || 0),
+  }), { cutting: 0, allocated: 0, received: 0, finishing: 0, finished: 0, outsource_sent: 0, outsource_returned: 0, finishing_input: 0 }), [rows]);
+
+  const metricCards = [
+    { key: "cutting", label: "Total Cut", color: "bg-primary/10 text-primary border-primary/20" },
+    { key: "allocated", label: "Allocated", color: "bg-violet-50 text-violet-700 border-violet-200" },
+    { key: "received", label: "Received", color: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" },
+    { key: "outsource_sent", label: "Outsource Sent", color: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20" },
+    { key: "outsource_returned", label: "Outsource Returned", color: "bg-cyan-500/10 text-cyan-700 border-cyan-500/20" },
+    { key: "finishing_input", label: "Finishing Input", color: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
+    { key: "finishing", label: "Finishing Output", color: "bg-orange-500/10 text-orange-700 border-orange-500/20" },
+    { key: "finished", label: "Stored", color: "bg-teal-50 text-teal-700 border-teal-200" },
+  ];
+
   return (
     <>
       <FilterBar fields={filterFields} values={filters} onChange={setFilters} />
-      {rows.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-6">
-          {(() => {
-            const totals = rows.reduce((acc: any, r: any) => ({
-              cutting: acc.cutting + (r.cutting || 0),
-              allocated: acc.allocated + (r.allocated || 0),
-              received: acc.received + (r.received || 0),
-              finishing: acc.finishing + (r.finishing || 0),
-              finished: acc.finished + (r.finished || 0),
-            }), { cutting: 0, allocated: 0, received: 0, finishing: 0, finished: 0 });
-            return [
-              { label: "Cut", value: totals.cutting, color: "bg-primary/10 text-primary border-primary/20" },
-              { label: "Allocated", value: totals.allocated, color: "bg-violet-50 text-violet-700 border-violet-200" },
-              { label: "Received", value: totals.received, color: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" },
-              { label: "Finishing", value: totals.finishing, color: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
-              { label: "Stored", value: totals.finished, color: "bg-teal-50 text-teal-700 border-teal-200" },
-            ].map(card => (
-              <Card key={card.label} className={`${card.color} border rounded-xl`}>
-                <CardContent className="p-4 text-center">
-                  <div className="text-3xl font-display font-bold">{card.value}</div>
-                  <div className="text-xs font-medium mt-1">{card.label}</div>
-                </CardContent>
-              </Card>
-            ));
-          })()}
+
+      <div className="flex items-center gap-2 mb-4">
+        <button
+          className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${showTargets ? "bg-primary text-white border-primary" : "bg-card text-muted-foreground border-border hover:border-primary/50"}`}
+          onClick={() => setShowTargets(!showTargets)}
+        >
+          {showTargets ? "Hide Targets" : "Set Targets"}
+        </button>
+      </div>
+
+      {showTargets && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          {metricCards.map(mc => (
+            <div key={mc.key}>
+              <label className="text-xs text-muted-foreground block mb-1">{mc.label} Target</label>
+              <input
+                type="number" min="0" placeholder="Optional"
+                className="w-full text-sm border border-border rounded-lg px-2.5 py-1.5 bg-card focus:ring-1 focus:ring-primary/30 focus:border-primary outline-none"
+                value={targets[mc.key] || ""}
+                onChange={e => setTargets(prev => ({ ...prev, [mc.key]: e.target.value }))}
+              />
+            </div>
+          ))}
         </div>
       )}
+
+      {rows.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          {metricCards.map(mc => {
+            const actual = (totals as any)[mc.key] || 0;
+            const target = Number(targets[mc.key]) || 0;
+            return (
+              <Card key={mc.key} className={`${mc.color} border rounded-xl`}>
+                <CardContent className="p-3 text-center">
+                  <div className="text-2xl font-display font-bold">{actual}</div>
+                  <div className="text-xs font-medium mt-0.5">{mc.label}</div>
+                  {target > 0 && (
+                    <div className={`text-xs mt-1 font-semibold ${actual >= target ? "text-emerald-600" : "text-red-500"}`}>
+                      Target: {target} ({actual >= target ? "Achieved" : `${target - actual} short`})
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {detailData && (detailData.teams.length > 0 || detailData.stitchers.length > 0) && (
+        <>
+          {detailData.teams.length > 0 && (
+            <>
+              <div className="bg-card border border-border rounded-xl p-4 mb-4">
+                <h3 className="text-sm font-semibold mb-3 text-foreground">Team-wise Allocated vs Received</h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={detailData.teams} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="teamName" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                    <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                    <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
+                    <Legend />
+                    <Bar dataKey="totalAllocated" name="Allocated" fill="hsl(262, 83%, 58%)" radius={[4,4,0,0]} />
+                    <Bar dataKey="totalReceived" name="Received" fill="hsl(160, 84%, 39%)" radius={[4,4,0,0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <ReportCard title="Team-wise Breakdown">
+                <Table>
+                  <TableHeader className="bg-background">
+                    <TableRow>
+                      <TableHead>Team</TableHead>
+                      <TableHead className="text-right">Allocated</TableHead>
+                      <TableHead className="text-right">Received</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {detailData.teams.map((t: any) => (
+                      <TableRow key={t.teamId}>
+                        <TableCell className="font-semibold">{t.teamName}</TableCell>
+                        <TableCell className="text-right">{t.totalAllocated}</TableCell>
+                        <TableCell className="text-right text-emerald-600 font-bold">{t.totalReceived}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ReportCard>
+            </>
+          )}
+
+          {detailData.stitchers.length > 0 && (
+            <>
+              <div className="bg-card border border-border rounded-xl p-4 mb-4 mt-4">
+                <h3 className="text-sm font-semibold mb-3 text-foreground">Stitcher-wise Allocated vs Received</h3>
+                <ResponsiveContainer width="100%" height={Math.max(250, detailData.stitchers.length * 30)}>
+                  <BarChart data={detailData.stitchers} layout="vertical" margin={{ top: 5, right: 20, left: 80, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                    <YAxis type="category" dataKey="stitcherName" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} width={75} />
+                    <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
+                    <Legend />
+                    <Bar dataKey="totalAllocated" name="Allocated" fill="hsl(262, 83%, 58%)" radius={[0,4,4,0]} />
+                    <Bar dataKey="totalReceived" name="Received" fill="hsl(160, 84%, 39%)" radius={[0,4,4,0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <ReportCard title="Stitcher-wise Breakdown">
+                <Table>
+                  <TableHeader className="bg-background">
+                    <TableRow>
+                      <TableHead>Stitcher</TableHead>
+                      <TableHead>Team</TableHead>
+                      <TableHead className="text-right">Allocated</TableHead>
+                      <TableHead className="text-right">Received</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {detailData.stitchers.map((s: any) => (
+                      <TableRow key={s.stitcherId}>
+                        <TableCell className="font-semibold">{s.stitcherName}</TableCell>
+                        <TableCell className="text-muted-foreground">{s.teamName || "—"}</TableCell>
+                        <TableCell className="text-right">{s.totalAllocated}</TableCell>
+                        <TableCell className="text-right text-emerald-600 font-bold">{s.totalReceived}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ReportCard>
+            </>
+          )}
+        </>
+      )}
+      {detailLoading && <div className="text-center py-4"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></div>}
+
       <ReportCard title="Date-wise Production Summary">
         <Table>
           <TableHeader className="bg-background">
@@ -217,19 +382,25 @@ function DailyProductionReport() {
               <TableHead className="text-right">Cut</TableHead>
               <TableHead className="text-right">Allocated</TableHead>
               <TableHead className="text-right">Received</TableHead>
-              <TableHead className="text-right">Finishing</TableHead>
+              <TableHead className="text-right">OS Sent</TableHead>
+              <TableHead className="text-right">OS Returned</TableHead>
+              <TableHead className="text-right">Fin. Input</TableHead>
+              <TableHead className="text-right">Fin. Output</TableHead>
               <TableHead className="text-right">Stored</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
-              !rows.length ? <TableRow><TableCell colSpan={6} className="text-center py-12 text-muted-foreground">Select a date range to view production data</TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={9} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow> :
+              !rows.length ? <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">Select a date range to view production data</TableCell></TableRow> :
               rows.map((row: any, i: number) => (
                 <TableRow key={i}>
                   <TableCell className="font-semibold">{row.date || `${row.startDate} – ${row.endDate}`}</TableCell>
                   <TableCell className="text-right">{row.cutting}</TableCell>
                   <TableCell className="text-right">{row.allocated}</TableCell>
                   <TableCell className="text-right text-emerald-600 font-bold">{row.received}</TableCell>
+                  <TableCell className="text-right">{row.outsource_sent || 0}</TableCell>
+                  <TableCell className="text-right">{row.outsource_returned || 0}</TableCell>
+                  <TableCell className="text-right">{row.finishing_input || 0}</TableCell>
                   <TableCell className="text-right">{row.finishing ?? '-'}</TableCell>
                   <TableCell className="text-right">{row.finished}</TableCell>
                 </TableRow>
@@ -271,13 +442,16 @@ function PendingReport() {
 }
 
 function BatchReport() {
-  const [filters, setFilters] = useState<Record<string, string>>({ batchNumber: "" });
+  const [filters, setFilters] = useState<Record<string, string>>({ batchNumber: "", productId: "" });
+  const productOptions = useProductOptions();
   const filterParams: Record<string, any> = {};
   if (filters.batchNumber) filterParams.batchNumber = filters.batchNumber;
+  if (filters.productId) filterParams.productId = Number(filters.productId);
   const { data, isLoading } = useGetBatchStatusReport(filterParams);
 
   const batchFilterFields = [
     { name: "batchNumber", label: "Batch Number", type: "text" as const, placeholder: "Search batch..." },
+    { name: "productId", label: "Product", type: "select" as const, options: productOptions },
   ];
 
   return (

@@ -73,7 +73,7 @@ async function recalculateAllocationTotals(allocationId: number) {
   }
 
   const pending = effectiveCeiling - totalReceived - totalRejected;
-  const allocStatus = pending <= 0 && effectiveCeiling > 0 ? "completed" : totalReceived > 0 ? "partial" : "pending";
+  const allocStatus = pending <= 0 && effectiveCeiling > 0 ? "completed" : "pending";
 
   await db
     .update(allocationsTable)

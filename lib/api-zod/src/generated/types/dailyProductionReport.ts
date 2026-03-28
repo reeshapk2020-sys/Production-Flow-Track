@@ -15,4 +15,7 @@ export interface DailyProductionReport {
   received: number;
   finishing?: number;
   finished: number;
+  outsource_sent?: number;
+  outsource_returned?: number;
+  finishing_input?: number;
 }

@@ -168,7 +168,7 @@ router.post("/finishing", checkPermission("finishing", "create"), async (req, re
   const defective = Number(defectiveQuantity) || 0;
 
   if (!cuttingBatchId) return res.status(400).json({ error: "Batch is required." });
-  if (input <= 0) return res.status(400).json({ error: "Input quantity must be greater than zero." });
+  if (input < 0) return res.status(400).json({ error: "Input quantity must not be negative." });
   if (output < 0 || defective < 0) return res.status(400).json({ error: "Quantities must be non-negative." });
 
   if (output > input) {
