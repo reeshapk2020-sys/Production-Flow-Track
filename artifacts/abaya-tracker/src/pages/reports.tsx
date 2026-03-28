@@ -11,7 +11,7 @@ import {
   useListTeams, useListOutsourceTransfers, useListProducts
 } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { fmtCode } from "@/lib/utils";
+import { fmtCode, fmtUTC } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { FilterBar } from "@/components/filter-bar";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
@@ -527,7 +527,7 @@ function OutsourceSummaryReport() {
     byCat[cat].returned += t.quantityReturned || 0;
     byCat[cat].damaged += t.quantityDamaged || 0;
 
-    const dateKey = t.sendDate ? format(new Date(t.sendDate), "yyyy-MM-dd") : "unknown";
+    const dateKey = t.sendDate ? fmtUTC(t.sendDate, "yyyy-MM-dd") : "unknown";
     if (!byDate[dateKey]) byDate[dateKey] = { sent: 0, returned: 0, damaged: 0 };
     byDate[dateKey].sent += t.quantitySent || 0;
     byDate[dateKey].returned += t.quantityReturned || 0;
@@ -607,7 +607,7 @@ function OutsourceSummaryReport() {
         <TableBody>
           {Object.entries(byDate).sort(([a], [b]) => b.localeCompare(a)).map(([d, v]) => (
             <TableRow key={d}>
-              <TableCell className="font-medium text-sm">{d !== "unknown" ? format(new Date(d), "MMM d, yyyy") : "Unknown"}</TableCell>
+              <TableCell className="font-medium text-sm">{d !== "unknown" ? fmtUTC(d, "MMM d, yyyy") : "Unknown"}</TableCell>
               <TableCell className="text-right font-bold text-violet-600">{v.sent}</TableCell>
               <TableCell className="text-right font-semibold text-emerald-600">{v.returned}</TableCell>
               <TableCell className="text-right font-semibold text-red-500">{v.damaged}</TableCell>
@@ -683,7 +683,7 @@ function OutsourceSummaryReport() {
                   "bg-amber-500/10 text-amber-700 border-amber-500/20"
                 }`}>{t.status?.replace(/_/g, " ")}</span>
               </TableCell>
-              <TableCell className="text-sm text-muted-foreground">{t.sendDate ? format(new Date(t.sendDate), "MMM d, yyyy") : "-"}</TableCell>
+              <TableCell className="text-sm text-muted-foreground">{t.sendDate ? fmtUTC(t.sendDate, "MMM d, yyyy") : "-"}</TableCell>
             </TableRow>
           ))}
           {!isLoading && (!data || data.length === 0) && (

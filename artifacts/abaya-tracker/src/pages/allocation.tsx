@@ -16,7 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { fmtCode } from "@/lib/utils";
+import { fmtCode, fmtUTC } from "@/lib/utils";
 import { useAppAuth } from "@/lib/auth-context";
 import { FilterBar } from "@/components/filter-bar";
 
@@ -545,7 +545,7 @@ export default function AllocationPage() {
                       <div className="text-muted-foreground">Expected Time</div>
                       <div className="font-semibold text-right text-primary">{formatMinutes(formTotalMinutes)}</div>
                       <div className="text-muted-foreground">Completion</div>
-                      <div className="font-semibold text-right text-emerald-600">{formExpectedEnd ? format(formExpectedEnd, "MMM d, yyyy HH:mm") : "—"}</div>
+                      <div className="font-semibold text-right text-emerald-600">{formExpectedEnd ? fmtUTC(formExpectedEnd) : "—"}</div>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
                       Working slots: 8:00–1:20 PM, 2:30–8:00 PM (4h30m effective), 8:30–11:00 PM · 1 point = 20 min
@@ -652,7 +652,7 @@ export default function AllocationPage() {
                         <StatusBadge status={(alloc as any).computedStatus || "pending"} />
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {alloc.issueDate ? format(new Date(alloc.issueDate), 'MMM d, yyyy HH:mm') : '-'}
+                        {alloc.issueDate ? fmtUTC(alloc.issueDate) : '-'}
                       </TableCell>
                       {canEdit && (
                         <TableCell>
@@ -746,8 +746,8 @@ export default function AllocationPage() {
               <div>
                 <label className="text-sm font-medium block mb-1.5">Issue Date & Time</label>
                 <div className="flex gap-2">
-                  <input type="date" name="issueDate" className="form-input-styled flex-1" required defaultValue={editTarget.issueDate?.split('T')[0] || ""} />
-                  <input type="time" name="issueTime" className="form-input-styled w-28" defaultValue={editTarget.issueDate ? new Date(editTarget.issueDate).toTimeString().slice(0,5) : ""} />
+                  <input type="date" name="issueDate" className="form-input-styled flex-1" required defaultValue={editTarget.issueDate ? editTarget.issueDate.slice(0, 10) : ""} />
+                  <input type="time" name="issueTime" className="form-input-styled w-28" defaultValue={editTarget.issueDate ? editTarget.issueDate.slice(11, 16) : ""} />
                 </div>
               </div>
               <div>
@@ -888,18 +888,18 @@ export default function AllocationPage() {
                 <div className="border-t border-border pt-3 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Allocation Start</span>
-                    <span className="font-medium text-foreground">{startDt ? format(startDt, "MMM d, yyyy HH:mm") : "—"}</span>
+                    <span className="font-medium text-foreground">{startDt ? fmtUTC(startDt) : "—"}</span>
                   </div>
                   {hasOutsource && (
                     <>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Outsource Sent</span>
-                        <span className="font-medium text-orange-500">{oSendDate ? format(oSendDate, "MMM d, yyyy HH:mm") : "—"}</span>
+                        <span className="font-medium text-orange-500">{oSendDate ? fmtUTC(oSendDate) : "—"}</span>
                       </div>
                       {oReturnDate && (
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Outsource Returned</span>
-                          <span className="font-medium text-teal-600">{format(oReturnDate, "MMM d, yyyy HH:mm")}</span>
+                          <span className="font-medium text-teal-600">{fmtUTC(oReturnDate)}</span>
                         </div>
                       )}
                       <div className="flex justify-between text-sm">
@@ -937,12 +937,12 @@ export default function AllocationPage() {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Pause Start</span>
-                            <span className="font-medium text-violet-600">{p.pauseStart ? format(new Date(p.pauseStart), "MMM d, yyyy HH:mm") : "—"}</span>
+                            <span className="font-medium text-violet-600">{p.pauseStart ? fmtUTC(p.pauseStart) : "—"}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Resume</span>
                             <span className={`font-medium ${p.pauseEnd ? "text-teal-600" : "text-violet-600"}`}>
-                              {p.pauseEnd ? format(new Date(p.pauseEnd), "MMM d, yyyy HH:mm") : "Pending"}
+                              {p.pauseEnd ? fmtUTC(p.pauseEnd) : "Pending"}
                             </span>
                           </div>
                           {p.pauseStart && p.pauseEnd && (
@@ -970,7 +970,7 @@ export default function AllocationPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Expected Completion</span>
                     <span className={`font-medium ${(isInOutsource || isPausedByOrder) ? "text-violet-600" : "text-emerald-600"}`}>
-                      {(isInOutsource || isPausedByOrder) ? "Paused" : expectedEnd ? format(expectedEnd, "MMM d, yyyy HH:mm") : "—"}
+                      {(isInOutsource || isPausedByOrder) ? "Paused" : expectedEnd ? fmtUTC(expectedEnd) : "—"}
                     </span>
                   </div>
                 </div>

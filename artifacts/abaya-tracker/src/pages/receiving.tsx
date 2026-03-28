@@ -14,7 +14,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { fmtCode } from "@/lib/utils";
+import { fmtCode, fmtUTC } from "@/lib/utils";
 import { useAppAuth } from "@/lib/auth-context";
 import { FilterBar } from "@/components/filter-bar";
 
@@ -137,8 +137,8 @@ export default function ReceivingPage() {
   const [qtyRejected, setQtyRejected] = useState(0);
   const [qtyDamaged, setQtyDamaged] = useState(0);
   const [formError, setFormError] = useState("");
-  const [rcvDate, setRcvDate] = useState(new Date().toISOString().split('T')[0]);
-  const [rcvTime, setRcvTime] = useState(new Date().toTimeString().slice(0, 5));
+  const [rcvDate, setRcvDate] = useState(new Date().toISOString().slice(0, 10));
+  const [rcvTime, setRcvTime] = useState(new Date().toISOString().slice(11, 16));
   const [editOpen, setEditOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<any>(null);
   const [timingOpen, setTimingOpen] = useState(false);
@@ -179,8 +179,8 @@ export default function ReceivingPage() {
     setQtyRejected(0);
     setQtyDamaged(0);
     setFormError("");
-    setRcvDate(new Date().toISOString().split('T')[0]);
-    setRcvTime(new Date().toTimeString().slice(0, 5));
+    setRcvDate(new Date().toISOString().slice(0, 10));
+    setRcvTime(new Date().toISOString().slice(11, 16));
   }
 
   const selectedAlloc = allocations?.find(a => a.id === selectedAllocationId) ?? null;
@@ -400,18 +400,18 @@ export default function ReceivingPage() {
                       <div className="space-y-1.5 pt-1">
                         <div className="flex justify-between text-xs">
                           <span className="text-muted-foreground">Allocation Start</span>
-                          <span className="font-medium text-foreground">{startDt ? format(startDt, "MMM d, yyyy HH:mm") : "—"}</span>
+                          <span className="font-medium text-foreground">{startDt ? fmtUTC(startDt) : "—"}</span>
                         </div>
                         {hasOutsource && (
                           <>
                             <div className="flex justify-between text-xs">
                               <span className="text-muted-foreground">Outsource Sent</span>
-                              <span className="font-medium text-orange-500">{oSendDate ? format(oSendDate, "MMM d, yyyy HH:mm") : "—"}</span>
+                              <span className="font-medium text-orange-500">{oSendDate ? fmtUTC(oSendDate) : "—"}</span>
                             </div>
                             {oReturnDate && (
                               <div className="flex justify-between text-xs">
                                 <span className="text-muted-foreground">Outsource Returned</span>
-                                <span className="font-medium text-teal-600">{format(oReturnDate, "MMM d, yyyy HH:mm")}</span>
+                                <span className="font-medium text-teal-600">{fmtUTC(oReturnDate)}</span>
                               </div>
                             )}
                             <div className="flex justify-between text-xs">
@@ -439,7 +439,7 @@ export default function ReceivingPage() {
                         <div className="flex justify-between text-xs">
                           <span className="text-muted-foreground">Expected Completion</span>
                           <span className={`font-medium ${isStillInOutsource ? "text-orange-500" : "text-emerald-600"}`}>
-                            {isStillInOutsource ? "Paused" : expectedEnd ? format(expectedEnd, "MMM d, yyyy HH:mm") : "—"}
+                            {isStillInOutsource ? "Paused" : expectedEnd ? fmtUTC(expectedEnd) : "—"}
                           </span>
                         </div>
                         <div className="flex justify-between text-xs border-t border-border pt-1.5">
@@ -619,7 +619,7 @@ export default function ReceivingPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {rec.receiveDate ? format(new Date(rec.receiveDate), 'MMM d, yyyy HH:mm') : '-'}
+                      {rec.receiveDate ? fmtUTC(rec.receiveDate) : '-'}
                     </TableCell>
                     {canEdit && (
                       <TableCell>
@@ -677,7 +677,7 @@ export default function ReceivingPage() {
                 <label className="text-sm font-medium block mb-1.5">Receive Date & Time</label>
                 <div className="flex gap-2">
                   <input type="date" name="receiveDate" className="form-input-styled flex-1" required defaultValue={editTarget.receiveDate?.split('T')[0] || ""} />
-                  <input type="time" name="receiveTime" className="form-input-styled w-28" defaultValue={editTarget.receiveDate ? new Date(editTarget.receiveDate).toTimeString().slice(0,5) : ""} />
+                  <input type="time" name="receiveTime" className="form-input-styled w-28" defaultValue={editTarget.receiveDate ? editTarget.receiveDate.slice(11, 16) : ""} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
@@ -806,11 +806,11 @@ export default function ReceivingPage() {
                   <div className="border-t border-border pt-3 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Allocation Start</span>
-                      <span className="font-medium">{startDt ? format(startDt, "MMM d, yyyy HH:mm") : "—"}</span>
+                      <span className="font-medium">{startDt ? fmtUTC(startDt) : "—"}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Actual Completion</span>
-                      <span className="font-medium text-emerald-600">{receiveDt ? format(receiveDt, "MMM d, yyyy HH:mm") : "—"}</span>
+                      <span className="font-medium text-emerald-600">{receiveDt ? fmtUTC(receiveDt) : "—"}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground font-medium">Actual Time Taken</span>
@@ -853,18 +853,18 @@ export default function ReceivingPage() {
                 <div className="border-t border-border pt-3 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Allocation Start</span>
-                    <span className="font-medium text-foreground">{startDt ? format(startDt, "MMM d, yyyy HH:mm") : "—"}</span>
+                    <span className="font-medium text-foreground">{startDt ? fmtUTC(startDt) : "—"}</span>
                   </div>
                   {hasOutsource && (
                     <>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Outsource Sent</span>
-                        <span className="font-medium text-orange-500">{oSendDate ? format(oSendDate, "MMM d, yyyy HH:mm") : "—"}</span>
+                        <span className="font-medium text-orange-500">{oSendDate ? fmtUTC(oSendDate) : "—"}</span>
                       </div>
                       {oReturnDate && (
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Outsource Returned</span>
-                          <span className="font-medium text-teal-600">{format(oReturnDate, "MMM d, yyyy HH:mm")}</span>
+                          <span className="font-medium text-teal-600">{fmtUTC(oReturnDate)}</span>
                         </div>
                       )}
                       <div className="flex justify-between text-sm">
@@ -896,12 +896,12 @@ export default function ReceivingPage() {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Pause Start</span>
-                            <span className="font-medium text-violet-600">{p.pauseStart ? format(new Date(p.pauseStart), "MMM d, yyyy HH:mm") : "—"}</span>
+                            <span className="font-medium text-violet-600">{p.pauseStart ? fmtUTC(p.pauseStart) : "—"}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Resume</span>
                             <span className={`font-medium ${p.pauseEnd ? "text-teal-600" : "text-violet-600"}`}>
-                              {p.pauseEnd ? format(new Date(p.pauseEnd), "MMM d, yyyy HH:mm") : "Pending"}
+                              {p.pauseEnd ? fmtUTC(p.pauseEnd) : "Pending"}
                             </span>
                           </div>
                           {p.pauseStart && p.pauseEnd && (
@@ -922,14 +922,14 @@ export default function ReceivingPage() {
                   )}
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Expected Completion</span>
-                    <span className="font-medium text-emerald-600">{expectedEnd ? format(expectedEnd, "MMM d, yyyy HH:mm") : "—"}</span>
+                    <span className="font-medium text-emerald-600">{expectedEnd ? fmtUTC(expectedEnd) : "—"}</span>
                   </div>
                 </div>
 
                 <div className="border-t border-border pt-3 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Actual Completion</span>
-                    <span className="font-medium text-emerald-600">{receiveDt ? format(receiveDt, "MMM d, yyyy HH:mm") : "—"}</span>
+                    <span className="font-medium text-emerald-600">{receiveDt ? fmtUTC(receiveDt) : "—"}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground font-medium">Actual Time Taken</span>

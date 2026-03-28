@@ -15,6 +15,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { fmtUTC } from "@/lib/utils";
 import { useAppAuth } from "@/lib/auth-context";
 import { FilterBar } from "@/components/filter-bar";
 
@@ -482,7 +483,7 @@ export default function OutsourcePage() {
                       <TableCell className="text-right font-semibold text-red-500">{t.quantityDamaged || 0}</TableCell>
                       <TableCell className="text-right font-bold text-amber-700">{pending}</TableCell>
                       <TableCell><TransferStatusBadge status={t.status || "sent"} /></TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{t.sendDate ? format(new Date(t.sendDate), "MMM d, yyyy HH:mm") : "-"}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{t.sendDate ? fmtUTC(t.sendDate) : "-"}</TableCell>
                     </TableRow>
                   );
                 })}
@@ -539,8 +540,8 @@ export default function OutsourcePage() {
                     <TableCell className="text-right font-semibold text-emerald-600">{t.quantityReturned || 0}</TableCell>
                     <TableCell className="text-right font-semibold text-red-500">{t.quantityDamaged || 0}</TableCell>
                     <TableCell><TransferStatusBadge status={t.status || "sent"} /></TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{t.sendDate ? format(new Date(t.sendDate), "MMM d, yyyy HH:mm") : "-"}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{t.returnDate ? format(new Date(t.returnDate), "MMM d, yyyy HH:mm") : "-"}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{t.sendDate ? fmtUTC(t.sendDate) : "-"}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{t.returnDate ? fmtUTC(t.returnDate) : "-"}</TableCell>
                     {canEdit && (
                       <TableCell>
                         <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => { setEditTarget({ ...t, isLocked: ((t.quantityReturned || 0) > 0 || (t.quantityDamaged || 0) > 0) }); setEditOpen(true); }}>

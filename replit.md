@@ -40,6 +40,9 @@ The system implements a dynamic, role-based permission system. Predefined system
 **Inventory & Tracking:**
 The system provides real-time inventory tracking across all production stages. A composite `itemCode` (`productCode-colorCode-material1Code-material2Code`) is generated at the cutting stage for consistent identification. Inventory summaries are available for raw materials, WIP, and finished goods.
 
+**UTC DateTime Display:**
+All date/time displays use the shared `fmtUTC()` helper from `src/lib/utils.ts`. The server stores timestamps in UTC; the helper creates a "fake local" Date from UTC components so `date-fns format()` renders UTC wall-clock time regardless of the browser's timezone. Form inputs for dates/times also use ISO string slicing (`slice(0,10)` for date, `slice(11,16)` for time) instead of `toTimeString()` to avoid local-timezone shifts.
+
 **Outsource Workflow:**
 A dedicated workflow manages outsourced production, distinguishing between `simple_stitch` and `outsource_required` allocations. It tracks items sent to and returned from vendors, with validations to ensure quantity accuracy.
 
