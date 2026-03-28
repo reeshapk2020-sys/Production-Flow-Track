@@ -561,6 +561,9 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
       issueDate: allocationsTable.issueDate,
       receiveDate: receivingsTable.receiveDate,
       workType: allocationsTable.workType,
+      batchNumber: cuttingBatchesTable.batchNumber,
+      productCode: productsTable.code,
+      productName: productsTable.name,
     })
     .from(receivingsTable)
     .innerJoin(allocationsTable, eq(receivingsTable.allocationId, allocationsTable.id))
@@ -602,6 +605,9 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
     issueDate: Date | null;
     lastReceiveDate: Date | null;
     lastReceiveDateKey: string;
+    batchNumber: string | null;
+    productCode: string | null;
+    productName: string | null;
   }
   const allocMap: Record<number, AllocRecord> = {};
 
@@ -625,6 +631,9 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
         issueDate: r.issueDate,
         lastReceiveDate: r.receiveDate,
         lastReceiveDateKey: dateKey,
+        batchNumber: r.batchNumber,
+        productCode: r.productCode,
+        productName: r.productName,
       };
     }
     const a = allocMap[r.allocationId];
@@ -636,12 +645,25 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
     }
   }
 
+  interface BatchDetail {
+    batchNumber: string;
+    product: string;
+    points: number;
+    expectedMinutes: number;
+    effectiveMinutes: number;
+    outsourceMinutes: number;
+    efficiency: number;
+    rating: string;
+    status: string;
+    actualCompletion: string | null;
+  }
   interface AggEntry {
     name: string; code?: string; teamName?: string;
     totalPoints: number; expectedMinutes: number;
     totalElapsedMinutes: number; outsourceMinutes: number;
     onTimeCount: number; lateCount: number;
     allocCount: number;
+    batches: BatchDetail[];
   }
   const stitcherAgg: Record<number, AggEntry> = {};
   const teamAgg: Record<number, AggEntry> = {};
@@ -655,12 +677,27 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
     const effectiveMin = Math.max(0, elapsedMin - osMin);
     const isOnTime = a.expectedMinutes > 0 && effectiveMin > 0 ? effectiveMin <= a.expectedMinutes : true;
 
+    const batchEfficiency = effectiveMin > 0 ? Math.round((a.expectedMinutes / effectiveMin) * 100) : 0;
+    const batchRating = batchEfficiency >= 120 ? "A+" : batchEfficiency >= 100 ? "A" : batchEfficiency >= 80 ? "B" : "C";
+    const batchDetail: BatchDetail = {
+      batchNumber: a.batchNumber || "—",
+      product: [a.productCode, a.productName].filter(Boolean).join(" - "),
+      points: Math.round(a.totalPoints * 100) / 100,
+      expectedMinutes: a.expectedMinutes,
+      effectiveMinutes: effectiveMin,
+      outsourceMinutes: osMin,
+      efficiency: batchEfficiency,
+      rating: batchRating,
+      status: isOnTime ? "On Time" : "Late",
+      actualCompletion: a.lastReceiveDate ? new Date(a.lastReceiveDate).toISOString() : null,
+    };
+
     if (a.allocationType === "individual" && a.stitcherId) {
       if (!stitcherAgg[a.stitcherId]) {
         stitcherAgg[a.stitcherId] = {
           name: a.stitcherName || "Unknown", teamName: a.teamName || undefined,
           totalPoints: 0, expectedMinutes: 0, totalElapsedMinutes: 0, outsourceMinutes: 0,
-          onTimeCount: 0, lateCount: 0, allocCount: 0,
+          onTimeCount: 0, lateCount: 0, allocCount: 0, batches: [],
         };
       }
       const s = stitcherAgg[a.stitcherId];
@@ -669,6 +706,7 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
       s.totalElapsedMinutes += elapsedMin;
       s.outsourceMinutes += osMin;
       s.allocCount++;
+      s.batches.push(batchDetail);
       if (a.expectedMinutes > 0 && effectiveMin > 0) { isOnTime ? s.onTimeCount++ : s.lateCount++; }
     }
 
@@ -679,7 +717,7 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
         teamAgg[tId] = {
           name: tName, totalPoints: 0, expectedMinutes: 0,
           totalElapsedMinutes: 0, outsourceMinutes: 0,
-          onTimeCount: 0, lateCount: 0, allocCount: 0,
+          onTimeCount: 0, lateCount: 0, allocCount: 0, batches: [],
         };
       }
       const t = teamAgg[tId];
@@ -688,6 +726,7 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
       t.totalElapsedMinutes += elapsedMin;
       t.outsourceMinutes += osMin;
       t.allocCount++;
+      t.batches.push(batchDetail);
       if (a.expectedMinutes > 0 && effectiveMin > 0) { isOnTime ? t.onTimeCount++ : t.lateCount++; }
     }
 
@@ -716,6 +755,7 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
           efficiency, rating,
           onTimeCount: v.onTimeCount, lateCount: v.lateCount,
           completedBatches: v.allocCount,
+          batches: v.batches.sort((a, b) => (b.actualCompletion || "").localeCompare(a.actualCompletion || "")),
         };
       })
       .sort((a, b) => b.efficiency - a.efficiency);

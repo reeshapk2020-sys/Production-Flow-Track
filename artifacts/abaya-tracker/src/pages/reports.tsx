@@ -3,6 +3,7 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, FileText, Users, BarChart3 } from "lucide-react";
 import { 
   useGetStitcherPerformanceReport, useGetStagePendingReport, useGetBatchStatusReport,
@@ -921,6 +922,7 @@ function EfficiencyReport() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<"stitcher" | "team">("stitcher");
+  const [drillTarget, setDrillTarget] = useState<any>(null);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -1027,12 +1029,12 @@ function EfficiencyReport() {
                 ) : rows.map((row: any, i: number) => {
                   const isTop = i === 0;
                   return (
-                    <TableRow key={row.id} className={isTop ? "bg-amber-500/5" : ""}>
+                    <TableRow key={row.id} className={`${isTop ? "bg-amber-500/5" : ""} cursor-pointer hover:bg-muted/50 transition-colors`} onClick={() => setDrillTarget(row)}>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {isTop && <Award className="h-4 w-4 text-amber-400 flex-shrink-0" />}
                           <div>
-                            <div className="font-semibold">{row.name}</div>
+                            <div className="font-semibold text-cyan-400 hover:underline">{row.name}</div>
                             {view === "stitcher" && row.teamName && <div className="text-xs text-muted-foreground">{row.teamName}</div>}
                           </div>
                         </div>
@@ -1088,6 +1090,136 @@ function EfficiencyReport() {
           )}
         </>
       )}
+
+      <Dialog open={!!drillTarget} onOpenChange={(v) => { if (!v) setDrillTarget(null); }}>
+        <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto rounded-2xl p-0 border-0 shadow-2xl">
+          {drillTarget && (() => {
+            const batches: any[] = drillTarget.batches || [];
+            const chartData = batches.map((b: any) => ({
+              batch: b.batchNumber,
+              efficiency: b.efficiency,
+              expected: b.expectedMinutes,
+              effective: b.effectiveMinutes,
+            }));
+            return (
+              <>
+                <DialogHeader className="px-6 pt-6 pb-0">
+                  <DialogTitle className="text-xl font-display text-foreground">
+                    {drillTarget.name} — Batch-wise Efficiency
+                  </DialogTitle>
+                  {drillTarget.teamName && (
+                    <div className="text-sm text-muted-foreground">{drillTarget.teamName}</div>
+                  )}
+                </DialogHeader>
+
+                <div className="px-6 py-4 space-y-5">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-2 text-center">
+                      <div className="text-lg font-bold text-cyan-400">{drillTarget.efficiency}%</div>
+                      <div className="text-[10px] text-muted-foreground">Overall Efficiency</div>
+                    </div>
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-2 text-center">
+                      <div className="text-lg font-bold text-amber-400">{drillTarget.totalPoints}</div>
+                      <div className="text-[10px] text-muted-foreground">Total Points</div>
+                    </div>
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2 text-center">
+                      <div className="text-lg font-bold text-emerald-400">{drillTarget.onTimeCount}</div>
+                      <div className="text-[10px] text-muted-foreground">On Time</div>
+                    </div>
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2 text-center">
+                      <div className="text-lg font-bold text-red-400">{drillTarget.lateCount}</div>
+                      <div className="text-[10px] text-muted-foreground">Late</div>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto rounded-lg border border-border">
+                    <Table>
+                      <TableHeader className="bg-background">
+                        <TableRow>
+                          <TableHead>Batch</TableHead>
+                          <TableHead>Product</TableHead>
+                          <TableHead className="text-right">Points</TableHead>
+                          <TableHead className="text-right">Expected</TableHead>
+                          <TableHead className="text-right">Effective</TableHead>
+                          <TableHead className="text-right">Outsource</TableHead>
+                          <TableHead className="text-right">Efficiency</TableHead>
+                          <TableHead className="text-center">Rating</TableHead>
+                          <TableHead className="text-center">Status</TableHead>
+                          <TableHead>Completed</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {batches.length === 0 ? (
+                          <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">No batch data</TableCell></TableRow>
+                        ) : batches.map((b: any, i: number) => (
+                          <TableRow key={i}>
+                            <TableCell className="font-mono text-sm font-semibold">{b.batchNumber}</TableCell>
+                            <TableCell className="text-sm max-w-[140px] truncate">{b.product}</TableCell>
+                            <TableCell className="text-right font-mono text-sm">{b.points}</TableCell>
+                            <TableCell className="text-right text-sm">{fmtMinutes(b.expectedMinutes)}</TableCell>
+                            <TableCell className="text-right text-sm">{fmtMinutes(b.effectiveMinutes)}</TableCell>
+                            <TableCell className="text-right text-sm text-violet-400">{b.outsourceMinutes > 0 ? fmtMinutes(b.outsourceMinutes) : "—"}</TableCell>
+                            <TableCell className="text-right">
+                              <span className={`font-bold text-sm ${getEfficiencyColor(b.efficiency)}`}>{b.efficiency}%</span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold border ${getRatingColor(b.rating)}`}>{b.rating}</span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${b.status === "On Time" ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
+                                {b.status}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{b.actualCompletion ? fmtUTC(b.actualCompletion, "MMM d, HH:mm") : "—"}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {chartData.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-card border border-border rounded-xl p-4">
+                        <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                          <BarChart3 className="h-4 w-4 text-cyan-400" />
+                          Batch Efficiency %
+                        </h4>
+                        <ResponsiveContainer width="100%" height={200}>
+                          <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis dataKey="batch" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} interval={0} angle={-30} textAnchor="end" height={50} />
+                            <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                            <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} formatter={(v: any) => [`${v}%`, "Efficiency"]} />
+                            <Bar dataKey="efficiency" fill="hsl(188, 78%, 46%)" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      <div className="bg-card border border-border rounded-xl p-4">
+                        <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-amber-400" />
+                          Expected vs Effective (min)
+                        </h4>
+                        <ResponsiveContainer width="100%" height={200}>
+                          <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis dataKey="batch" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} interval={0} angle={-30} textAnchor="end" height={50} />
+                            <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                            <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                            <Legend wrapperStyle={{ fontSize: 11 }} />
+                            <Bar dataKey="expected" name="Expected" fill="hsl(142, 71%, 45%)" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="effective" name="Effective" fill="hsl(38, 92%, 50%)" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
