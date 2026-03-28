@@ -14,85 +14,9 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { fmtCode, fmtUTC } from "@/lib/utils";
+import { fmtCode, fmtUTC, calcExpectedCompletion, calcWorkingMinutesBetween, formatMinutes, WORK_SLOTS, MINUTES_PER_POINT } from "@/lib/utils";
 import { useAppAuth } from "@/lib/auth-context";
 import { FilterBar } from "@/components/filter-bar";
-
-interface WorkSlot { start: number; end: number; effective?: number; }
-const WORK_SLOTS: WorkSlot[] = [
-  { start: 8 * 60, end: 13 * 60 + 20 },
-  { start: 14 * 60 + 30, end: 20 * 60, effective: 270 },
-  { start: 20 * 60 + 30, end: 23 * 60 },
-];
-const MINUTES_PER_POINT = 20;
-
-function calcExpectedCompletion(startDateTime: Date, totalMinutes: number) {
-  let remaining = totalMinutes;
-  let current = new Date(startDateTime);
-  const dayStartUTC = (d: Date) => { const r = new Date(d); r.setUTCHours(0, 0, 0, 0); return r; };
-  const minuteOfDayUTC = (d: Date) => d.getUTCHours() * 60 + d.getUTCMinutes();
-  for (let guard = 0; guard < 365 && remaining > 0; guard++) {
-    const todayBase = dayStartUTC(current);
-    const curMinute = minuteOfDayUTC(current);
-    for (const slot of WORK_SLOTS) {
-      if (remaining <= 0) break;
-      const effectiveStart = Math.max(curMinute, slot.start);
-      if (effectiveStart >= slot.end) continue;
-      const rawAvail = slot.end - effectiveStart;
-      const slotTotal = slot.end - slot.start;
-      const effectiveTotal = slot.effective || slotTotal;
-      const ratio = effectiveTotal / slotTotal;
-      const available = Math.floor(rawAvail * ratio);
-      if (remaining <= available) {
-        const rawNeeded = Math.ceil(remaining / ratio);
-        current = new Date(todayBase.getTime() + (effectiveStart + rawNeeded) * 60000);
-        remaining = 0;
-        break;
-      }
-      remaining -= available;
-    }
-    if (remaining > 0) {
-      current = new Date(todayBase.getTime() + 24 * 60 * 60000);
-      current.setUTCHours(0, 0, 0, 0);
-    }
-  }
-  return current;
-}
-
-function calcWorkingMinutesBetween(startDt: Date, endDt: Date): number {
-  let total = 0;
-  let current = new Date(startDt);
-  const dayStartUTC = (d: Date) => { const r = new Date(d); r.setUTCHours(0, 0, 0, 0); return r; };
-  const minuteOfDayUTC = (d: Date) => d.getUTCHours() * 60 + d.getUTCMinutes();
-  const endMinuteOfDay = minuteOfDayUTC(endDt);
-  const endDayStart = dayStartUTC(endDt).getTime();
-  for (let guard = 0; guard < 365; guard++) {
-    const todayBase = dayStartUTC(current);
-    const isEndDay = todayBase.getTime() === endDayStart;
-    const curMinute = minuteOfDayUTC(current);
-    for (const slot of WORK_SLOTS) {
-      const effectiveStart = Math.max(curMinute, slot.start);
-      const slotEnd = isEndDay ? Math.min(slot.end, endMinuteOfDay) : slot.end;
-      if (effectiveStart >= slotEnd) continue;
-      const rawAvail = slotEnd - effectiveStart;
-      const slotTotal = slot.end - slot.start;
-      const effectiveTotal = slot.effective || slotTotal;
-      const ratio = effectiveTotal / slotTotal;
-      total += Math.floor(rawAvail * ratio);
-    }
-    if (isEndDay) break;
-    current = new Date(todayBase.getTime() + 24 * 60 * 60000);
-    current.setUTCHours(0, 0, 0, 0);
-  }
-  return total;
-}
-
-function formatMinutes(m: number) {
-  const hrs = Math.floor(m / 60);
-  const mins = Math.round(m % 60);
-  if (hrs === 0) return `${mins} min`;
-  return mins > 0 ? `${hrs} hr ${mins} min` : `${hrs} hr`;
-}
 
 function BatchStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
@@ -451,7 +375,7 @@ export default function ReceivingPage() {
                         <div className="flex justify-between text-xs">
                           <span className="text-muted-foreground font-medium">Actual Time Taken</span>
                           <span className="font-bold text-foreground">
-                            {startDt && rcvDate ? (() => { const m = Math.round((new Date(`${rcvDate}T${rcvTime || "00:00"}:00Z`).getTime() - startDt.getTime()) / 60000); return m > 0 ? formatMinutes(m) : "—"; })() : "—"}
+                            {startDt && rcvDate ? (() => { const m = calcWorkingMinutesBetween(startDt, new Date(`${rcvDate}T${rcvTime || "00:00"}:00Z`)); return m > 0 ? formatMinutes(m) : "—"; })() : "—"}
                           </span>
                         </div>
                       </div>
@@ -800,7 +724,7 @@ export default function ReceivingPage() {
               }
             }
 
-            const actualMinutes = startDt && receiveDt ? Math.round((receiveDt.getTime() - startDt.getTime()) / 60000) : 0;
+            const actualMinutes = startDt && receiveDt ? calcWorkingMinutesBetween(startDt, receiveDt) : 0;
 
             const rcvQty = timingTarget.quantityReceived || 0;
             const rejQty = timingTarget.quantityRejected || 0;

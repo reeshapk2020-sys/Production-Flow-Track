@@ -504,6 +504,40 @@ router.get("/reports/team-points", checkPermission("reports", "view"), async (re
   res.json(result);
 });
 
+function serverCalcWorkingMinutesBetween(startDt: Date, endDt: Date): number {
+  if (endDt <= startDt) return 0;
+  const SLOTS = [
+    { start: 8 * 60, end: 13 * 60 + 20 },
+    { start: 14 * 60 + 30, end: 20 * 60, effective: 270 },
+    { start: 20 * 60 + 30, end: 23 * 60 },
+  ];
+  let total = 0;
+  let current = new Date(startDt);
+  const dayStartUTC = (d: Date) => { const r = new Date(d); r.setUTCHours(0, 0, 0, 0); return r; };
+  const minuteOfDayUTC = (d: Date) => d.getUTCHours() * 60 + d.getUTCMinutes();
+  const endMinuteOfDay = minuteOfDayUTC(endDt);
+  const endDayStart = dayStartUTC(endDt).getTime();
+  for (let guard = 0; guard < 365; guard++) {
+    const todayBase = dayStartUTC(current);
+    const isEndDay = todayBase.getTime() === endDayStart;
+    const curMinute = minuteOfDayUTC(current);
+    for (const slot of SLOTS) {
+      const effectiveStart = Math.max(curMinute, slot.start);
+      const slotEnd = isEndDay ? Math.min(slot.end, endMinuteOfDay) : slot.end;
+      if (effectiveStart >= slotEnd) continue;
+      const rawAvail = slotEnd - effectiveStart;
+      const slotTotal = slot.end - slot.start;
+      const effectiveTotal = (slot as any).effective || slotTotal;
+      const ratio = effectiveTotal / slotTotal;
+      total += Math.floor(rawAvail * ratio);
+    }
+    if (isEndDay) break;
+    current = new Date(todayBase.getTime() + 24 * 60 * 60000);
+    current.setUTCHours(0, 0, 0, 0);
+  }
+  return total;
+}
+
 router.get("/reports/efficiency", checkPermission("reports", "view"), async (req, res) => {
   const { startDate, endDate, productId } = req.query;
   const conditions: any[] = [];
@@ -542,12 +576,17 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
     const oRows = await db
       .select({
         allocationId: outsourceTransfersTable.allocationId,
-        outsourceMinutes: sql<number>`COALESCE(SUM(EXTRACT(EPOCH FROM (COALESCE(${outsourceTransfersTable.returnDate}, NOW()) - ${outsourceTransfersTable.sendDate})) / 60), 0)::int`,
+        sendDate: outsourceTransfersTable.sendDate,
+        returnDate: outsourceTransfersTable.returnDate,
       })
       .from(outsourceTransfersTable)
-      .where(sql`${outsourceTransfersTable.allocationId} IN (${sql.join(allocIds.map(id => sql`${id}`), sql`, `)})`)
-      .groupBy(outsourceTransfersTable.allocationId);
-    for (const o of oRows) outsourceMap[o.allocationId] = o.outsourceMinutes;
+      .where(sql`${outsourceTransfersTable.allocationId} IN (${sql.join(allocIds.map(id => sql`${id}`), sql`, `)})`);
+    for (const o of oRows) {
+      const send = new Date(o.sendDate);
+      const ret = o.returnDate ? new Date(o.returnDate) : new Date();
+      const osWorkMin = serverCalcWorkingMinutesBetween(send, ret);
+      outsourceMap[o.allocationId] = (outsourceMap[o.allocationId] || 0) + osWorkMin;
+    }
   }
 
   interface AllocRecord {
@@ -610,7 +649,7 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
 
   for (const a of Object.values(allocMap)) {
     const elapsedMin = a.issueDate && a.lastReceiveDate
-      ? Math.max(0, Math.round((new Date(a.lastReceiveDate).getTime() - new Date(a.issueDate).getTime()) / 60000))
+      ? serverCalcWorkingMinutesBetween(new Date(a.issueDate), new Date(a.lastReceiveDate))
       : 0;
     const osMin = outsourceMap[a.allocationId] || 0;
     const effectiveMin = Math.max(0, elapsedMin - osMin);

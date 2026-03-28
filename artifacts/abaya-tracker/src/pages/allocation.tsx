@@ -16,7 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { fmtCode, fmtUTC } from "@/lib/utils";
+import { fmtCode, fmtUTC, calcExpectedCompletion, calcWorkingMinutesBetween, formatMinutes, WORK_SLOTS, MINUTES_PER_POINT } from "@/lib/utils";
 import { useAppAuth } from "@/lib/auth-context";
 import { FilterBar } from "@/components/filter-bar";
 
@@ -33,90 +33,6 @@ function StatusBadge({ status }: { status: BatchStatus }) {
   };
   const { label, cls } = map[status] || { label: status, cls: "bg-muted text-muted-foreground border-border" };
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}>{label}</span>;
-}
-
-interface WorkSlot { start: number; end: number; effective?: number; }
-const WORK_SLOTS: WorkSlot[] = [
-  { start: 8 * 60, end: 13 * 60 + 20 },
-  { start: 14 * 60 + 30, end: 20 * 60, effective: 270 },
-  { start: 20 * 60 + 30, end: 23 * 60 },
-];
-const MINUTES_PER_POINT = 20;
-
-function calcExpectedCompletion(startDateTime: Date, totalMinutes: number) {
-  let remaining = totalMinutes;
-  let current = new Date(startDateTime);
-
-  const dayStartUTC = (d: Date) => {
-    const r = new Date(d); r.setUTCHours(0, 0, 0, 0); return r;
-  };
-  const minuteOfDayUTC = (d: Date) => d.getUTCHours() * 60 + d.getUTCMinutes();
-
-  for (let guard = 0; guard < 365 && remaining > 0; guard++) {
-    const todayBase = dayStartUTC(current);
-    const curMinute = minuteOfDayUTC(current);
-
-    for (const slot of WORK_SLOTS) {
-      if (remaining <= 0) break;
-      const effectiveStart = Math.max(curMinute, slot.start);
-      if (effectiveStart >= slot.end) continue;
-      const rawAvail = slot.end - effectiveStart;
-      const slotTotal = slot.end - slot.start;
-      const effectiveTotal = slot.effective || slotTotal;
-      const ratio = effectiveTotal / slotTotal;
-      const available = Math.floor(rawAvail * ratio);
-      if (remaining <= available) {
-        const rawNeeded = Math.ceil(remaining / ratio);
-        current = new Date(todayBase.getTime() + (effectiveStart + rawNeeded) * 60000);
-        remaining = 0;
-        break;
-      }
-      remaining -= available;
-    }
-    if (remaining > 0) {
-      current = new Date(todayBase.getTime() + 24 * 60 * 60000);
-      current.setUTCHours(0, 0, 0, 0);
-    }
-  }
-  return current;
-}
-
-function calcWorkingMinutesBetween(startDt: Date, endDt: Date): number {
-  let total = 0;
-  let current = new Date(startDt);
-  const dayStartUTC = (d: Date) => { const r = new Date(d); r.setUTCHours(0, 0, 0, 0); return r; };
-  const minuteOfDayUTC = (d: Date) => d.getUTCHours() * 60 + d.getUTCMinutes();
-  const endMinuteOfDay = minuteOfDayUTC(endDt);
-  const endDayStart = dayStartUTC(endDt).getTime();
-
-  for (let guard = 0; guard < 365; guard++) {
-    const todayBase = dayStartUTC(current);
-    const isEndDay = todayBase.getTime() === endDayStart;
-    const curMinute = minuteOfDayUTC(current);
-
-    for (const slot of WORK_SLOTS) {
-      const effectiveStart = Math.max(curMinute, slot.start);
-      const slotEnd = isEndDay ? Math.min(slot.end, endMinuteOfDay) : slot.end;
-      if (effectiveStart >= slotEnd) continue;
-      const rawAvail = slotEnd - effectiveStart;
-      const slotTotal = slot.end - slot.start;
-      const effectiveTotal = slot.effective || slotTotal;
-      const ratio = effectiveTotal / slotTotal;
-      total += Math.floor(rawAvail * ratio);
-    }
-
-    if (isEndDay) break;
-    current = new Date(todayBase.getTime() + 24 * 60 * 60000);
-    current.setUTCHours(0, 0, 0, 0);
-  }
-  return total;
-}
-
-function formatMinutes(m: number) {
-  const hrs = Math.floor(m / 60);
-  const mins = Math.round(m % 60);
-  if (hrs === 0) return `${mins} min`;
-  return mins > 0 ? `${hrs} hr ${mins} min` : `${hrs} hr`;
 }
 
 export default function AllocationPage() {
@@ -1013,7 +929,7 @@ export default function AllocationPage() {
                     const lastRcvRaw = (detailTarget as any).lastReceiveDate;
                     const lastRcvDt = lastRcvRaw ? new Date(lastRcvRaw) : null;
                     if (!lastRcvDt || !startDt) return null;
-                    const actualMinutes = Math.round((lastRcvDt.getTime() - startDt.getTime()) / 60000);
+                    const actualMinutes = calcWorkingMinutesBetween(startDt, lastRcvDt);
                     return (
                       <>
                         <div className="flex justify-between text-sm">
