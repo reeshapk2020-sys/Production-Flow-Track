@@ -796,27 +796,135 @@ export default function ReceivingPage() {
 
             const actualMinutes = startDt && receiveDt ? Math.round((receiveDt.getTime() - startDt.getTime()) / 60000) : 0;
 
+            const rcvQty = timingTarget.quantityReceived || 0;
+            const rejQty = timingTarget.quantityRejected || 0;
+            const dmgQty = timingTarget.quantityDamaged || 0;
+            const pendingQtyPopup = qty - rcvQty - rejQty;
+            const wt = timingTarget.workType;
+            const osCat = timingTarget.outsourceCategory;
+            const prodFor = timingTarget.productionFor || "reesha_stock";
+            const prodRef = prodFor === "purchase_order" ? `PO: ${timingTarget.poNumber || "?"}` : prodFor === "order" ? `Order: ${timingTarget.orderNumber || "?"}` : null;
+            const itemCode = timingTarget.itemCode;
+            const remarks = timingTarget.remarks;
+            const allocRemarks = timingTarget.allocationRemarks;
+
+            const headerBlock = (
+              <div className="bg-background rounded-xl p-3 text-sm text-muted-foreground">
+                <div className="font-semibold text-foreground">{timingTarget.batchNumber} — {timingTarget.allocationNumber}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{fmtCode(timingTarget.productCode, timingTarget.productName)} · {timingTarget.stitcherName}</div>
+                {itemCode && <div className="text-xs font-mono text-teal-700 mt-0.5">{itemCode}</div>}
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border bg-background text-muted-foreground border-border">
+                    {wt === "outsource_required" ? "Outsource" : "Simple Stitch"}
+                    {osCat ? ` · ${osCat.replace(/_/g, " ")}` : ""}
+                  </span>
+                  {prodRef && <span className="text-[10px] font-medium text-violet-600">{prodRef}</span>}
+                </div>
+              </div>
+            );
+
+            const receivingStatsBlock = (
+              <div className="grid grid-cols-4 gap-2">
+                <div className="bg-card border border-border rounded-lg p-2 text-center">
+                  <div className="text-sm font-bold text-foreground">{qty}</div>
+                  <div className="text-[10px] text-muted-foreground">Issued</div>
+                </div>
+                <div className="bg-card border border-border rounded-lg p-2 text-center">
+                  <div className="text-sm font-bold text-emerald-600">{rcvQty}</div>
+                  <div className="text-[10px] text-muted-foreground">Received</div>
+                </div>
+                <div className="bg-card border border-border rounded-lg p-2 text-center">
+                  <div className="text-sm font-bold text-red-500">{rejQty}{dmgQty > 0 ? `/${dmgQty}` : ""}</div>
+                  <div className="text-[10px] text-muted-foreground">{dmgQty > 0 ? "Rej/Dmg" : "Rejected"}</div>
+                </div>
+                <div className="bg-card border border-border rounded-lg p-2 text-center">
+                  <div className={`text-sm font-bold ${pendingQtyPopup > 0 ? "text-amber-700" : "text-emerald-600"}`}>{pendingQtyPopup}</div>
+                  <div className="text-[10px] text-muted-foreground">Pending</div>
+                </div>
+              </div>
+            );
+
+            const qcFlags = [
+              timingTarget.hasStain && "Stain",
+              timingTarget.hasDamage && "Damage",
+              timingTarget.needsWash && "Wash",
+              timingTarget.needsRework && "Rework",
+            ].filter(Boolean);
+
+            const actualBlock = (
+              <div className="border-t border-border pt-3 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Actual Completion</span>
+                  <span className="font-medium text-emerald-600">{receiveDt ? fmtUTC(receiveDt) : "—"}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground font-medium">Actual Time Taken</span>
+                  <span className="font-bold text-foreground">{actualMinutes > 0 ? formatMinutes(actualMinutes) : "—"}</span>
+                </div>
+                <div className="flex justify-between text-sm items-center">
+                  <span className="text-muted-foreground">Quality Checks</span>
+                  <span className="flex gap-1 flex-wrap justify-end">
+                    {qcFlags.length > 0 ? qcFlags.map((f, i) => (
+                      <span key={i} className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                        f === "Stain" ? "bg-red-500/10 text-red-600 border border-red-500/20" :
+                        f === "Damage" ? "bg-orange-500/10 text-orange-600 border border-orange-500/20" :
+                        f === "Wash" ? "bg-primary/10 text-primary border border-primary/20" :
+                        "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                      }`}>{f}</span>
+                    )) : <span className="text-xs text-emerald-600 font-medium">OK</span>}
+                  </span>
+                </div>
+              </div>
+            );
+
+            const remarksBlock = (remarks || allocRemarks) ? (
+              <div className="border-t border-border pt-2 space-y-1.5">
+                {allocRemarks && (
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-0.5">Allocation Remarks</div>
+                    <div className="text-sm text-foreground">{allocRemarks}</div>
+                  </div>
+                )}
+                {remarks && (
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-0.5">Receiving Remarks</div>
+                    <div className="text-sm text-foreground">{remarks}</div>
+                  </div>
+                )}
+              </div>
+            ) : null;
+
             if (ppp === 0) {
               return (
                 <div className="space-y-3 pt-4">
-                  <div className="bg-background rounded-xl p-3 text-sm text-muted-foreground">
-                    <div className="font-semibold text-foreground">{timingTarget.batchNumber} — {timingTarget.allocationNumber}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">{fmtCode(timingTarget.productCode, timingTarget.productName)} · {timingTarget.stitcherName}</div>
-                  </div>
+                  {headerBlock}
+                  {receivingStatsBlock}
                   <div className="border-t border-border pt-3 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Allocation Start</span>
                       <span className="font-medium">{startDt ? fmtUTC(startDt) : "—"}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Actual Completion</span>
-                      <span className="font-medium text-emerald-600">{receiveDt ? fmtUTC(receiveDt) : "—"}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground font-medium">Actual Time Taken</span>
-                      <span className="font-bold">{actualMinutes > 0 ? formatMinutes(actualMinutes) : "—"}</span>
-                    </div>
                   </div>
+                  {hasOutsource && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Outsource Sent</span>
+                        <span className="font-medium text-orange-500">{oSendDate ? fmtUTC(oSendDate) : "—"}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Outsource Qty</span>
+                        <span className="font-medium text-foreground">{oSent} sent · {oRet} returned{oDmg > 0 ? ` · ${oDmg} damaged` : ""}</span>
+                      </div>
+                      {oReturnDate && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Outsource Returned</span>
+                          <span className="font-medium text-teal-600">{fmtUTC(oReturnDate)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {actualBlock}
+                  {remarksBlock}
                   <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
                     <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
                     No points configured for this product. Set points in Product Master for full timing details.
@@ -827,10 +935,8 @@ export default function ReceivingPage() {
 
             return (
               <div className="grid grid-cols-1 gap-3 pt-4">
-                <div className="bg-background rounded-xl p-3 text-sm text-muted-foreground">
-                  <div className="font-semibold text-foreground">{timingTarget.batchNumber} — {timingTarget.allocationNumber}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">{fmtCode(timingTarget.productCode, timingTarget.productName)} · {timingTarget.stitcherName}</div>
-                </div>
+                {headerBlock}
+
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-card border border-border rounded-xl p-3">
                     <div className="text-xs text-muted-foreground mb-1">Points / Piece</div>
@@ -850,6 +956,8 @@ export default function ReceivingPage() {
                   </div>
                 </div>
 
+                {receivingStatsBlock}
+
                 <div className="border-t border-border pt-3 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Allocation Start</span>
@@ -860,6 +968,10 @@ export default function ReceivingPage() {
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Outsource Sent</span>
                         <span className="font-medium text-orange-500">{oSendDate ? fmtUTC(oSendDate) : "—"}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Outsource Qty</span>
+                        <span className="font-medium text-foreground">{oSent} sent · {oRet} returned{oDmg > 0 ? ` · ${oDmg} damaged` : ""}</span>
                       </div>
                       {oReturnDate && (
                         <div className="flex justify-between text-sm">
@@ -926,16 +1038,8 @@ export default function ReceivingPage() {
                   </div>
                 </div>
 
-                <div className="border-t border-border pt-3 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Actual Completion</span>
-                    <span className="font-medium text-emerald-600">{receiveDt ? fmtUTC(receiveDt) : "—"}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground font-medium">Actual Time Taken</span>
-                    <span className="font-bold text-foreground">{actualMinutes > 0 ? formatMinutes(actualMinutes) : "—"}</span>
-                  </div>
-                </div>
+                {actualBlock}
+                {remarksBlock}
 
                 <div className="text-xs text-muted-foreground mt-1">
                   Working slots: 8:00–1:20 PM, 2:30–8:00 PM (4h30m eff.), 8:30–11:00 PM · 1 pt = 20 min

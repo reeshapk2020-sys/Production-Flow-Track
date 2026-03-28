@@ -860,19 +860,47 @@ export default function AllocationPage() {
               }
             }
 
+            const received = detailTarget.quantityReceived || 0;
+            const rejected = detailTarget.quantityRejected || 0;
+            const pending = qty - received - rejected;
+            const wt = (detailTarget as any).workType;
+            const osCat = (detailTarget as any).outsourceCategory;
+            const prodFor = (detailTarget as any).productionFor || "reesha_stock";
+            const prodRef = prodFor === "purchase_order" ? `PO: ${(detailTarget as any).poNumber || "?"}` : prodFor === "order" ? `Order: ${(detailTarget as any).orderNumber || "?"}` : null;
+            const itemCode = (detailTarget as any).itemCode;
+            const remarks = (detailTarget as any).remarks;
+            const status = (detailTarget as any).computedStatus || "pending";
+
             return (
               <div className="grid grid-cols-1 gap-3 pt-4">
                 <div className="bg-background rounded-xl p-3 text-sm text-muted-foreground">
                   <div className="font-semibold text-foreground">{detailTarget.batchNumber} — {detailTarget.allocationNumber}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">{detailTarget.productName || detailTarget.productCode || "—"} · {detailTarget.assigneeName || detailTarget.stitcherName}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{fmtCode(detailTarget.productCode, detailTarget.productName)} · {detailTarget.assigneeName || detailTarget.stitcherName}</div>
+                  {itemCode && <div className="text-xs font-mono text-teal-700 mt-0.5">{itemCode}</div>}
+                  <div className="flex items-center gap-2 mt-1">
+                    <StatusBadge status={status} />
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border bg-background text-muted-foreground border-border">
+                      {wt === "outsource_required" ? "Outsource" : "Simple Stitch"}
+                      {osCat ? ` · ${osCat.replace(/_/g, " ")}` : ""}
+                    </span>
+                    {prodRef && <span className="text-[10px] font-medium text-violet-600">{prodRef}</span>}
+                  </div>
                 </div>
+
+                {ppp === 0 && (
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                    No points configured for this product. Update the Product Master to set points per piece.
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-card border border-border rounded-xl p-3">
                     <div className="text-xs text-muted-foreground mb-1">Points / Piece</div>
                     <div className="text-lg font-bold text-foreground">{ppp}</div>
                   </div>
                   <div className="bg-card border border-border rounded-xl p-3">
-                    <div className="text-xs text-muted-foreground mb-1">Allocated Qty</div>
+                    <div className="text-xs text-muted-foreground mb-1">Qty Issued</div>
                     <div className="text-lg font-bold text-foreground">{qty}</div>
                   </div>
                   <div className="bg-card border border-border rounded-xl p-3">
@@ -882,6 +910,21 @@ export default function AllocationPage() {
                   <div className="bg-card border border-border rounded-xl p-3">
                     <div className="text-xs text-muted-foreground mb-1">Expected Time</div>
                     <div className="text-lg font-bold text-primary">{formatMinutes(totalMinutes)}</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-card border border-border rounded-lg p-2 text-center">
+                    <div className="text-sm font-bold text-emerald-600">{received}</div>
+                    <div className="text-[10px] text-muted-foreground">Received</div>
+                  </div>
+                  <div className="bg-card border border-border rounded-lg p-2 text-center">
+                    <div className="text-sm font-bold text-red-500">{rejected}</div>
+                    <div className="text-[10px] text-muted-foreground">Rejected</div>
+                  </div>
+                  <div className="bg-card border border-border rounded-lg p-2 text-center">
+                    <div className={`text-sm font-bold ${pending > 0 ? "text-amber-700" : "text-emerald-600"}`}>{pending}</div>
+                    <div className="text-[10px] text-muted-foreground">Pending</div>
                   </div>
                 </div>
 
@@ -895,6 +938,10 @@ export default function AllocationPage() {
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Outsource Sent</span>
                         <span className="font-medium text-orange-500">{oSendDate ? fmtUTC(oSendDate) : "—"}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Outsource Qty</span>
+                        <span className="font-medium text-foreground">{oSent} sent · {oReturned} returned{oDamaged > 0 ? ` · ${oDamaged} damaged` : ""}</span>
                       </div>
                       {oReturnDate && (
                         <div className="flex justify-between text-sm">
@@ -975,12 +1022,13 @@ export default function AllocationPage() {
                   </div>
                 </div>
 
-                {ppp === 0 && (
-                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
-                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                    No points configured for this product. Update the Product Master to set points per piece.
+                {remarks && (
+                  <div className="border-t border-border pt-2">
+                    <div className="text-xs text-muted-foreground mb-0.5">Remarks</div>
+                    <div className="text-sm text-foreground">{remarks}</div>
                   </div>
                 )}
+
                 <div className="text-xs text-muted-foreground mt-1">
                   Working slots: 8:00–1:20 PM, 2:30–8:00 PM (4h30m effective), 8:30–11:00 PM · 1 point = 20 min
                 </div>
