@@ -129,6 +129,8 @@ router.get("/allocation", checkPermission("allocation", "view"), async (req, res
         totalSent: sql<number>`COALESCE(SUM(${outsourceTransfersTable.quantitySent}), 0)::int`,
         totalReturned: sql<number>`COALESCE(SUM(${outsourceTransfersTable.quantityReturned}), 0)::int`,
         totalDamaged: sql<number>`COALESCE(SUM(${outsourceTransfersTable.quantityDamaged}), 0)::int`,
+        earliestSendDate: sql<string>`MIN(${outsourceTransfersTable.sendDate})`,
+        latestReturnDate: sql<string>`MAX(${outsourceTransfersTable.returnDate})`,
       })
       .from(outsourceTransfersTable)
       .where(inArray(outsourceTransfersTable.allocationId, outsourceAllocIds))
@@ -137,10 +139,12 @@ router.get("/allocation", checkPermission("allocation", "view"), async (req, res
     const outsourceMap = new Map(outsourceSums.map(o => [o.allocationId, o]));
     for (const row of mapped) {
       if (row.workType === "outsource_required") {
-        const o = outsourceMap.get(row.id) || { totalSent: 0, totalReturned: 0, totalDamaged: 0 };
+        const o = outsourceMap.get(row.id) || { totalSent: 0, totalReturned: 0, totalDamaged: 0, earliestSendDate: null, latestReturnDate: null };
         (row as any).outsourceSent = o.totalSent;
         (row as any).outsourceReturned = o.totalReturned;
         (row as any).outsourceDamaged = o.totalDamaged;
+        (row as any).outsourceSendDate = o.earliestSendDate || null;
+        (row as any).outsourceReturnDate = o.latestReturnDate || null;
       }
     }
   }

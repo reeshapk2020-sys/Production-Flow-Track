@@ -81,6 +81,37 @@ function calcExpectedCompletion(startDateTime: Date, totalMinutes: number) {
   return current;
 }
 
+function calcWorkingMinutesBetween(startDt: Date, endDt: Date): number {
+  let total = 0;
+  let current = new Date(startDt);
+  const dayStart = (d: Date) => { const r = new Date(d); r.setHours(0, 0, 0, 0); return r; };
+  const minuteOfDay = (d: Date) => d.getHours() * 60 + d.getMinutes();
+  const endMinuteOfDay = minuteOfDay(endDt);
+  const endDayStart = dayStart(endDt).getTime();
+
+  for (let guard = 0; guard < 365; guard++) {
+    const todayBase = dayStart(current);
+    const isEndDay = todayBase.getTime() === endDayStart;
+    const curMinute = minuteOfDay(current);
+
+    for (const slot of WORK_SLOTS) {
+      const effectiveStart = Math.max(curMinute, slot.start);
+      const slotEnd = isEndDay ? Math.min(slot.end, endMinuteOfDay) : slot.end;
+      if (effectiveStart >= slotEnd) continue;
+      const rawAvail = slotEnd - effectiveStart;
+      const slotTotal = slot.end - slot.start;
+      const effectiveTotal = slot.effective || slotTotal;
+      const ratio = effectiveTotal / slotTotal;
+      total += Math.floor(rawAvail * ratio);
+    }
+
+    if (isEndDay) break;
+    current = new Date(todayBase.getTime() + 24 * 60 * 60000);
+    current.setHours(0, 0, 0, 0);
+  }
+  return total;
+}
+
 function formatMinutes(m: number) {
   const hrs = Math.floor(m / 60);
   const mins = Math.round(m % 60);
@@ -744,7 +775,33 @@ export default function AllocationPage() {
             const totalPoints = ppp * qty;
             const totalMinutes = totalPoints * MINUTES_PER_POINT;
             const startDt = detailTarget.issueDate ? new Date(detailTarget.issueDate) : null;
-            const expectedEnd = startDt && totalMinutes > 0 ? calcExpectedCompletion(startDt, totalMinutes) : null;
+
+            const oSendDate = detailTarget.outsourceSendDate ? new Date(detailTarget.outsourceSendDate) : null;
+            const oReturnDate = detailTarget.outsourceReturnDate ? new Date(detailTarget.outsourceReturnDate) : null;
+            const oSent = detailTarget.outsourceSent || 0;
+            const oReturned = detailTarget.outsourceReturned || 0;
+            const oDamaged = detailTarget.outsourceDamaged || 0;
+            const hasOutsource = oSendDate !== null && oSent > 0;
+            const outsourcePending = oSent - oReturned - oDamaged;
+            const isInOutsource = hasOutsource && outsourcePending > 0;
+            const outsourceFullyReturned = hasOutsource && outsourcePending <= 0;
+
+            let preOutsourceUsed = 0;
+            let remainingMinutes = totalMinutes;
+            let expectedEnd: Date | null = null;
+
+            if (startDt && totalMinutes > 0) {
+              if (hasOutsource && oSendDate) {
+                preOutsourceUsed = calcWorkingMinutesBetween(startDt, oSendDate);
+                remainingMinutes = Math.max(0, totalMinutes - preOutsourceUsed);
+                if (outsourceFullyReturned && oReturnDate && remainingMinutes > 0) {
+                  expectedEnd = calcExpectedCompletion(oReturnDate, remainingMinutes);
+                }
+              } else {
+                expectedEnd = calcExpectedCompletion(startDt, totalMinutes);
+              }
+            }
+
             return (
               <div className="grid grid-cols-1 gap-3 pt-4">
                 <div className="bg-background rounded-xl p-3 text-sm text-muted-foreground">
@@ -769,16 +826,48 @@ export default function AllocationPage() {
                     <div className="text-lg font-bold text-primary">{formatMinutes(totalMinutes)}</div>
                   </div>
                 </div>
+
                 <div className="border-t border-border pt-3 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Allocation Start</span>
                     <span className="font-medium text-foreground">{startDt ? format(startDt, "MMM d, yyyy HH:mm") : "—"}</span>
                   </div>
+                  {hasOutsource && (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Outsource Sent</span>
+                        <span className="font-medium text-orange-500">{oSendDate ? format(oSendDate, "MMM d, yyyy HH:mm") : "—"}</span>
+                      </div>
+                      {oReturnDate && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Outsource Returned</span>
+                          <span className="font-medium text-teal-600">{format(oReturnDate, "MMM d, yyyy HH:mm")}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Time Before Outsource</span>
+                        <span className="font-medium text-foreground">{formatMinutes(preOutsourceUsed)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Remaining Time</span>
+                        <span className="font-medium text-primary">{formatMinutes(remainingMinutes)}</span>
+                      </div>
+                    </>
+                  )}
+                  {isInOutsource && (
+                    <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-2 text-xs text-orange-600 flex items-center gap-2 mt-1">
+                      <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                      Timing paused — batch is currently in outsource
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Expected Completion</span>
-                    <span className="font-medium text-emerald-600">{expectedEnd ? format(expectedEnd, "MMM d, yyyy HH:mm") : "—"}</span>
+                    <span className={`font-medium ${isInOutsource ? "text-orange-500" : "text-emerald-600"}`}>
+                      {isInOutsource ? "Paused" : expectedEnd ? format(expectedEnd, "MMM d, yyyy HH:mm") : "—"}
+                    </span>
                   </div>
                 </div>
+
                 {ppp === 0 && (
                   <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
                     <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
