@@ -200,10 +200,45 @@ export function computeTimingValues(input: TimingInput): TimingResult {
       preOutsourceUsed = calcWorkingMinutesBetween(startDt, oSendDate);
       remainingMinutes = Math.max(0, totalMinutes - preOutsourceUsed);
       if (outsourceFullyReturned && oReturnDate && remainingMinutes > 0) {
-        expectedEnd = calcExpectedCompletion(oReturnDate, remainingMinutes);
+        let resumePoint = oReturnDate;
+        let workedAfterResume = 0;
+        for (const p of mergedPauses) {
+          const pStart = new Date(p.start);
+          const pEnd = new Date(p.end);
+          if (pStart.getTime() > oReturnDate.getTime()) {
+            workedAfterResume += calcWorkingMinutesBetween(resumePoint, pStart);
+            resumePoint = pEnd;
+          }
+        }
+        const adjustedRemaining = Math.max(0, remainingMinutes - workedAfterResume);
+        if (isPausedByOrder) {
+          remainingMinutes = adjustedRemaining;
+        } else {
+          remainingMinutes = adjustedRemaining;
+          expectedEnd = calcExpectedCompletion(resumePoint, adjustedRemaining);
+        }
       }
     } else {
-      expectedEnd = calcExpectedCompletion(startDt, totalMinutes);
+      let workedBeforePauses = 0;
+      let resumePoint: Date = startDt;
+      if (hasPriorityPause) {
+        for (const p of mergedPauses) {
+          const pStart = new Date(p.start);
+          const pEnd = new Date(p.end);
+          if (pStart.getTime() > resumePoint.getTime()) {
+            workedBeforePauses += calcWorkingMinutesBetween(resumePoint, pStart);
+          }
+          if (pEnd.getTime() > resumePoint.getTime()) {
+            resumePoint = pEnd;
+          }
+        }
+        remainingMinutes = Math.max(0, totalMinutes - workedBeforePauses);
+        if (!isPausedByOrder) {
+          expectedEnd = calcExpectedCompletion(resumePoint, remainingMinutes);
+        }
+      } else {
+        expectedEnd = calcExpectedCompletion(startDt, totalMinutes);
+      }
     }
   }
 
