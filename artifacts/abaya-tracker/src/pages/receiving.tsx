@@ -274,7 +274,8 @@ export default function ReceivingPage() {
                   });
                   const { totalPoints, totalMinutes, startDt, oSendDate, oReturnDate,
                     hasOutsource, isInOutsource: isStillInOutsource,
-                    preOutsourceUsed, remainingMinutes, expectedEnd } = t;
+                    preOutsourceUsed, remainingMinutes, expectedEnd,
+                    hasPriorityPause, isPausedByOrder, priorityPauses } = t;
                   const ppp = Number(selectedAlloc.pointsPerPiece) || 0;
 
                   if (ppp === 0) {
@@ -344,10 +345,53 @@ export default function ReceivingPage() {
                             Timing paused — batch is currently in outsource
                           </div>
                         )}
+                        {hasPriorityPause && (
+                          <>
+                            {priorityPauses.map((p: any, idx: number) => (
+                              <div key={idx} className="bg-violet-500/10 border border-violet-500/20 rounded-xl px-4 py-2 text-[10px] space-y-1 mt-1">
+                                <div className="font-semibold text-violet-700 flex items-center gap-1">
+                                  <AlertTriangle className="h-3 w-3 shrink-0" />
+                                  Priority Order Pause{priorityPauses.length > 1 ? ` #${idx + 1}` : ""}
+                                </div>
+                                <div className="text-muted-foreground">
+                                  Order: {p.orderBatchNumber || p.orderAllocationNumber || "—"}
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Pause Start</span>
+                                  <span className="font-medium text-violet-600">{p.pauseStart ? fmtUTC(p.pauseStart) : "—"}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Resume</span>
+                                  <span className={`font-medium ${p.pauseEnd ? "text-teal-600" : "text-violet-600"}`}>
+                                    {p.pauseEnd ? fmtUTC(p.pauseEnd) : "Pending"}
+                                  </span>
+                                </div>
+                                {p.pauseStart && p.pauseEnd && (
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Paused Duration</span>
+                                    <span className="font-medium text-foreground">{formatMinutes(calcWorkingMinutesBetween(new Date(p.pauseStart), new Date(p.pauseEnd)))}</span>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                            {isPausedByOrder && (
+                              <div className="bg-violet-500/10 border border-violet-500/20 rounded-lg px-3 py-1.5 text-[10px] text-violet-700 flex items-center gap-1.5">
+                                <AlertTriangle className="h-3 w-3 shrink-0" />
+                                Timing paused — priority Order batch in progress
+                              </div>
+                            )}
+                          </>
+                        )}
+                        {!hasOutsource && hasPriorityPause && (
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Remaining Time</span>
+                            <span className="font-medium text-primary">{formatMinutes(remainingMinutes)}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between text-xs">
                           <span className="text-muted-foreground">Expected Completion</span>
-                          <span className={`font-medium ${isStillInOutsource ? "text-orange-500" : "text-emerald-600"}`}>
-                            {isStillInOutsource ? "Paused" : expectedEnd ? fmtUTC(expectedEnd) : "—"}
+                          <span className={`font-medium ${(isStillInOutsource || isPausedByOrder) ? "text-violet-600" : "text-emerald-600"}`}>
+                            {expectedEnd ? fmtUTC(expectedEnd) : "—"}{(isStillInOutsource || isPausedByOrder) && expectedEnd ? " (paused)" : ""}
                           </span>
                         </div>
                         {startDt && rcvDate && (

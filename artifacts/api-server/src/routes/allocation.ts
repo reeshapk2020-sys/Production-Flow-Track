@@ -255,8 +255,8 @@ router.get("/allocation", checkPermission("allocation", "view"), async (req, res
           orderAllocationId: oa.id,
           orderAllocationNumber: oa.allocationNumber,
           orderBatchNumber: oa.batchNumber,
-          pauseStart: oa.issueDate,
-          pauseEnd: oaCompleted && rcvDate ? rcvDate : null,
+          pauseStart: oa.issueDate instanceof Date ? oa.issueDate.toISOString() : oa.issueDate,
+          pauseEnd: oaCompleted && rcvDate ? new Date(rcvDate).toISOString() : null,
           orderCompleted: oaCompleted,
         });
       }
