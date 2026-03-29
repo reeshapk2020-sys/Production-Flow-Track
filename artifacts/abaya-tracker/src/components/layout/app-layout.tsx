@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useAppAuth, displayName, getRoleLabel } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Database, Layers, Scissors, Send,
   Inbox, Settings2, Package, Box, BarChart3,
   GitBranch, Shield, Users, LogOut, Loader2, ChevronRight, KeyRound, ArrowUpRight,
-  FileText, ShoppingCart, PackageOpen, Truck, Moon, Sun
+  FileText, ShoppingCart, PackageOpen, Truck, Moon, Sun, Sparkles, ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -35,7 +35,17 @@ const NAV_ITEMS = [
 export function AppLayout({ children, title }: { children: ReactNode; title: string }) {
   const [location] = useLocation();
   const { user, isLoading, logout, can } = useAppAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
+  const [themeOpen, setThemeOpen] = useState(false);
+  const themeRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (themeRef.current && !themeRef.current.contains(e.target as Node)) setThemeOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   if (isLoading) {
     return (
@@ -137,13 +147,47 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
       <main className="flex-1 flex flex-col min-w-0">
         <header className="h-16 bg-card border-b border-border shadow-sm flex items-center px-6 lg:px-8 shrink-0 z-10">
           <h1 className="text-2xl font-display font-semibold text-foreground flex-1">{title}</h1>
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </button>
+          <div ref={themeRef} className="relative">
+            <button
+              onClick={() => setThemeOpen((v) => !v)}
+              onKeyDown={(e) => { if (e.key === "Escape") setThemeOpen(false); }}
+              className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground flex items-center gap-1"
+              aria-label="Change theme"
+              aria-expanded={themeOpen}
+              aria-haspopup="menu"
+            >
+              {theme === "dark" ? <Moon className="h-5 w-5" /> : theme === "reesha" ? <Sparkles className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+              <ChevronDown className="h-3 w-3" />
+            </button>
+            {themeOpen && (
+              <div role="menu" className="absolute right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-lg py-1 min-w-[160px] z-50">
+                <button
+                  role="menuitem"
+                  onClick={() => { setTheme("light"); setThemeOpen(false); }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors ${theme === "light" ? "text-primary font-medium" : "text-foreground"}`}
+                >
+                  <Sun className="h-4 w-4" />
+                  Light
+                </button>
+                <button
+                  role="menuitem"
+                  onClick={() => { setTheme("reesha"); setThemeOpen(false); }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors ${theme === "reesha" ? "text-primary font-medium" : "text-foreground"}`}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Reesha
+                </button>
+                <button
+                  role="menuitem"
+                  onClick={() => { setTheme("dark"); setThemeOpen(false); }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors ${theme === "dark" ? "text-primary font-medium" : "text-foreground"}`}
+                >
+                  <Moon className="h-4 w-4" />
+                  Dark
+                </button>
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-2 md:hidden ml-2">
             <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary text-xs">
               {initials || "U"}
