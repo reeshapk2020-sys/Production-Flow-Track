@@ -355,6 +355,7 @@ export default function ReceivingPage() {
                                 </div>
                                 <div className="text-muted-foreground">
                                   Order: {p.orderBatchNumber || p.orderAllocationNumber || "—"}
+                                  {p.phaseLabel && <span className="ml-1 text-violet-500">({p.phaseLabel})</span>}
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-muted-foreground">Pause Start</span>
@@ -907,6 +908,7 @@ export default function ReceivingPage() {
                           </div>
                           <div className="text-muted-foreground">
                             Order: {p.orderBatchNumber || p.orderAllocationNumber || "—"}
+                            {p.phaseLabel && <span className="ml-1 text-violet-500">({p.phaseLabel})</span>}
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Pause Start</span>

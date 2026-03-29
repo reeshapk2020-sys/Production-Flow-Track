@@ -178,7 +178,7 @@ export function computeTimingValues(input: TimingInput): TimingResult {
 
   const priorityPauses: any[] = input.priorityPauses || [];
   const hasPriorityPause = priorityPauses.length > 0;
-  const activePriorityPause = priorityPauses.find((p: any) => !p.orderCompleted);
+  const activePriorityPause = priorityPauses.find((p: any) => !p.pauseEnd);
   const isPausedByOrder = !!activePriorityPause;
 
   const completedPauseIntervals = priorityPauses

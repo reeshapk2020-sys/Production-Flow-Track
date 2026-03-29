@@ -237,6 +237,29 @@ router.get("/allocation", checkPermission("allocation", "view"), async (req, res
       for (const r of rcvDates) orderRcvMap.set(r.allocationId, r.latestReceiveDate);
     }
 
+    const orderOutsourceMap = new Map<number, { sendDate: string | null; returnDate: string | null; sent: number; returned: number; damaged: number }>();
+    if (orderIds.length > 0) {
+      const orderOsData = await db
+        .select({
+          allocationId: outsourceTransfersTable.allocationId,
+          totalSent: sql<number>`COALESCE(SUM(${outsourceTransfersTable.quantitySent}), 0)::int`,
+          totalReturned: sql<number>`COALESCE(SUM(${outsourceTransfersTable.quantityReturned}), 0)::int`,
+          totalDamaged: sql<number>`COALESCE(SUM(${outsourceTransfersTable.quantityDamaged}), 0)::int`,
+          earliestSendDate: sql<string>`MIN(${outsourceTransfersTable.sendDate})`,
+          latestReturnDate: sql<string>`MAX(${outsourceTransfersTable.returnDate})`,
+        })
+        .from(outsourceTransfersTable)
+        .where(inArray(outsourceTransfersTable.allocationId, orderIds))
+        .groupBy(outsourceTransfersTable.allocationId);
+      for (const o of orderOsData) {
+        orderOutsourceMap.set(o.allocationId, {
+          sendDate: o.earliestSendDate ? new Date(o.earliestSendDate).toISOString() : null,
+          returnDate: o.latestReturnDate ? new Date(o.latestReturnDate).toISOString() : null,
+          sent: o.totalSent, returned: o.totalReturned, damaged: o.totalDamaged,
+        });
+      }
+    }
+
     for (const row of finalRows) {
       if (!row.stitcherId || !row.issueDate) continue;
       if (row.productionFor === "order") continue;
@@ -251,14 +274,34 @@ router.get("/allocation", checkPermission("allocation", "view"), async (req, res
         if (!oaIssueTime || oaIssueTime <= rowIssueTime) continue;
         const oaCompleted = (oa.quantityReceived + oa.quantityRejected) >= oa.quantityIssued && oa.quantityIssued > 0;
         const rcvDate = orderRcvMap.get(oa.id) || null;
-        rawPauses.push({
-          orderAllocationId: oa.id,
-          orderAllocationNumber: oa.allocationNumber,
-          orderBatchNumber: oa.batchNumber,
-          pauseStart: oa.issueDate instanceof Date ? oa.issueDate.toISOString() : oa.issueDate,
-          pauseEnd: oaCompleted && rcvDate ? new Date(rcvDate).toISOString() : null,
-          orderCompleted: oaCompleted,
-        });
+        const oaStart = oa.issueDate instanceof Date ? oa.issueDate.toISOString() : oa.issueDate;
+        const oaEnd = oaCompleted && rcvDate ? new Date(rcvDate).toISOString() : null;
+        const oo = orderOutsourceMap.get(oa.id);
+        const oaHasOs = oo && oo.sent > 0 && oo.sendDate;
+        if (oaHasOs) {
+          const osPending = oo.sent - oo.returned - oo.damaged;
+          const osReturned = osPending <= 0;
+          rawPauses.push({
+            orderAllocationId: oa.id, orderAllocationNumber: oa.allocationNumber,
+            orderBatchNumber: oa.batchNumber, orderCompleted: false,
+            pauseStart: oaStart, pauseEnd: oo.sendDate,
+            phaseLabel: "In-house before outsource",
+          });
+          if (osReturned && oo.returnDate) {
+            rawPauses.push({
+              orderAllocationId: oa.id, orderAllocationNumber: oa.allocationNumber,
+              orderBatchNumber: oa.batchNumber, orderCompleted: oaCompleted,
+              pauseStart: oo.returnDate, pauseEnd: oaEnd,
+              phaseLabel: "In-house after outsource",
+            });
+          }
+        } else {
+          rawPauses.push({
+            orderAllocationId: oa.id, orderAllocationNumber: oa.allocationNumber,
+            orderBatchNumber: oa.batchNumber, orderCompleted: oaCompleted,
+            pauseStart: oaStart, pauseEnd: oaEnd,
+          });
+        }
       }
       if (rawPauses.length > 0) {
         (row as any).priorityPauses = rawPauses;
