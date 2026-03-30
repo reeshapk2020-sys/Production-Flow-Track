@@ -35,7 +35,6 @@ export default function DashboardPage() {
         <StatCard title="Today's Receiving" value={data.todayReceivedQty} icon={Inbox} trend="Quality Check" color="text-indigo-600" bg="bg-indigo-100" />
         <StatCard title="Today's Finished" value={data.todayFinishedQty} icon={Package} trend="Store Ready" color="text-emerald-600" bg="bg-emerald-100" />
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         {/* Chart */}
         <Card className="lg:col-span-2 shadow-md border-border rounded-2xl overflow-hidden">
@@ -82,7 +81,6 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
-
       {/* Tables Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card className="shadow-md border-border rounded-2xl">
@@ -120,7 +118,7 @@ export default function DashboardPage() {
 
         <Card className="shadow-md border-border rounded-2xl">
           <CardHeader className="bg-background/50 border-b border-border">
-            <CardTitle className="text-lg font-display text-foreground">Top Performing Stitchers</CardTitle>
+            <CardTitle className="text-lg font-display text-foreground">Stitchers performance</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
