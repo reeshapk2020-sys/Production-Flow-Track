@@ -22,10 +22,12 @@ router.get("/opening-finished-goods", checkPermission("opening-finished-goods", 
 });
 
 router.post("/opening-finished-goods", checkPermission("opening-finished-goods", "create"), async (req: Request, res: Response) => {
-  const { itemCode, productCode, productName, sizeName, colorName, quantity, remarks } = req.body;
+  const { itemCode, productCode, productName, sizeName, colorName, quantity, stockStage, remarks } = req.body;
   if (!itemCode || !quantity || quantity <= 0) {
     return res.status(400).json({ error: "itemCode and a positive quantity are required." });
   }
+  const validStages = ["finishing", "finished_goods"];
+  const stage = validStages.includes(stockStage) ? stockStage : "finished_goods";
   const [row] = await db.insert(openingFinishedGoodsTable).values({
     itemCode: String(itemCode).trim(),
     productCode: productCode ? String(productCode).trim() : null,
@@ -33,16 +35,17 @@ router.post("/opening-finished-goods", checkPermission("opening-finished-goods",
     sizeName: sizeName ? String(sizeName).trim() : null,
     colorName: colorName ? String(colorName).trim() : null,
     quantity: Number(quantity),
+    stockStage: stage,
     remarks: remarks || null,
     enteredBy: (req as any).user?.username || null,
   }).returning();
-  await logAudit(req, "CREATE", "opening_finished_goods", String(row.id), `Added opening stock: ${itemCode} x${quantity}`);
+  await logAudit(req, "CREATE", "opening_finished_goods", String(row.id), `Added opening stock: ${itemCode} x${quantity} [${stage}]`);
   res.status(201).json(row);
 });
 
 router.put("/opening-finished-goods/:id", checkPermission("opening-finished-goods", "edit"), async (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
-  const { itemCode, productCode, productName, sizeName, colorName, quantity, remarks } = req.body;
+  const { itemCode, productCode, productName, sizeName, colorName, quantity, stockStage, remarks } = req.body;
   const updates: Record<string, any> = {};
   if (itemCode !== undefined) updates.itemCode = String(itemCode).trim();
   if (productCode !== undefined) updates.productCode = productCode ? String(productCode).trim() : null;
@@ -52,6 +55,10 @@ router.put("/opening-finished-goods/:id", checkPermission("opening-finished-good
   if (quantity !== undefined) {
     if (quantity <= 0) return res.status(400).json({ error: "Quantity must be positive." });
     updates.quantity = Number(quantity);
+  }
+  if (stockStage !== undefined) {
+    const validStages = ["finishing", "finished_goods"];
+    if (validStages.includes(stockStage)) updates.stockStage = stockStage;
   }
   if (remarks !== undefined) updates.remarks = remarks || null;
 
@@ -74,7 +81,7 @@ router.delete("/opening-finished-goods/:id", checkPermission("opening-finished-g
 router.get("/opening-finished-goods/template", checkPermission("opening-finished-goods", "view"), (_req: Request, res: Response) => {
   res.setHeader("Content-Type", "text/csv");
   res.setHeader("Content-Disposition", "attachment; filename=opening_finished_goods_template.csv");
-  res.send("itemCode,productCode,productName,sizeName,colorName,quantity,remarks\nABY-BLK-SLK,ABY,Black Abaya,L,Black,10,Old stock\n");
+  res.send("itemCode,productCode,productName,sizeName,colorName,quantity,stockStage,remarks\nABY-BLK-SLK,ABY,Black Abaya,L,Black,10,finished_goods,Old stock\n");
 });
 
 router.post("/opening-finished-goods/import", checkPermission("opening-finished-goods", "import"), async (req: Request, res: Response) => {
@@ -98,6 +105,8 @@ router.post("/opening-finished-goods/import", checkPermission("opening-finished-
       errors.push({ row: rowNum, message: "quantity must be a positive number." });
       continue;
     }
+    const validStages = ["finishing", "finished_goods"];
+    const stage = validStages.includes(r.stockStage) ? r.stockStage : "finished_goods";
     validRows.push({
       itemCode: String(r.itemCode).trim(),
       productCode: r.productCode ? String(r.productCode).trim() : null,
@@ -105,6 +114,7 @@ router.post("/opening-finished-goods/import", checkPermission("opening-finished-
       sizeName: r.sizeName ? String(r.sizeName).trim() : null,
       colorName: r.colorName ? String(r.colorName).trim() : null,
       quantity: qty,
+      stockStage: stage,
       remarks: r.remarks ? String(r.remarks).trim() : null,
       enteredBy: (req as any).user?.username || null,
     });
@@ -128,6 +138,7 @@ router.get("/opening-finished-goods/summary", checkPermission("opening-finished-
       productName: openingFinishedGoodsTable.productName,
       sizeName: openingFinishedGoodsTable.sizeName,
       colorName: openingFinishedGoodsTable.colorName,
+      stockStage: openingFinishedGoodsTable.stockStage,
       totalQuantity: sql<number>`SUM(${openingFinishedGoodsTable.quantity})::int`,
     })
     .from(openingFinishedGoodsTable)
@@ -136,7 +147,8 @@ router.get("/opening-finished-goods/summary", checkPermission("opening-finished-
       openingFinishedGoodsTable.productCode,
       openingFinishedGoodsTable.productName,
       openingFinishedGoodsTable.sizeName,
-      openingFinishedGoodsTable.colorName
+      openingFinishedGoodsTable.colorName,
+      openingFinishedGoodsTable.stockStage
     )
     .orderBy(openingFinishedGoodsTable.itemCode);
   res.json(rows);

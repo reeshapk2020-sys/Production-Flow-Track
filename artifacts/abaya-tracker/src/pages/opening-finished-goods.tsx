@@ -105,6 +105,7 @@ export default function OpeningFinishedGoodsPage() {
                   <TableHead>Size</TableHead>
                   <TableHead>Color</TableHead>
                   <TableHead className="text-right">Qty</TableHead>
+                  <TableHead>Stage</TableHead>
                   <TableHead>Remarks</TableHead>
                   <TableHead>Added</TableHead>
                   {canEdit && <TableHead className="text-center">Actions</TableHead>}
@@ -112,9 +113,9 @@ export default function OpeningFinishedGoodsPage() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={canEdit ? 8 : 7} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-300" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={canEdit ? 9 : 8} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-300" /></TableCell></TableRow>
                 ) : data?.length === 0 ? (
-                  <TableRow><TableCell colSpan={canEdit ? 8 : 7} className="text-center py-12 text-muted-foreground">No opening stock entries yet.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={canEdit ? 9 : 8} className="text-center py-12 text-muted-foreground">No opening stock entries yet.</TableCell></TableRow>
                 ) : data?.map(entry => (
                   <TableRow key={entry.id} className="group hover:bg-background/50">
                     <TableCell>
@@ -128,6 +129,15 @@ export default function OpeningFinishedGoodsPage() {
                     <TableCell className="text-sm">{entry.sizeName || "—"}</TableCell>
                     <TableCell className="text-sm">{entry.colorName || "—"}</TableCell>
                     <TableCell className="text-right font-display text-lg font-bold text-emerald-600">{entry.quantity}</TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${
+                        entry.stockStage === "finishing"
+                          ? "bg-orange-100 text-orange-700 border border-orange-200"
+                          : "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                      }`}>
+                        {entry.stockStage === "finishing" ? "Finishing" : "Finished Goods"}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">{entry.remarks || "—"}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {entry.createdAt ? format(new Date(entry.createdAt), "dd MMM yyyy") : "—"}
@@ -167,6 +177,7 @@ function AddEditDialog({ open, onOpenChange, entry, onSuccess }: {
     sizeName: entry?.sizeName || "",
     colorName: entry?.colorName || "",
     quantity: entry?.quantity || "",
+    stockStage: entry?.stockStage || "finished_goods",
     remarks: entry?.remarks || "",
   });
   const { toast } = useToast();
@@ -184,6 +195,7 @@ function AddEditDialog({ open, onOpenChange, entry, onSuccess }: {
       sizeName: form.sizeName.trim() || undefined,
       colorName: form.colorName.trim() || undefined,
       quantity: Number(form.quantity),
+      stockStage: form.stockStage,
       remarks: form.remarks.trim() || undefined,
     };
 
@@ -221,6 +233,17 @@ function AddEditDialog({ open, onOpenChange, entry, onSuccess }: {
         <div className="grid grid-cols-2 gap-4 pt-2">
           {F("Item Code", "itemCode", true)}
           {F("Quantity", "quantity", true, "number")}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-muted-foreground">Stock Stage<span className="text-red-500"> *</span></Label>
+            <select
+              value={form.stockStage}
+              onChange={e => setForm(f => ({ ...f, stockStage: e.target.value }))}
+              className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary"
+            >
+              <option value="finished_goods">Finished Goods (Ready)</option>
+              <option value="finishing">Finishing (Unpressed)</option>
+            </select>
+          </div>
           {F("Product Code", "productCode")}
           {F("Product / Item Name", "productName")}
           {F("Size", "sizeName")}
@@ -314,6 +337,7 @@ function ImportOpeningStockDialog({ open, onOpenChange, onSuccess }: {
         sizeName: r.sizeName || r.size || undefined,
         colorName: r.colorName || r.color || undefined,
         quantity: Number(r.quantity) || 0,
+        stockStage: r.stockStage || "finished_goods",
         remarks: r.remarks || undefined,
       }));
       const res = await importMut.mutateAsync({ data: { rows: payload } });

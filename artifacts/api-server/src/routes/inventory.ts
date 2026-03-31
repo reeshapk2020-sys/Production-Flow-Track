@@ -65,9 +65,15 @@ router.get("/inventory/summary", checkPermission("inventory", "view"), async (_r
     .select({ totalQuantity: sql<number>`COALESCE(SUM(${finishedGoodsTable.quantity}), 0)::int` })
     .from(finishedGoodsTable);
 
-  const [openingStock] = await db
+  const [openingStockFG] = await db
     .select({ totalQuantity: sql<number>`COALESCE(SUM(${openingFinishedGoodsTable.quantity}), 0)::int` })
-    .from(openingFinishedGoodsTable);
+    .from(openingFinishedGoodsTable)
+    .where(sql`${openingFinishedGoodsTable.stockStage} = 'finished_goods'`);
+
+  const [openingStockFinishing] = await db
+    .select({ totalQuantity: sql<number>`COALESCE(SUM(${openingFinishedGoodsTable.quantity}), 0)::int` })
+    .from(openingFinishedGoodsTable)
+    .where(sql`${openingFinishedGoodsTable.stockStage} = 'finishing'`);
 
   res.json({
     rawMaterial: {
@@ -83,15 +89,16 @@ router.get("/inventory/summary", checkPermission("inventory", "view"), async (_r
       totalQuantity: pendingWithStitchers.totalQuantity || 0,
     },
     inFinishing: {
-      pressing: Math.max(0, pressingQty.qty || 0),
+      pressing: Math.max(0, (pressingQty.qty || 0) + (openingStockFinishing.totalQuantity || 0)),
       buttons: Math.max(0, buttonsQty.qty || 0),
       hanger: Math.max(0, hangerQty.qty || 0),
       packing: Math.max(0, packingQty.qty || 0),
+      openingFinishing: openingStockFinishing.totalQuantity || 0,
     },
     finishedGoods: {
-      totalQuantity: (finishedGoods.totalQuantity || 0) + (openingStock.totalQuantity || 0),
+      totalQuantity: (finishedGoods.totalQuantity || 0) + (openingStockFG.totalQuantity || 0),
       producedQuantity: finishedGoods.totalQuantity || 0,
-      openingQuantity: openingStock.totalQuantity || 0,
+      openingQuantity: openingStockFG.totalQuantity || 0,
     },
   });
 });

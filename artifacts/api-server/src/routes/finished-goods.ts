@@ -204,6 +204,7 @@ router.get("/finished-goods/stock", checkPermission("finished-goods", "view"), a
       openingQty: sql<number>`SUM(${openingFinishedGoodsTable.quantity})::int`,
     })
     .from(openingFinishedGoodsTable)
+    .where(sql`${openingFinishedGoodsTable.stockStage} = 'finished_goods'`)
     .groupBy(
       openingFinishedGoodsTable.itemCode,
       openingFinishedGoodsTable.productCode,

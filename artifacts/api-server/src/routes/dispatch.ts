@@ -64,6 +64,7 @@ async function getAvailableStockByItemCode(): Promise<Map<string, number>> {
       qty: sql<number>`SUM(${openingFinishedGoodsTable.quantity})::int`,
     })
     .from(openingFinishedGoodsTable)
+    .where(sql`${openingFinishedGoodsTable.stockStage} = 'finished_goods'`)
     .groupBy(
       openingFinishedGoodsTable.itemCode,
       openingFinishedGoodsTable.productCode,

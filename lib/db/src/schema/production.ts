@@ -339,6 +339,7 @@ export const openingFinishedGoodsTable = pgTable("opening_finished_goods", {
   sizeName: text("size_name"),
   colorName: text("color_name"),
   quantity: integer("quantity").notNull(),
+  stockStage: text("stock_stage").notNull().default("finished_goods"),
   remarks: text("remarks"),
   enteredBy: text("entered_by"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

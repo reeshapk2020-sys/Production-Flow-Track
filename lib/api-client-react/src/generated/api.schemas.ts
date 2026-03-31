@@ -922,6 +922,7 @@ export interface OpeningFinishedGoods {
   sizeName?: string | null;
   colorName?: string | null;
   quantity: number;
+  stockStage?: string;
   remarks?: string | null;
   enteredBy?: string | null;
   createdAt?: string;
@@ -934,6 +935,7 @@ export interface CreateOpeningFinishedGoodsBody {
   sizeName?: string;
   colorName?: string;
   quantity: number;
+  stockStage?: string;
   remarks?: string;
 }
 
