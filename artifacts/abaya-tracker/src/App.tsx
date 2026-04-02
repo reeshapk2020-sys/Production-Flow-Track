@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -6,6 +7,7 @@ import { Loader2 } from "lucide-react";
 
 import { AuthProvider, useAppAuth } from "@/lib/auth-context";
 import { ThemeProvider } from "@/lib/theme-context";
+import { setTimeSettings, type WorkSlot } from "@/lib/utils";
 
 import LoginPage from "./pages/login";
 import DashboardPage from "./pages/dashboard";
@@ -27,6 +29,7 @@ import PermissionsPage from "./pages/permissions";
 import PurchaseOrdersPage from "./pages/purchase-orders";
 import OrdersPage from "./pages/orders";
 import DispatchPage from "./pages/dispatch";
+import TimeSettingsPage from "./pages/time-settings";
 import NotFound from "./pages/not-found";
 
 const queryClient = new QueryClient({
@@ -37,6 +40,29 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+
+function TimeSettingsLoader({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAppAuth();
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    fetch(`${API_BASE}/time-settings`, { credentials: "include" })
+      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
+      .then((s) => {
+        if (s && s.slot1Start !== undefined) {
+          const slots: WorkSlot[] = [
+            { start: s.slot1Start, end: s.slot1End },
+            { start: s.slot2Start, end: s.slot2End, effective: s.slot2Effective || undefined },
+            { start: s.slot3Start, end: s.slot3End },
+          ];
+          setTimeSettings(slots, s.minutesPerPoint || 20);
+        }
+      })
+      .catch(() => {});
+  }, [isAuthenticated]);
+  return <>{children}</>;
+}
 
 const PATH_TO_MODULE: Record<string, string> = {
   "/fabric-rolls": "fabric-rolls",
@@ -57,6 +83,7 @@ const PATH_TO_MODULE: Record<string, string> = {
   "/users": "__admin__",
   "/permissions": "__admin__",
   "/audit": "__admin__",
+  "/time-settings": "__admin__",
 };
 
 function ProtectedRoute({ component: Component, path }: { component: React.ComponentType; path: string }) {
@@ -114,6 +141,7 @@ function Router() {
       <Route path="/users" component={() => <ProtectedRoute component={UsersPage} path="/users" />} />
       <Route path="/permissions" component={() => <ProtectedRoute component={PermissionsPage} path="/permissions" />} />
       <Route path="/audit" component={() => <ProtectedRoute component={AuditPage} path="/audit" />} />
+      <Route path="/time-settings" component={() => <ProtectedRoute component={TimeSettingsPage} path="/time-settings" />} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -126,7 +154,9 @@ function App() {
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
             <AuthProvider>
-              <Router />
+              <TimeSettingsLoader>
+                <Router />
+              </TimeSettingsLoader>
             </AuthProvider>
           </WouterRouter>
           <Toaster />

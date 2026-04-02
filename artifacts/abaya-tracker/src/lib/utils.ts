@@ -23,13 +23,22 @@ export function fmtCode(
   return n || c || "";
 }
 
-interface WorkSlot { start: number; end: number; effective?: number; }
-export const WORK_SLOTS: WorkSlot[] = [
+export interface WorkSlot { start: number; end: number; effective?: number; }
+
+let _workSlots: WorkSlot[] = [
   { start: 8 * 60, end: 13 * 60 + 20 },
   { start: 14 * 60 + 30, end: 20 * 60, effective: 270 },
   { start: 20 * 60 + 30, end: 23 * 60 },
 ];
-export const MINUTES_PER_POINT = 20;
+let _minutesPerPoint = 20;
+
+export function setTimeSettings(slots: WorkSlot[], minutesPerPoint: number) {
+  _workSlots = slots;
+  _minutesPerPoint = minutesPerPoint;
+}
+
+export function getWorkSlots(): WorkSlot[] { return _workSlots; }
+export function getMinutesPerPoint(): number { return _minutesPerPoint; }
 
 export function calcExpectedCompletion(startDateTime: Date, totalMinutes: number): Date {
   let remaining = totalMinutes;
@@ -39,7 +48,7 @@ export function calcExpectedCompletion(startDateTime: Date, totalMinutes: number
   for (let guard = 0; guard < 365 && remaining > 0; guard++) {
     const todayBase = dayStartUTC(current);
     const curMinute = minuteOfDayUTC(current);
-    for (const slot of WORK_SLOTS) {
+    for (const slot of _workSlots) {
       if (remaining <= 0) break;
       const effectiveStart = Math.max(curMinute, slot.start);
       if (effectiveStart >= slot.end) continue;
@@ -76,7 +85,7 @@ export function calcWorkingMinutesBetween(startDt: Date, endDt: Date): number {
     const todayBase = dayStartUTC(current);
     const isEndDay = todayBase.getTime() === endDayStart;
     const curMinute = minuteOfDayUTC(current);
-    for (const slot of WORK_SLOTS) {
+    for (const slot of _workSlots) {
       const effectiveStart = Math.max(curMinute, slot.start);
       const slotEnd = isEndDay ? Math.min(slot.end, endMinuteOfDay) : slot.end;
       if (effectiveStart >= slotEnd) continue;
@@ -163,7 +172,7 @@ export function computeTimingValues(input: TimingInput): TimingResult {
   const ppp = Number(input.pointsPerPiece) || 0;
   const qty = input.quantityIssued || 0;
   const totalPoints = ppp * qty;
-  const totalMinutes = totalPoints * MINUTES_PER_POINT;
+  const totalMinutes = totalPoints * _minutesPerPoint;
   const startDt = input.issueDate ? new Date(input.issueDate) : null;
 
   const oSendDate = input.outsourceSendDate ? new Date(input.outsourceSendDate) : null;

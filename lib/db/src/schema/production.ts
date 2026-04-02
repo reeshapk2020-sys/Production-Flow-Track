@@ -525,3 +525,20 @@ export const insertAuditLogSchema = createInsertSchema(auditLogsTable).omit({
 });
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogsTable.$inferSelect;
+
+// ===== TIME SETTINGS =====
+
+export const timeSettingsTable = pgTable("time_settings", {
+  id: serial("id").primaryKey(),
+  slot1Start: integer("slot1_start").notNull().default(480),
+  slot1End: integer("slot1_end").notNull().default(800),
+  slot2Start: integer("slot2_start").notNull().default(870),
+  slot2End: integer("slot2_end").notNull().default(1200),
+  slot2Effective: integer("slot2_effective"),
+  slot3Start: integer("slot3_start").notNull().default(1230),
+  slot3End: integer("slot3_end").notNull().default(1380),
+  minutesPerPoint: integer("minutes_per_point").notNull().default(20),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type TimeSettings = typeof timeSettingsTable.$inferSelect;

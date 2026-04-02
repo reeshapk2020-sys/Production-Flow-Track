@@ -16,7 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { fmtCode, fmtUTC, calcExpectedCompletion, calcWorkingMinutesBetween, formatMinutes, MINUTES_PER_POINT, computeTimingValues } from "@/lib/utils";
+import { fmtCode, fmtUTC, calcExpectedCompletion, calcWorkingMinutesBetween, formatMinutes, getMinutesPerPoint, computeTimingValues } from "@/lib/utils";
 import { useAppAuth } from "@/lib/auth-context";
 import { FilterBar } from "@/components/filter-bar";
 
@@ -123,7 +123,7 @@ export default function AllocationPage() {
   const formProduct = formProductId ? products?.find((p: any) => p.id === formProductId) : null;
   const formPPP = formProduct ? Number(formProduct.pointsPerPiece) || 0 : 0;
   const formTotalPoints = formPPP * formQty;
-  const formTotalMinutes = formTotalPoints * MINUTES_PER_POINT;
+  const formTotalMinutes = formTotalPoints * getMinutesPerPoint();
   const formStartDt = formDate ? new Date(`${formDate}T${formTime || "08:00"}:00Z`) : null;
   const formExpectedEnd = formStartDt && formTotalMinutes > 0 ? calcExpectedCompletion(formStartDt, formTotalMinutes) : null;
 
