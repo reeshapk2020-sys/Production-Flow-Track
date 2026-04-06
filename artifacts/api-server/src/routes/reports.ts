@@ -13,6 +13,7 @@ import {
   colorsTable,
   auditLogsTable,
   outsourceTransfersTable,
+  manualPausesTable,
 } from "@workspace/db/schema";
 import { eq, sql, and, gte, lte, ilike } from "drizzle-orm";
 import { checkPermission } from "./permissions.js";
@@ -592,6 +593,24 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
     }
   }
 
+  let manualPauseMap: Record<number, number> = {};
+  if (allocIds.length > 0) {
+    const mpRows = await db
+      .select({
+        allocationId: manualPausesTable.allocationId,
+        pauseStart: manualPausesTable.pauseStart,
+        pauseEnd: manualPausesTable.pauseEnd,
+      })
+      .from(manualPausesTable)
+      .where(sql`${manualPausesTable.allocationId} IN (${sql.join(allocIds.map(id => sql`${id}`), sql`, `)})`);
+    for (const mp of mpRows) {
+      const ps = new Date(mp.pauseStart);
+      const pe = new Date(mp.pauseEnd);
+      const mpWorkMin = serverCalcWorkingMinutesBetween(ps, pe);
+      manualPauseMap[mp.allocationId] = (manualPauseMap[mp.allocationId] || 0) + mpWorkMin;
+    }
+  }
+
   interface AllocRecord {
     allocationId: number;
     stitcherId: number | null;
@@ -674,7 +693,8 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
       ? serverCalcWorkingMinutesBetween(new Date(a.issueDate), new Date(a.lastReceiveDate))
       : 0;
     const osMin = outsourceMap[a.allocationId] || 0;
-    const effectiveMin = Math.max(0, elapsedMin - osMin);
+    const mpMin = manualPauseMap[a.allocationId] || 0;
+    const effectiveMin = Math.max(0, elapsedMin - osMin - mpMin);
     const isOnTime = a.expectedMinutes > 0 && effectiveMin > 0 ? effectiveMin <= a.expectedMinutes : true;
 
     const batchEfficiency = effectiveMin > 0 ? Math.round((a.expectedMinutes / effectiveMin) * 100) : 0;
@@ -685,7 +705,7 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
       points: Math.round(a.totalPoints * 100) / 100,
       expectedMinutes: a.expectedMinutes,
       effectiveMinutes: effectiveMin,
-      outsourceMinutes: osMin,
+      outsourceMinutes: osMin + mpMin,
       efficiency: batchEfficiency,
       rating: batchRating,
       status: isOnTime ? "On Time" : "Late",
@@ -704,7 +724,7 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
       s.totalPoints += a.totalPoints;
       s.expectedMinutes += a.expectedMinutes;
       s.totalElapsedMinutes += elapsedMin;
-      s.outsourceMinutes += osMin;
+      s.outsourceMinutes += osMin + mpMin;
       s.allocCount++;
       s.batches.push(batchDetail);
       if (a.expectedMinutes > 0 && effectiveMin > 0) { isOnTime ? s.onTimeCount++ : s.lateCount++; }
@@ -724,7 +744,7 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
       t.totalPoints += a.totalPoints;
       t.expectedMinutes += a.expectedMinutes;
       t.totalElapsedMinutes += elapsedMin;
-      t.outsourceMinutes += osMin;
+      t.outsourceMinutes += osMin + mpMin;
       t.allocCount++;
       t.batches.push(batchDetail);
       if (a.expectedMinutes > 0 && effectiveMin > 0) { isOnTime ? t.onTimeCount++ : t.lateCount++; }

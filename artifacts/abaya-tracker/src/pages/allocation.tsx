@@ -696,6 +696,7 @@ export default function AllocationPage() {
               outsourceReturned: detailTarget.outsourceReturned || 0,
               outsourceDamaged: detailTarget.outsourceDamaged || 0,
               priorityPauses: detailTarget.priorityPauses,
+              manualPauses: (detailTarget as any).manualPauses,
               actualCompletionDate: (detailTarget as any).lastReceiveDate,
             });
             const { totalPoints, totalMinutes, startDt, oSendDate, oReturnDate, oSent, oReturned, oDamaged,

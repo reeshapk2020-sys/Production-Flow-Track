@@ -21,6 +21,7 @@ import ordersRouter from "./orders.js";
 import openingFinishedGoodsRouter from "./opening-finished-goods.js";
 import dispatchRouter from "./dispatch.js";
 import timeSettingsRouter from "./time-settings.js";
+import manualPausesRouter from "./manual-pauses.js";
 
 const router: IRouter = Router();
 
@@ -46,5 +47,6 @@ router.use(ordersRouter);
 router.use(openingFinishedGoodsRouter);
 router.use(dispatchRouter);
 router.use(timeSettingsRouter);
+router.use(manualPausesRouter);
 
 export default router;

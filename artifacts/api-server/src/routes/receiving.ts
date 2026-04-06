@@ -15,6 +15,7 @@ import {
   outsourceTransfersTable,
   purchaseOrdersTable,
   ordersTable,
+  manualPausesTable,
 } from "@workspace/db/schema";
 import { eq, sql, and, gte, lte, ilike, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -353,6 +354,27 @@ router.get("/receiving", checkPermission("receiving", "view"), async (req, res) 
     }
   }
 
+  const allAllocIds = [...new Set(rows.map((r: any) => r.allocationId))];
+  const manualPauseMap = new Map<number, any[]>();
+  if (allAllocIds.length > 0) {
+    const mpRows = await db
+      .select()
+      .from(manualPausesTable)
+      .where(sql`${manualPausesTable.allocationId} IN (${sql.join(allAllocIds.map(id => sql`${id}`), sql`, `)})`)
+      .orderBy(manualPausesTable.pauseStart);
+    for (const mp of mpRows) {
+      const arr = manualPauseMap.get(mp.allocationId) || [];
+      arr.push({
+        id: mp.id,
+        pauseStart: mp.pauseStart instanceof Date ? mp.pauseStart.toISOString() : mp.pauseStart,
+        pauseEnd: mp.pauseEnd instanceof Date ? mp.pauseEnd.toISOString() : mp.pauseEnd,
+        reason: mp.reason,
+        remarks: mp.remarks,
+      });
+      manualPauseMap.set(mp.allocationId, arr);
+    }
+  }
+
   res.json(rows.map((r: any) => {
     const o = outsourceMap.get(r.allocationId);
     return {
@@ -366,6 +388,7 @@ router.get("/receiving", checkPermission("receiving", "view"), async (req, res) 
       outsourceReturned: o?.totalReturned || 0,
       outsourceDamaged: o?.totalDamaged || 0,
       priorityPauses: priorityPauseMap.get(r.allocationId) || null,
+      manualPauses: manualPauseMap.get(r.allocationId) || [],
     };
   }));
 });

@@ -126,6 +126,13 @@ export interface TimingInput {
     orderBatchNumber?: string | null;
     orderAllocationNumber?: string | null;
   }>;
+  manualPauses?: Array<{
+    id?: number;
+    pauseStart: string;
+    pauseEnd: string;
+    reason?: string | null;
+    remarks?: string | null;
+  }>;
   actualCompletionDate?: string | Date | null;
 }
 
@@ -190,10 +197,15 @@ export function computeTimingValues(input: TimingInput): TimingResult {
   const activePriorityPause = priorityPauses.find((p: any) => !p.pauseEnd);
   const isPausedByOrder = !!activePriorityPause;
 
+  const manualPauses: any[] = input.manualPauses || [];
+
   const completedPauseIntervals = priorityPauses
     .filter((p: any) => p.pauseStart && p.pauseEnd)
     .map((p: any) => ({ start: new Date(p.pauseStart).getTime(), end: new Date(p.pauseEnd).getTime() }));
-  const allPauseIntervals: { start: number; end: number }[] = [...completedPauseIntervals];
+  const manualPauseIntervals = manualPauses
+    .filter((p: any) => p.pauseStart && p.pauseEnd)
+    .map((p: any) => ({ start: new Date(p.pauseStart).getTime(), end: new Date(p.pauseEnd).getTime() }));
+  const allPauseIntervals: { start: number; end: number }[] = [...completedPauseIntervals, ...manualPauseIntervals];
   if (hasOutsource && oSendDate) {
     const osEnd = outsourceFullyReturned && oReturnDate ? oReturnDate.getTime() : Date.now();
     allPauseIntervals.push({ start: oSendDate.getTime(), end: osEnd });
@@ -230,7 +242,8 @@ export function computeTimingValues(input: TimingInput): TimingResult {
     } else {
       let workedBeforePauses = 0;
       let resumePoint: Date = startDt;
-      if (hasPriorityPause) {
+      const hasAnyPause = mergedPauses.length > 0;
+      if (hasAnyPause) {
         for (const p of mergedPauses) {
           const pStart = new Date(p.start);
           const pEnd = new Date(p.end);
@@ -252,7 +265,18 @@ export function computeTimingValues(input: TimingInput): TimingResult {
   }
 
   const actualCompletionDt = input.actualCompletionDate ? new Date(input.actualCompletionDate) : null;
-  const actualMinutes = startDt && actualCompletionDt ? calcWorkingMinutesBetween(startDt, actualCompletionDt) : 0;
+  let actualMinutes = startDt && actualCompletionDt ? calcWorkingMinutesBetween(startDt, actualCompletionDt) : 0;
+  if (actualMinutes > 0 && mergedPauses.length > 0 && startDt && actualCompletionDt) {
+    let pauseWorkMin = 0;
+    for (const p of mergedPauses) {
+      const pStart = new Date(Math.max(p.start, startDt.getTime()));
+      const pEnd = new Date(Math.min(p.end, actualCompletionDt.getTime()));
+      if (pStart < pEnd) {
+        pauseWorkMin += calcWorkingMinutesBetween(pStart, pEnd);
+      }
+    }
+    actualMinutes = Math.max(0, actualMinutes - pauseWorkMin);
+  }
 
   return {
     totalPoints,

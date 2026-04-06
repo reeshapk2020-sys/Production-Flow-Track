@@ -15,6 +15,7 @@ import {
   receivingsTable,
   purchaseOrdersTable,
   ordersTable,
+  manualPausesTable,
 } from "@workspace/db/schema";
 import { eq, sql, and, gte, lte, ilike, inArray, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -306,6 +307,30 @@ router.get("/allocation", checkPermission("allocation", "view"), async (req, res
       if (rawPauses.length > 0) {
         (row as any).priorityPauses = rawPauses;
       }
+    }
+  }
+
+  const mpAllocIds = finalRows.map((r: any) => r.id);
+  if (mpAllocIds.length > 0) {
+    const mpRows = await db
+      .select()
+      .from(manualPausesTable)
+      .where(sql`${manualPausesTable.allocationId} IN (${sql.join(mpAllocIds.map((id: number) => sql`${id}`), sql`, `)})`)
+      .orderBy(manualPausesTable.pauseStart);
+    const mpMap = new Map<number, any[]>();
+    for (const mp of mpRows) {
+      const arr = mpMap.get(mp.allocationId) || [];
+      arr.push({
+        id: mp.id,
+        pauseStart: mp.pauseStart instanceof Date ? mp.pauseStart.toISOString() : mp.pauseStart,
+        pauseEnd: mp.pauseEnd instanceof Date ? mp.pauseEnd.toISOString() : mp.pauseEnd,
+        reason: mp.reason,
+        remarks: mp.remarks,
+      });
+      mpMap.set(mp.allocationId, arr);
+    }
+    for (const row of finalRows) {
+      (row as any).manualPauses = mpMap.get((row as any).id) || [];
     }
   }
 

@@ -526,6 +526,26 @@ export const insertAuditLogSchema = createInsertSchema(auditLogsTable).omit({
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogsTable.$inferSelect;
 
+// ===== MANUAL PAUSES =====
+
+export const manualPausesTable = pgTable("manual_pauses", {
+  id: serial("id").primaryKey(),
+  allocationId: integer("allocation_id").notNull(),
+  pauseStart: timestamp("pause_start").notNull(),
+  pauseEnd: timestamp("pause_end").notNull(),
+  reason: text("reason"),
+  remarks: text("remarks"),
+  createdBy: integer("created_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertManualPauseSchema = createInsertSchema(manualPausesTable).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertManualPause = z.infer<typeof insertManualPauseSchema>;
+export type ManualPause = typeof manualPausesTable.$inferSelect;
+
 // ===== TIME SETTINGS =====
 
 export const timeSettingsTable = pgTable("time_settings", {

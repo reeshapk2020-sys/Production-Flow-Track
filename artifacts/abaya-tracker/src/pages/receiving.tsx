@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Loader2, Inbox, AlertCircle, CheckCircle2, Pencil, Clock, AlertTriangle } from "lucide-react";
+import { Plus, Loader2, Inbox, AlertCircle, CheckCircle2, Pencil, Clock, AlertTriangle, Trash2, PauseCircle } from "lucide-react";
 import { SearchableSelect } from "@/components/searchable-select";
 import {
   useListReceivings, useCreateReceiving, getListReceivingsQueryKey,
@@ -17,6 +17,144 @@ import { format } from "date-fns";
 import { fmtCode, fmtUTC, calcWorkingMinutesBetween, formatMinutes, computeTimingValues } from "@/lib/utils";
 import { useAppAuth } from "@/lib/auth-context";
 import { FilterBar } from "@/components/filter-bar";
+
+const API = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+
+function ManualPauseSection({ allocationId, manualPauses: initialPauses, issueDate, onUpdated }: {
+  allocationId: number;
+  manualPauses: any[];
+  issueDate?: string | null;
+  onUpdated?: () => void;
+}) {
+  const [pauses, setPauses] = useState<any[]>(initialPauses || []);
+  const [showForm, setShowForm] = useState(false);
+  const [pStart, setPStart] = useState("");
+  const [pEnd, setPEnd] = useState("");
+  const [reason, setReason] = useState("");
+  const [remarks, setRemarks] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const { toast } = useToast();
+
+  useEffect(() => { setPauses(initialPauses || []); }, [initialPauses]);
+
+  async function addPause() {
+    if (!pStart || !pEnd) { setError("Both start and end are required"); return; }
+    const startDt = new Date(pStart + ":00Z");
+    const endDt = new Date(pEnd + ":00Z");
+    if (endDt <= startDt) { setError("End must be after start"); return; }
+    if (issueDate && startDt < new Date(issueDate)) { setError("Pause cannot be before issue date"); return; }
+    setError("");
+    setSaving(true);
+    try {
+      const res = await fetch(`${API}/manual-pauses`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          allocationId,
+          pauseStart: startDt.toISOString(),
+          pauseEnd: endDt.toISOString(),
+          reason: reason || null,
+          remarks: remarks || null,
+        }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Failed"); }
+      const row = await res.json();
+      setPauses(prev => [...prev, row]);
+      setPStart(""); setPEnd(""); setReason(""); setRemarks("");
+      setShowForm(false);
+      toast({ title: "Manual pause added" });
+      onUpdated?.();
+    } catch (e: any) {
+      setError(e.message);
+    } finally { setSaving(false); }
+  }
+
+  async function deletePause(id: number) {
+    try {
+      const res = await fetch(`${API}/manual-pauses/${id}`, { method: "DELETE", credentials: "include" });
+      if (!res.ok) throw new Error("Failed");
+      setPauses(prev => prev.filter(p => p.id !== id));
+      toast({ title: "Manual pause removed" });
+      onUpdated?.();
+    } catch {
+      toast({ title: "Error", description: "Failed to delete pause", variant: "destructive" });
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold flex items-center gap-1.5 text-orange-700">
+          <PauseCircle className="h-3.5 w-3.5" /> Manual Pauses / Other Work
+        </span>
+        <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => setShowForm(!showForm)}>
+          {showForm ? "Cancel" : <><Plus className="h-3 w-3 mr-1" /> Add Pause</>}
+        </Button>
+      </div>
+
+      {pauses.length > 0 && pauses.map((p: any) => (
+        <div key={p.id} className="bg-orange-500/10 border border-orange-500/20 rounded-xl px-3 py-2 text-[10px] space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-orange-700 flex items-center gap-1">
+              <PauseCircle className="h-3 w-3" /> Other Work Pause
+            </span>
+            <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-500 hover:text-red-700" onClick={() => deletePause(p.id)}>
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+          {p.reason && <div className="text-muted-foreground">Reason: {p.reason}</div>}
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Start</span>
+            <span className="font-medium text-orange-600">{fmtUTC(p.pauseStart)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">End</span>
+            <span className="font-medium text-teal-600">{fmtUTC(p.pauseEnd)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Duration</span>
+            <span className="font-medium text-foreground">{formatMinutes(calcWorkingMinutesBetween(new Date(p.pauseStart), new Date(p.pauseEnd)))}</span>
+          </div>
+          {p.remarks && <div className="text-muted-foreground italic">Remarks: {p.remarks}</div>}
+        </div>
+      ))}
+
+      {showForm && (
+        <div className="bg-orange-500/5 border border-orange-500/20 rounded-xl p-3 space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] text-muted-foreground block mb-0.5">Start (UTC)</label>
+              <input type="datetime-local" value={pStart} onChange={e => setPStart(e.target.value)}
+                className="w-full h-8 rounded-md border border-input bg-background px-2 text-xs" />
+            </div>
+            <div>
+              <label className="text-[10px] text-muted-foreground block mb-0.5">End (UTC)</label>
+              <input type="datetime-local" value={pEnd} onChange={e => setPEnd(e.target.value)}
+                className="w-full h-8 rounded-md border border-input bg-background px-2 text-xs" />
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] text-muted-foreground block mb-0.5">Reason (optional)</label>
+            <input type="text" value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Machine repair, Other batch work"
+              className="w-full h-8 rounded-md border border-input bg-background px-2 text-xs" />
+          </div>
+          <div>
+            <label className="text-[10px] text-muted-foreground block mb-0.5">Remarks (optional)</label>
+            <input type="text" value={remarks} onChange={e => setRemarks(e.target.value)} placeholder="Any additional notes"
+              className="w-full h-8 rounded-md border border-input bg-background px-2 text-xs" />
+          </div>
+          {error && <div className="text-[10px] text-red-600">{error}</div>}
+          <Button size="sm" className="h-7 text-xs w-full" onClick={addPause} disabled={saving}>
+            {saving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Plus className="h-3 w-3 mr-1" />}
+            Add Pause Entry
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function BatchStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
@@ -271,6 +409,7 @@ export default function ReceivingPage() {
                     outsourceReturned: (selectedAlloc as any).outsourceReturned || 0,
                     outsourceDamaged: (selectedAlloc as any).outsourceDamaged || 0,
                     priorityPauses: (selectedAlloc as any).priorityPauses,
+                    manualPauses: (selectedAlloc as any).manualPauses,
                   });
                   const { totalPoints, totalMinutes, startDt, oSendDate, oReturnDate,
                     hasOutsource, isInOutsource: isStillInOutsource,
@@ -414,6 +553,18 @@ export default function ReceivingPage() {
                     </div>
                   );
                 })()}
+
+                {selectedAlloc && canCreate && (
+                  <ManualPauseSection
+                    allocationId={selectedAlloc.id}
+                    manualPauses={(selectedAlloc as any).manualPauses || []}
+                    issueDate={selectedAlloc.issueDate}
+                    onUpdated={() => {
+                      queryClient.invalidateQueries({ queryKey: getListAllocationsQueryKey() });
+                      queryClient.invalidateQueries({ queryKey: getListReceivingsQueryKey() });
+                    }}
+                  />
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2 sm:col-span-1">
@@ -688,6 +839,7 @@ export default function ReceivingPage() {
               outsourceReturned: timingTarget.outsourceReturned || 0,
               outsourceDamaged: timingTarget.outsourceDamaged || 0,
               priorityPauses: timingTarget.priorityPauses,
+              manualPauses: timingTarget.manualPauses,
               actualCompletionDate: timingTarget.receiveDate,
             });
             const { totalPoints, totalMinutes, startDt, oSendDate, oReturnDate, oSent,
@@ -943,6 +1095,18 @@ export default function ReceivingPage() {
                     </span>
                   </div>
                 </div>
+
+                {canCreate && (
+                  <ManualPauseSection
+                    allocationId={timingTarget.allocationId}
+                    manualPauses={timingTarget.manualPauses || []}
+                    issueDate={timingTarget.issueDate}
+                    onUpdated={() => {
+                      queryClient.invalidateQueries({ queryKey: getListReceivingsQueryKey() });
+                      queryClient.invalidateQueries({ queryKey: getListAllocationsQueryKey() });
+                    }}
+                  />
+                )}
 
                 {actualBlock}
                 {remarksBlock}
