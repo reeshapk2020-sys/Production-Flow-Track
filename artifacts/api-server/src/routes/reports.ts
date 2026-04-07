@@ -433,7 +433,8 @@ router.get("/reports/stitcher-points", checkPermission("reports", "view"), async
       teamName: teamsTable.name,
       productCode: productsTable.code,
       productName: productsTable.name,
-      pointsPerPiece: productsTable.pointsPerPiece,
+      productPointsPerPiece: productsTable.pointsPerPiece,
+      snapshotPointsPerPiece: allocationsTable.pointsPerPiece,
       completedQty: sql<number>`COALESCE(SUM(${receivingsTable.quantityReceived}), 0)::int`,
     })
     .from(receivingsTable)
@@ -443,11 +444,11 @@ router.get("/reports/stitcher-points", checkPermission("reports", "view"), async
     .innerJoin(stitchersTable, eq(allocationsTable.stitcherId, stitchersTable.id))
     .leftJoin(teamsTable, eq(stitchersTable.teamId, teamsTable.id))
     .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .groupBy(stitchersTable.id, stitchersTable.name, teamsTable.name, productsTable.id, productsTable.code, productsTable.name, productsTable.pointsPerPiece)
+    .groupBy(stitchersTable.id, stitchersTable.name, teamsTable.name, productsTable.id, productsTable.code, productsTable.name, productsTable.pointsPerPiece, allocationsTable.pointsPerPiece)
     .orderBy(stitchersTable.name, productsTable.code);
 
   const result = rows.map(r => {
-    const pts = r.pointsPerPiece ? Number(r.pointsPerPiece) : 0;
+    const pts = r.snapshotPointsPerPiece != null ? Number(r.snapshotPointsPerPiece) : (r.productPointsPerPiece ? Number(r.productPointsPerPiece) : 0);
     return {
       stitcherId: r.stitcherId,
       stitcherName: r.stitcherName,
@@ -477,7 +478,8 @@ router.get("/reports/team-points", checkPermission("reports", "view"), async (re
       teamCode: teamsTable.code,
       productCode: productsTable.code,
       productName: productsTable.name,
-      pointsPerPiece: productsTable.pointsPerPiece,
+      productPointsPerPiece: productsTable.pointsPerPiece,
+      snapshotPointsPerPiece: allocationsTable.pointsPerPiece,
       completedQty: sql<number>`COALESCE(SUM(${receivingsTable.quantityReceived}), 0)::int`,
     })
     .from(receivingsTable)
@@ -486,11 +488,11 @@ router.get("/reports/team-points", checkPermission("reports", "view"), async (re
     .innerJoin(productsTable, eq(cuttingBatchesTable.productId, productsTable.id))
     .innerJoin(teamsTable, eq(allocationsTable.teamId, teamsTable.id))
     .where(and(...conditions))
-    .groupBy(teamsTable.id, teamsTable.name, teamsTable.code, productsTable.id, productsTable.code, productsTable.name, productsTable.pointsPerPiece)
+    .groupBy(teamsTable.id, teamsTable.name, teamsTable.code, productsTable.id, productsTable.code, productsTable.name, productsTable.pointsPerPiece, allocationsTable.pointsPerPiece)
     .orderBy(teamsTable.name, productsTable.code);
 
   const result = rows.map(r => {
-    const pts = r.pointsPerPiece ? Number(r.pointsPerPiece) : 0;
+    const pts = r.snapshotPointsPerPiece != null ? Number(r.snapshotPointsPerPiece) : (r.productPointsPerPiece ? Number(r.productPointsPerPiece) : 0);
     return {
       teamId: r.teamId,
       teamName: r.teamName,
@@ -558,7 +560,8 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
       allocTeamId: allocationsTable.teamId,
       allocTeamName: sql<string>`(SELECT name FROM teams WHERE id = ${allocationsTable.teamId})`,
       quantityReceived: receivingsTable.quantityReceived,
-      pointsPerPiece: productsTable.pointsPerPiece,
+      productPointsPerPiece: productsTable.pointsPerPiece,
+      snapshotPointsPerPiece: allocationsTable.pointsPerPiece,
       issueDate: allocationsTable.issueDate,
       receiveDate: receivingsTable.receiveDate,
       workType: allocationsTable.workType,
@@ -631,7 +634,7 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
   const allocMap: Record<number, AllocRecord> = {};
 
   for (const r of rows) {
-    const ppp = Number(r.pointsPerPiece) || 0;
+    const ppp = r.snapshotPointsPerPiece != null ? Number(r.snapshotPointsPerPiece) : (Number(r.productPointsPerPiece) || 0);
     const pts = ppp * (r.quantityReceived || 0);
     const expectedMin = pts * 20;
     const dateKey = r.receiveDate ? new Date(r.receiveDate).toISOString().slice(0, 10) : "";

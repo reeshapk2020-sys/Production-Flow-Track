@@ -46,6 +46,9 @@ All date/time displays use the shared `fmtUTC()` helper from `src/lib/utils.ts`.
 **Time Settings (Admin-Configurable):**
 Working time slots and the minutes-per-point conversion are now admin-configurable via the `time_settings` table (singleton row, id=1). The admin "Time Settings" page (`/time-settings`) allows editing 3 daily working slots (times stored as minutes-since-midnight in UTC) and `minutesPerPoint`. Slot 2 supports an optional `slot2Effective` override for reduced productive minutes. The frontend loads settings on login via `TimeSettingsLoader` in `App.tsx` which calls `setTimeSettings()` to update the mutable module variables in `utils.ts`. The API route (`/api/time-settings`) enforces auth on GET and admin-only on PUT, with full server-side validation (integer ranges 0-1439, start < end, no overlap, minutesPerPoint 1-1440). Defaults: Slot1 08:00-13:20, Slot2 14:30-20:00 (effective 270 min), Slot3 20:30-23:00, 1 point = 20 min.
 
+**Points per Piece Snapshot:**
+The `allocations` table has a `points_per_piece` column that snapshots the product's PPP at allocation creation time. This ensures historical accuracy: completed/received batches always use the snapshotted PPP (as it was when allocated), while pending batches use the current product PPP. The same logic applies in all API responses (allocation GET, receiving GET) and reports (stitcher-points, team-points, efficiency). The backend resolves `pointsPerPiece` in responses as: if allocation status is completed/received and snapshot exists → use snapshot; otherwise → use current product value. The frontend needs no changes as it reads the resolved `pointsPerPiece` from the API.
+
 **Outsource Workflow:**
 A dedicated workflow manages outsourced production, distinguishing between `simple_stitch` and `outsource_required` allocations. It tracks items sent to and returned from vendors, with validations to ensure quantity accuracy.
 

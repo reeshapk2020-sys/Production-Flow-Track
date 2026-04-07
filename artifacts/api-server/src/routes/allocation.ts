@@ -45,7 +45,8 @@ const allocSelect = {
   batchNumber: cuttingBatchesTable.batchNumber,
   productCode: productsTable.code,
   productName: productsTable.name,
-  pointsPerPiece: productsTable.pointsPerPiece,
+  productPointsPerPiece: productsTable.pointsPerPiece,
+  snapshotPointsPerPiece: allocationsTable.pointsPerPiece,
   fabricId: cuttingBatchesTable.fabricId,
   fabricCode: fabricsTable.code,
   fabricName: fabricsTable.name,
@@ -98,8 +99,13 @@ function allocJoins(q: any) {
 }
 
 function withItemCode(r: any) {
+  const isCompleted = r.status === "completed" || r.status === "received";
+  const effectivePPP = isCompleted && r.snapshotPointsPerPiece != null
+    ? r.snapshotPointsPerPiece
+    : (r.productPointsPerPiece ?? r.snapshotPointsPerPiece);
   return {
     ...r,
+    pointsPerPiece: effectivePPP,
     quantityPending: r.quantityIssued - r.quantityReceived - r.quantityRejected,
     itemCode: computeItemCode(r.productCode, r.colorCode, r.materialCode, r.material2Code),
     assigneeName: r.allocationType === "team" ? r.teamName : r.stitcherName,
@@ -393,6 +399,13 @@ router.post("/allocation", checkPermission("allocation", "create"), async (req, 
   const validCategories = ["heat_stone", "embroidery", "hand_stones"];
   const oc = wt === "outsource_required" && validCategories.includes(outsourceCategory) ? outsourceCategory : null;
 
+  const effectiveProductId = batchProductId || batch.productId;
+  let snapshotPPP: string | null = null;
+  if (effectiveProductId) {
+    const [prod] = await db.select({ ppp: productsTable.pointsPerPiece }).from(productsTable).where(eq(productsTable.id, effectiveProductId));
+    if (prod?.ppp) snapshotPPP = prod.ppp;
+  }
+
   const [allocation] = await db
     .insert(allocationsTable)
     .values({
@@ -404,6 +417,7 @@ router.post("/allocation", checkPermission("allocation", "create"), async (req, 
       quantityIssued,
       workType: wt,
       outsourceCategory: oc,
+      pointsPerPiece: snapshotPPP,
       issueDate: new Date(issueDate),
       remarks,
       createdBy: (req as any).user?.username,

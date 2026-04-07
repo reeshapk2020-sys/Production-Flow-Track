@@ -184,7 +184,9 @@ router.get("/receiving", checkPermission("receiving", "view"), async (req, res) 
       issueDate: allocationsTable.issueDate,
       workType: allocationsTable.workType,
       outsourceCategory: allocationsTable.outsourceCategory,
-      pointsPerPiece: productsTable.pointsPerPiece,
+      productPointsPerPiece: productsTable.pointsPerPiece,
+      snapshotPointsPerPiece: allocationsTable.pointsPerPiece,
+      allocationStatus: allocationsTable.status,
       quantityReceived: receivingsTable.quantityReceived,
       quantityRejected: receivingsTable.quantityRejected,
       quantityDamaged: receivingsTable.quantityDamaged,
@@ -379,7 +381,13 @@ router.get("/receiving", checkPermission("receiving", "view"), async (req, res) 
     const o = outsourceMap.get(r.allocationId);
     return {
       ...r,
-      pointsPerPiece: r.pointsPerPiece ? Number(r.pointsPerPiece) : null,
+      pointsPerPiece: (() => {
+        const isCompleted = r.allocationStatus === "completed" || r.allocationStatus === "received";
+        const eff = isCompleted && r.snapshotPointsPerPiece != null
+          ? r.snapshotPointsPerPiece
+          : (r.productPointsPerPiece ?? r.snapshotPointsPerPiece);
+        return eff ? Number(eff) : null;
+      })(),
       itemCode: computeItemCode(r.productCode, r.colorCode, r.materialCode, r.material2Code),
       isLocked: finSet.has(batchIdMap.get(r.allocationId)),
       outsourceSendDate: o?.earliestSendDate ? new Date(o.earliestSendDate).toISOString() : null,
