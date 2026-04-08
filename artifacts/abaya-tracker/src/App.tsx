@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 
 import { AuthProvider, useAppAuth } from "@/lib/auth-context";
 import { ThemeProvider } from "@/lib/theme-context";
-import { setTimeSettings, type WorkSlot } from "@/lib/utils";
+import { setTimeSettings, setOffDays, type WorkSlot } from "@/lib/utils";
 
 import LoginPage from "./pages/login";
 import DashboardPage from "./pages/dashboard";
@@ -30,6 +30,7 @@ import PurchaseOrdersPage from "./pages/purchase-orders";
 import OrdersPage from "./pages/orders";
 import DispatchPage from "./pages/dispatch";
 import TimeSettingsPage from "./pages/time-settings";
+import OffDaysPage from "./pages/off-days";
 import NotFound from "./pages/not-found";
 
 const queryClient = new QueryClient({
@@ -60,6 +61,14 @@ function TimeSettingsLoader({ children }: { children: React.ReactNode }) {
         }
       })
       .catch(() => {});
+    fetch(`${API_BASE}/off-days`, { credentials: "include" })
+      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
+      .then((rows: any[]) => {
+        const weeklyDays = rows.filter((r: any) => r.type === "weekly").map((r: any) => r.dayOfWeek as number);
+        const holidays = rows.filter((r: any) => r.type === "holiday" && r.date).map((r: any) => r.date as string);
+        setOffDays(weeklyDays, holidays);
+      })
+      .catch(() => {});
   }, [isAuthenticated]);
   return <>{children}</>;
 }
@@ -84,6 +93,7 @@ const PATH_TO_MODULE: Record<string, string> = {
   "/permissions": "__admin__",
   "/audit": "__admin__",
   "/time-settings": "__admin__",
+  "/off-days": "__admin__",
 };
 
 function ProtectedRoute({ component: Component, path }: { component: React.ComponentType; path: string }) {
@@ -142,6 +152,7 @@ function Router() {
       <Route path="/permissions" component={() => <ProtectedRoute component={PermissionsPage} path="/permissions" />} />
       <Route path="/audit" component={() => <ProtectedRoute component={AuditPage} path="/audit" />} />
       <Route path="/time-settings" component={() => <ProtectedRoute component={TimeSettingsPage} path="/time-settings" />} />
+      <Route path="/off-days" component={() => <ProtectedRoute component={OffDaysPage} path="/off-days" />} />
       <Route component={NotFound} />
     </Switch>
   );

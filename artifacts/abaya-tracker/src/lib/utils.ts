@@ -32,21 +32,40 @@ let _workSlots: WorkSlot[] = [
 ];
 let _minutesPerPoint = 20;
 
+let _weeklyOffDays: Set<number> = new Set();
+let _holidayDates: Set<string> = new Set();
+
 export function setTimeSettings(slots: WorkSlot[], minutesPerPoint: number) {
   _workSlots = slots;
   _minutesPerPoint = minutesPerPoint;
 }
 
+export function setOffDays(weeklyDays: number[], holidays: string[]) {
+  _weeklyOffDays = new Set(weeklyDays);
+  _holidayDates = new Set(holidays);
+}
+
 export function getWorkSlots(): WorkSlot[] { return _workSlots; }
 export function getMinutesPerPoint(): number { return _minutesPerPoint; }
+
+function isOffDay(d: Date): boolean {
+  if (_weeklyOffDays.has(d.getUTCDay())) return true;
+  const ds = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+  return _holidayDates.has(ds);
+}
 
 export function calcExpectedCompletion(startDateTime: Date, totalMinutes: number): Date {
   let remaining = totalMinutes;
   let current = new Date(startDateTime);
   const dayStartUTC = (d: Date) => { const r = new Date(d); r.setUTCHours(0, 0, 0, 0); return r; };
   const minuteOfDayUTC = (d: Date) => d.getUTCHours() * 60 + d.getUTCMinutes();
-  for (let guard = 0; guard < 365 && remaining > 0; guard++) {
+  for (let guard = 0; guard < 730 && remaining > 0; guard++) {
     const todayBase = dayStartUTC(current);
+    if (isOffDay(todayBase)) {
+      current = new Date(todayBase.getTime() + 24 * 60 * 60000);
+      current.setUTCHours(0, 0, 0, 0);
+      continue;
+    }
     const curMinute = minuteOfDayUTC(current);
     for (const slot of _workSlots) {
       if (remaining <= 0) break;
@@ -81,9 +100,15 @@ export function calcWorkingMinutesBetween(startDt: Date, endDt: Date): number {
   const minuteOfDayUTC = (d: Date) => d.getUTCHours() * 60 + d.getUTCMinutes();
   const endMinuteOfDay = minuteOfDayUTC(endDt);
   const endDayStart = dayStartUTC(endDt).getTime();
-  for (let guard = 0; guard < 365; guard++) {
+  for (let guard = 0; guard < 730; guard++) {
     const todayBase = dayStartUTC(current);
     const isEndDay = todayBase.getTime() === endDayStart;
+    if (isOffDay(todayBase)) {
+      if (isEndDay) break;
+      current = new Date(todayBase.getTime() + 24 * 60 * 60000);
+      current.setUTCHours(0, 0, 0, 0);
+      continue;
+    }
     const curMinute = minuteOfDayUTC(current);
     for (const slot of _workSlots) {
       const effectiveStart = Math.max(curMinute, slot.start);

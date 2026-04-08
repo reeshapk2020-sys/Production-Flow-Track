@@ -14,6 +14,7 @@ import {
   auditLogsTable,
   outsourceTransfersTable,
   manualPausesTable,
+  offDaysTable,
 } from "@workspace/db/schema";
 import { eq, sql, and, gte, lte, ilike } from "drizzle-orm";
 import { checkPermission } from "./permissions.js";
@@ -507,7 +508,36 @@ router.get("/reports/team-points", checkPermission("reports", "view"), async (re
   res.json(result);
 });
 
-function serverCalcWorkingMinutesBetween(startDt: Date, endDt: Date): number {
+interface ServerOffDayData {
+  weeklyOffDays: Set<number>;
+  holidayDates: Set<string>;
+}
+
+let _serverOffDays: ServerOffDayData | null = null;
+let _serverOffDaysCacheTime = 0;
+
+async function getServerOffDays(): Promise<ServerOffDayData> {
+  const now = Date.now();
+  if (_serverOffDays && now - _serverOffDaysCacheTime < 60000) return _serverOffDays;
+  const rows = await db.select().from(offDaysTable);
+  const weeklyOffDays = new Set<number>();
+  const holidayDates = new Set<string>();
+  for (const r of rows) {
+    if (r.type === "weekly" && r.dayOfWeek !== null) weeklyOffDays.add(r.dayOfWeek);
+    if (r.type === "holiday" && r.date) holidayDates.add(r.date);
+  }
+  _serverOffDays = { weeklyOffDays, holidayDates };
+  _serverOffDaysCacheTime = now;
+  return _serverOffDays;
+}
+
+function serverIsOffDay(d: Date, offDays: ServerOffDayData): boolean {
+  if (offDays.weeklyOffDays.has(d.getUTCDay())) return true;
+  const ds = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+  return offDays.holidayDates.has(ds);
+}
+
+function serverCalcWorkingMinutesBetween(startDt: Date, endDt: Date, offDays: ServerOffDayData): number {
   if (endDt <= startDt) return 0;
   const SLOTS = [
     { start: 8 * 60, end: 13 * 60 + 20 },
@@ -520,9 +550,15 @@ function serverCalcWorkingMinutesBetween(startDt: Date, endDt: Date): number {
   const minuteOfDayUTC = (d: Date) => d.getUTCHours() * 60 + d.getUTCMinutes();
   const endMinuteOfDay = minuteOfDayUTC(endDt);
   const endDayStart = dayStartUTC(endDt).getTime();
-  for (let guard = 0; guard < 365; guard++) {
+  for (let guard = 0; guard < 730; guard++) {
     const todayBase = dayStartUTC(current);
     const isEndDay = todayBase.getTime() === endDayStart;
+    if (serverIsOffDay(todayBase, offDays)) {
+      if (isEndDay) break;
+      current = new Date(todayBase.getTime() + 24 * 60 * 60000);
+      current.setUTCHours(0, 0, 0, 0);
+      continue;
+    }
     const curMinute = minuteOfDayUTC(current);
     for (const slot of SLOTS) {
       const effectiveStart = Math.max(curMinute, slot.start);
@@ -547,6 +583,8 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
   if (startDate) conditions.push(gte(receivingsTable.receiveDate, new Date(startDate as string)));
   if (endDate) { const ed = new Date(endDate as string); ed.setDate(ed.getDate() + 1); conditions.push(lte(receivingsTable.receiveDate, ed)); }
   if (productId) conditions.push(eq(cuttingBatchesTable.productId, Number(productId)));
+
+  const offDays = await getServerOffDays();
 
   const rows = await db
     .select({
@@ -591,7 +629,7 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
     for (const o of oRows) {
       const send = new Date(o.sendDate);
       const ret = o.returnDate ? new Date(o.returnDate) : new Date();
-      const osWorkMin = serverCalcWorkingMinutesBetween(send, ret);
+      const osWorkMin = serverCalcWorkingMinutesBetween(send, ret, offDays);
       outsourceMap[o.allocationId] = (outsourceMap[o.allocationId] || 0) + osWorkMin;
     }
   }
@@ -609,7 +647,7 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
     for (const mp of mpRows) {
       const ps = new Date(mp.pauseStart);
       const pe = new Date(mp.pauseEnd);
-      const mpWorkMin = serverCalcWorkingMinutesBetween(ps, pe);
+      const mpWorkMin = serverCalcWorkingMinutesBetween(ps, pe, offDays);
       manualPauseMap[mp.allocationId] = (manualPauseMap[mp.allocationId] || 0) + mpWorkMin;
     }
   }
@@ -693,7 +731,7 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
 
   for (const a of Object.values(allocMap)) {
     const elapsedMin = a.issueDate && a.lastReceiveDate
-      ? serverCalcWorkingMinutesBetween(new Date(a.issueDate), new Date(a.lastReceiveDate))
+      ? serverCalcWorkingMinutesBetween(new Date(a.issueDate), new Date(a.lastReceiveDate), offDays)
       : 0;
     const osMin = outsourceMap[a.allocationId] || 0;
     const mpMin = manualPauseMap[a.allocationId] || 0;

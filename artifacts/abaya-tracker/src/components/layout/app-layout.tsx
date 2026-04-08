@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Database, Layers, Scissors, Send,
   Inbox, Settings2, Package, Box, BarChart3,
   GitBranch, Shield, Users, LogOut, Loader2, ChevronRight, KeyRound, ArrowUpRight,
-  FileText, ShoppingCart, PackageOpen, Truck, Moon, Sun, Sparkles, ChevronDown, Clock
+  FileText, ShoppingCart, PackageOpen, Truck, Moon, Sun, Sparkles, ChevronDown, Clock, CalendarOff
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -31,6 +31,7 @@ const NAV_ITEMS = [
   { path: "/permissions", label: "Role Permissions", icon: KeyRound, roles: ["admin"] },
   { path: "/audit", label: "Audit Log", icon: Shield, roles: ["admin"] },
   { path: "/time-settings", label: "Time Settings", icon: Clock, roles: ["admin"] },
+  { path: "/off-days", label: "Off Days / Holidays", icon: CalendarOff, roles: ["admin"] },
 ];
 
 export function AppLayout({ children, title }: { children: ReactNode; title: string }) {

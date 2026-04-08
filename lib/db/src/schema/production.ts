@@ -563,3 +563,14 @@ export const timeSettingsTable = pgTable("time_settings", {
 });
 
 export type TimeSettings = typeof timeSettingsTable.$inferSelect;
+
+// ===== OFF DAYS / HOLIDAYS =====
+
+export const offDaysTable = pgTable("off_days", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull(),
+  dayOfWeek: integer("day_of_week"),
+  date: text("date"),
+  label: text("label"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
