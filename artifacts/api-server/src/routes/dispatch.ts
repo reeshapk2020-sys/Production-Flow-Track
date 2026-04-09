@@ -257,29 +257,42 @@ router.post("/dispatch/import", checkPermission("dispatch", "create"), async (re
   const validRows: any[] = [];
   const tempStock = new Map(stockMap);
 
+  const knownItemCodes = new Set(stockMap.keys());
+
   for (let i = 0; i < importRows.length; i++) {
     const r = importRows[i];
-    const rowNum = i + 1;
+    const rowNum = i + 2;
 
-    if (!r.itemCode || !String(r.itemCode).trim()) { errors.push({ row: rowNum, error: "itemCode is required" }); continue; }
-    if (!r.quantity || Number(r.quantity) <= 0) { errors.push({ row: rowNum, error: "quantity must be a positive number" }); continue; }
+    const rawItemCode = r.itemCode ? String(r.itemCode).trim() : "";
+    const rawQty = r.quantity ? Number(r.quantity) : 0;
+
+    if (!rawItemCode) { errors.push({ row: rowNum, error: "itemCode is required" }); continue; }
+    if (!rawQty || rawQty <= 0) { errors.push({ row: rowNum, error: "quantity must be a positive number" }); continue; }
     if (!r.dispatchDate) { errors.push({ row: rowNum, error: "dispatchDate is required" }); continue; }
 
-    const dest = r.destinationType || "reesha";
-    if (!validDest.includes(dest)) { errors.push({ row: rowNum, error: `Invalid destinationType: ${dest}` }); continue; }
+    const dest = r.destinationType ? String(r.destinationType).trim() : "reesha";
+    if (!validDest.includes(dest)) { errors.push({ row: rowNum, error: `Invalid destinationType "${dest}". Must be: reesha, purchase_order, or order` }); continue; }
 
-    const itemKey = normalize(r.itemCode);
+    const itemKey = normalize(rawItemCode);
+
+    if (!knownItemCodes.has(itemKey)) {
+      errors.push({ row: rowNum, error: `Item code "${rawItemCode}" not found in system. Check spelling or format (e.g. PROD-COLOR-MAT1-MAT2)` });
+      continue;
+    }
+
     const available = tempStock.get(itemKey) || 0;
-    const qty = Number(r.quantity);
 
-    if (qty > available) { errors.push({ row: rowNum, error: `Insufficient stock for ${r.itemCode}. Available: ${Math.max(0, available)}, Requested: ${qty}` }); continue; }
+    if (rawQty > available) {
+      errors.push({ row: rowNum, error: `Insufficient stock for "${rawItemCode}". Available: ${Math.max(0, available)}, Requested: ${rawQty}` });
+      continue;
+    }
 
-    tempStock.set(itemKey, available - qty);
-    validRows.push({ ...r, quantity: qty, destinationType: dest });
+    tempStock.set(itemKey, available - rawQty);
+    validRows.push({ ...r, itemCode: rawItemCode, quantity: rawQty, destinationType: dest });
   }
 
-  if (errors.length > 0) {
-    return res.status(400).json({ error: "Validation errors in import data", errors, validCount: validRows.length, errorCount: errors.length });
+  if (validRows.length === 0 && errors.length > 0) {
+    return res.status(400).json({ error: "All rows failed validation", errors, validCount: 0, errorCount: errors.length });
   }
 
   const created: any[] = [];
@@ -288,7 +301,7 @@ router.post("/dispatch/import", checkPermission("dispatch", "create"), async (re
     const [row] = await db.insert(dispatchesTable).values({
       dispatchNumber,
       dispatchDate: new Date(r.dispatchDate),
-      itemCode: String(r.itemCode).trim(),
+      itemCode: r.itemCode,
       productCode: r.productCode ? String(r.productCode).trim() : null,
       productName: r.productName ? String(r.productName).trim() : null,
       sizeName: r.sizeName ? String(r.sizeName).trim() : null,
@@ -305,8 +318,13 @@ router.post("/dispatch/import", checkPermission("dispatch", "create"), async (re
     created.push(row);
   }
 
-  await logAudit(req, "CREATE", "dispatches", "bulk", `Imported ${created.length} dispatch records`);
-  res.status(201).json({ imported: created.length, records: created });
+  await logAudit(req, "CREATE", "dispatches", "bulk", `Imported ${created.length} dispatch records${errors.length > 0 ? `, ${errors.length} rows skipped` : ""}`);
+  res.status(errors.length > 0 ? 207 : 201).json({
+    imported: created.length,
+    skipped: errors.length,
+    errors: errors.length > 0 ? errors : undefined,
+    records: created,
+  });
 });
 
 router.delete("/dispatch/:id", checkPermission("dispatch", "edit"), async (req: Request, res: Response) => {

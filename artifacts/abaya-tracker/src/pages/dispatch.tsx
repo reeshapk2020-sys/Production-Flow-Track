@@ -586,6 +586,8 @@ function ImportDispatchDialog({ onClose, onSuccess }: { onClose: () => void; onS
     setFileName(file.name);
     setErrors([]);
     setParsedRows([]);
+    setImportErrors([]);
+    setImportResult(null);
 
     const reader = new FileReader();
     reader.onload = (evt) => {
@@ -627,18 +629,36 @@ function ImportDispatchDialog({ onClose, onSuccess }: { onClose: () => void; onS
     reader.readAsBinaryString(file);
   };
 
+  const [importErrors, setImportErrors] = useState<Array<{ row: number; error: string }>>([]);
+  const [importResult, setImportResult] = useState<{ imported: number; skipped: number } | null>(null);
+
   const handleImport = () => {
     if (parsedRows.length === 0) return;
+    setImportErrors([]);
+    setImportResult(null);
     importMutation.mutate(
       { data: { rows: parsedRows } },
       {
         onSuccess: (res: any) => {
-          toast({ title: `Imported ${res.imported} dispatches` });
-          onSuccess();
-          onClose();
+          if (res.skipped > 0) {
+            setImportResult({ imported: res.imported, skipped: res.skipped });
+            setImportErrors(res.errors || []);
+            toast({ title: `Imported ${res.imported} dispatches, ${res.skipped} rows skipped` });
+            onSuccess();
+          } else {
+            toast({ title: `Imported ${res.imported} dispatches` });
+            onSuccess();
+            onClose();
+          }
         },
         onError: (err: any) => {
-          toast({ title: "Import Error", description: err?.response?.data?.error || "Import failed", variant: "destructive" });
+          const data = err?.data || err?.response?.data;
+          if (data?.errors && Array.isArray(data.errors)) {
+            setImportErrors(data.errors);
+            setImportResult({ imported: 0, skipped: data.errorCount || data.errors.length });
+          } else {
+            toast({ title: "Import Error", description: data?.error || err?.message || "Import failed", variant: "destructive" });
+          }
         },
       }
     );
@@ -671,21 +691,48 @@ function ImportDispatchDialog({ onClose, onSuccess }: { onClose: () => void; onS
             </div>
           )}
 
-          {parsedRows.length > 0 && errors.length === 0 && (
+          {parsedRows.length > 0 && errors.length === 0 && !importResult && (
             <div className="bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3 text-sm text-green-800">
               <CheckCircle2 className="h-4 w-4 inline mr-1" />
               {parsedRows.length} rows parsed. Total quantity: {parsedRows.reduce((s: number, r: any) => s + r.quantity, 0)}.
             </div>
           )}
 
-          <Button
-            className="w-full rounded-xl"
-            onClick={handleImport}
-            disabled={importMutation.isPending || parsedRows.length === 0 || errors.length > 0}
-          >
-            {importMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
-            Import {parsedRows.length} Dispatches
-          </Button>
+          {importResult && (
+            <div className={`rounded-xl px-4 py-3 text-sm space-y-1 ${importResult.imported > 0 ? "bg-amber-500/10 border border-amber-500/20 text-amber-800" : "bg-red-500/10 border border-red-500/20 text-red-700"}`}>
+              <div className="font-medium">
+                {importResult.imported > 0
+                  ? `${importResult.imported} rows imported successfully, ${importResult.skipped} rows skipped`
+                  : `All ${importResult.skipped} rows failed validation`}
+              </div>
+            </div>
+          )}
+
+          {importErrors.length > 0 && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-700 space-y-1 max-h-48 overflow-y-auto">
+              <div className="flex items-center gap-2 font-medium sticky top-0 bg-red-500/10 py-1"><AlertCircle className="h-4 w-4" /> Row Errors ({importErrors.length})</div>
+              {importErrors.map((e, i) => (
+                <p key={i} className="text-xs"><span className="font-semibold">Row {e.row}:</span> {e.error}</p>
+              ))}
+            </div>
+          )}
+
+          {!importResult && (
+            <Button
+              className="w-full rounded-xl"
+              onClick={handleImport}
+              disabled={importMutation.isPending || parsedRows.length === 0 || errors.length > 0}
+            >
+              {importMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+              Import {parsedRows.length} Dispatches
+            </Button>
+          )}
+
+          {importResult && (
+            <Button className="w-full rounded-xl" variant="outline" onClick={onClose}>
+              Close
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
