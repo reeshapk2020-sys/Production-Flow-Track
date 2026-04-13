@@ -273,6 +273,7 @@ export const outsourceTransfersTable = pgTable("outsource_transfers", {
   sendDate: timestamp("send_date").notNull(),
   returnDate: timestamp("return_date"),
   status: text("status").notNull().default("sent"),
+  sourceStage: text("source_stage").notNull().default("allocation"),
   remarks: text("remarks"),
   createdBy: text("created_by"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

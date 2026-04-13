@@ -25,6 +25,8 @@ export interface OutsourceTransfer {
   sendDate?: string;
   returnDate?: string | null;
   status?: string;
+  /** 'allocation' or 'receiving' */
+  sourceStage?: string;
   remarks?: string | null;
   assigneeName?: string;
   allocationType?: string;

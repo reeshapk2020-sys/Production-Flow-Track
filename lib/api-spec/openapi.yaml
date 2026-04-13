@@ -987,6 +987,21 @@ paths:
                 items:
                   $ref: "#/components/schemas/OutsourceAllocation"
 
+  /outsource/receiving-batches:
+    get:
+      operationId: listOutsourceReceivingBatches
+      tags: [outsource]
+      summary: List received allocations available for post-receiving outsource
+      responses:
+        "200":
+          description: List of received allocations with available qty for outsource
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OutsourceAllocation"
+
   /outsource/send:
     post:
       operationId: sendToOutsource
@@ -3134,6 +3149,9 @@ components:
           nullable: true
         status:
           type: string
+        sourceStage:
+          type: string
+          description: "'allocation' or 'receiving'"
         remarks:
           type: string
           nullable: true
@@ -3194,6 +3212,9 @@ components:
           type: string
         sendDate:
           type: string
+        sourceStage:
+          type: string
+          description: "'allocation' or 'receiving'"
         remarks:
           type: string
       required: [allocationId, quantitySent]

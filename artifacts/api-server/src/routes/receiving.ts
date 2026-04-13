@@ -69,7 +69,7 @@ async function recalculateAllocationTotals(allocationId: number) {
         totalReturned: sql<number>`COALESCE(SUM(${outsourceTransfersTable.quantityReturned}), 0)::int`,
       })
       .from(outsourceTransfersTable)
-      .where(eq(outsourceTransfersTable.allocationId, allocationId));
+      .where(and(eq(outsourceTransfersTable.allocationId, allocationId), eq(outsourceTransfersTable.sourceStage, "allocation")));
     effectiveCeiling = Number(outsourceSums?.totalReturned ?? 0);
   }
 
@@ -250,7 +250,7 @@ router.get("/receiving", checkPermission("receiving", "view"), async (req, res) 
         latestReturnDate: sql<string>`MAX(${outsourceTransfersTable.returnDate})`,
       })
       .from(outsourceTransfersTable)
-      .where(inArray(outsourceTransfersTable.allocationId, outsourceAllocIds))
+      .where(and(inArray(outsourceTransfersTable.allocationId, outsourceAllocIds), eq(outsourceTransfersTable.sourceStage, "allocation")))
       .groupBy(outsourceTransfersTable.allocationId);
     oSums.forEach(o => outsourceMap.set(o.allocationId, o));
   }
@@ -300,7 +300,7 @@ router.get("/receiving", checkPermission("receiving", "view"), async (req, res) 
           latestReturnDate: sql<string>`MAX(${outsourceTransfersTable.returnDate})`,
         })
         .from(outsourceTransfersTable)
-        .where(inArray(outsourceTransfersTable.allocationId, orderAllocIdSet))
+        .where(and(inArray(outsourceTransfersTable.allocationId, orderAllocIdSet), eq(outsourceTransfersTable.sourceStage, "allocation")))
         .groupBy(outsourceTransfersTable.allocationId);
       for (const o of orderOsData) {
         orderOutsourceMap.set(o.allocationId, {
@@ -452,7 +452,7 @@ router.post("/receiving", checkPermission("receiving", "create"), async (req, re
         totalReturned: sql<number>`COALESCE(SUM(${outsourceTransfersTable.quantityReturned}), 0)::int`,
       })
       .from(outsourceTransfersTable)
-      .where(eq(outsourceTransfersTable.allocationId, allocationId));
+      .where(and(eq(outsourceTransfersTable.allocationId, allocationId), eq(outsourceTransfersTable.sourceStage, "allocation")));
 
     const returnedFromOutsource = Number(outsourceTotals?.totalReturned ?? 0);
     maxReceivable = returnedFromOutsource;

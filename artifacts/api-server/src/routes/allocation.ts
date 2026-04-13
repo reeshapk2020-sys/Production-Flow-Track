@@ -141,7 +141,7 @@ router.get("/allocation", checkPermission("allocation", "view"), async (req, res
         latestReturnDate: sql<string>`MAX(${outsourceTransfersTable.returnDate})`,
       })
       .from(outsourceTransfersTable)
-      .where(inArray(outsourceTransfersTable.allocationId, outsourceAllocIds))
+      .where(and(inArray(outsourceTransfersTable.allocationId, outsourceAllocIds), eq(outsourceTransfersTable.sourceStage, "allocation")))
       .groupBy(outsourceTransfersTable.allocationId);
 
     const outsourceMap = new Map(outsourceSums.map(o => [o.allocationId, o]));
@@ -256,7 +256,7 @@ router.get("/allocation", checkPermission("allocation", "view"), async (req, res
           latestReturnDate: sql<string>`MAX(${outsourceTransfersTable.returnDate})`,
         })
         .from(outsourceTransfersTable)
-        .where(inArray(outsourceTransfersTable.allocationId, orderIds))
+        .where(and(inArray(outsourceTransfersTable.allocationId, orderIds), eq(outsourceTransfersTable.sourceStage, "allocation")))
         .groupBy(outsourceTransfersTable.allocationId);
       for (const o of orderOsData) {
         orderOutsourceMap.set(o.allocationId, {

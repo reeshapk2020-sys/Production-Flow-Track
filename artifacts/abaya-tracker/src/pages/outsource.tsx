@@ -8,8 +8,10 @@ import { Loader2, ArrowUpRight, ArrowDownLeft, List, SendHorizontal, RotateCcw, 
 import { SearchableSelect } from "@/components/searchable-select";
 import {
   useListOutsourceTransfers, useListOutsourceAllocations,
+  useListOutsourceReceivingBatches,
   useSendToOutsource, useReturnFromOutsource, useUpdateOutsourceTransfer,
   getListOutsourceTransfersQueryKey, getListOutsourceAllocationsQueryKey,
+  getListOutsourceReceivingBatchesQueryKey,
   getListAllocationsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -55,8 +57,11 @@ export default function OutsourcePage() {
   if (filters.status) filterParams.status = filters.status;
   if (filters.batchNumber) filterParams.batchNumber = filters.batchNumber;
 
+  const [sendStage, setSendStage] = useState<"allocation" | "receiving">("allocation");
+
   const { data: transfers, isLoading: transfersLoading } = useListOutsourceTransfers(filterParams);
   const { data: allocations, isLoading: allocsLoading } = useListOutsourceAllocations();
+  const { data: receivingBatches, isLoading: recvLoading } = useListOutsourceReceivingBatches();
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -74,6 +79,7 @@ export default function OutsourcePage() {
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: getListOutsourceTransfersQueryKey() });
     queryClient.invalidateQueries({ queryKey: getListOutsourceAllocationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getListOutsourceReceivingBatchesQueryKey() });
     queryClient.invalidateQueries({ queryKey: getListAllocationsQueryKey() });
   };
 
@@ -143,6 +149,7 @@ export default function OutsourcePage() {
         outsourceCategory: (fd.get("outsourceCategory") as string) || selectedAlloc.outsourceCategory || "",
         vendorName: fd.get("vendorName") as string,
         sendDate: (fd.get("sendTime") ? `${fd.get("sendDate")}T${fd.get("sendTime")}` : fd.get("sendDate")) as string,
+        sourceStage: sendStage,
         remarks: fd.get("remarks") as string,
       },
     });
@@ -192,7 +199,10 @@ export default function OutsourcePage() {
   ];
 
   const pendingTransfers = transfers?.filter((t) => t.status === "sent" || t.status === "partial_return") || [];
-  const availableAllocations = allocations?.filter((a: any) => (a.availableToSend || 0) > 0) || [];
+  const allocStageList = allocations?.filter((a: any) => (a.availableToSend || 0) > 0) || [];
+  const recvStageList = receivingBatches?.filter((a: any) => (a.availableToSend || 0) > 0) || [];
+  const availableAllocations = sendStage === "allocation" ? allocStageList : recvStageList;
+  const sendListLoading = sendStage === "allocation" ? allocsLoading : recvLoading;
 
   return (
     <AppLayout title="Outsource Management">
@@ -222,7 +232,26 @@ export default function OutsourcePage() {
                 <ArrowUpRight className="h-5 w-5 text-violet-600" />
                 Send to Outsource
               </CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">Allocations marked as "Outsource Required" with available pieces.</p>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-xs text-muted-foreground font-medium">Source Stage:</span>
+                <button
+                  onClick={() => { setSendStage("allocation"); setSelectedAlloc(null); }}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium border transition-all ${sendStage === "allocation" ? "bg-violet-600 text-white border-violet-600" : "bg-card text-muted-foreground border-border hover:border-violet-300"}`}
+                >
+                  From Allocation
+                </button>
+                <button
+                  onClick={() => { setSendStage("receiving"); setSelectedAlloc(null); }}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium border transition-all ${sendStage === "receiving" ? "bg-blue-600 text-white border-blue-600" : "bg-card text-muted-foreground border-border hover:border-blue-300"}`}
+                >
+                  From Receiving
+                </button>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                {sendStage === "allocation"
+                  ? 'Allocations marked as "Outsource Required" with available pieces.'
+                  : "Received allocations with pieces available for post-receiving outsource."}
+              </p>
             </div>
             {canCreate && (
               <Dialog open={sendOpen} onOpenChange={(v) => { setSendOpen(v); if (!v) setSelectedAlloc(null); }}>
@@ -313,8 +342,8 @@ export default function OutsourcePage() {
                   <TableHead className="py-4">Alloc. #</TableHead>
                   <TableHead>Batch / Product</TableHead>
                   <TableHead>Assignee</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead className="text-right">Issued</TableHead>
+                  {sendStage === "allocation" && <TableHead>Category</TableHead>}
+                  <TableHead className="text-right">{sendStage === "allocation" ? "Issued" : "Received"}</TableHead>
                   <TableHead className="text-right">Sent</TableHead>
                   <TableHead className="text-right">Returned</TableHead>
                   <TableHead className="text-right">Available</TableHead>
@@ -322,9 +351,9 @@ export default function OutsourcePage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {allocsLoading ? (
-                  <TableRow><TableCell colSpan={9} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
-                ) : allocations?.map((a: any) => (
+                {sendListLoading ? (
+                  <TableRow><TableCell colSpan={sendStage === "allocation" ? 9 : 8} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+                ) : (sendStage === "allocation" ? allocations : receivingBatches)?.map((a: any) => (
                   <TableRow key={a.id} className="hover:bg-background/50">
                     <TableCell className="font-mono text-xs text-muted-foreground">{a.allocationNumber}</TableCell>
                     <TableCell>
@@ -332,8 +361,8 @@ export default function OutsourcePage() {
                       <div className="text-xs text-muted-foreground">{a.productName}</div>
                     </TableCell>
                     <TableCell className="text-sm">{a.assigneeName}</TableCell>
-                    <TableCell><CategoryLabel cat={a.outsourceCategory} /></TableCell>
-                    <TableCell className="text-right font-bold text-foreground">{a.quantityIssued}</TableCell>
+                    {sendStage === "allocation" && <TableCell><CategoryLabel cat={a.outsourceCategory} /></TableCell>}
+                    <TableCell className="text-right font-bold text-foreground">{sendStage === "allocation" ? a.quantityIssued : a.quantityReceived}</TableCell>
                     <TableCell className="text-right font-semibold text-violet-600">{a.totalSentToOutsource || 0}</TableCell>
                     <TableCell className="text-right font-semibold text-emerald-600">{a.totalReturnedFromOutsource || 0}</TableCell>
                     <TableCell className="text-right font-bold text-amber-700">{a.availableToSend || 0}</TableCell>
@@ -346,8 +375,10 @@ export default function OutsourcePage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!allocsLoading && (!allocations || allocations.length === 0) && (
-                  <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">No outsource-type allocations found.</TableCell></TableRow>
+                {!sendListLoading && availableAllocations.length === 0 && (sendStage === "allocation" ? allocations : receivingBatches)?.length === 0 && (
+                  <TableRow><TableCell colSpan={sendStage === "allocation" ? 9 : 8} className="text-center py-12 text-muted-foreground">
+                    {sendStage === "allocation" ? "No outsource-type allocations found." : "No received allocations found."}
+                  </TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -454,6 +485,7 @@ export default function OutsourcePage() {
                 <TableRow>
                   <TableHead className="py-4">ID</TableHead>
                   <TableHead>Batch</TableHead>
+                  <TableHead>Source</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Vendor</TableHead>
                   <TableHead className="text-right">Sent</TableHead>
@@ -466,7 +498,7 @@ export default function OutsourcePage() {
               </TableHeader>
               <TableBody>
                 {transfersLoading ? (
-                  <TableRow><TableCell colSpan={10} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={11} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
                 ) : pendingTransfers.map((t) => {
                   const pending = (t.quantitySent || 0) - (t.quantityReturned || 0) - (t.quantityDamaged || 0);
                   return (
@@ -475,6 +507,15 @@ export default function OutsourcePage() {
                       <TableCell>
                         <div className="font-semibold text-primary text-sm">{t.batchNumber}</div>
                         <div className="text-xs text-muted-foreground">{t.productName}</div>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
+                          (t as any).sourceStage === "receiving"
+                            ? "bg-blue-500/10 text-blue-700 border-blue-500/20"
+                            : "bg-violet-500/10 text-violet-700 border-violet-500/20"
+                        }`}>
+                          {(t as any).sourceStage === "receiving" ? "Receiving" : "Allocation"}
+                        </span>
                       </TableCell>
                       <TableCell><CategoryLabel cat={t.outsourceCategory} /></TableCell>
                       <TableCell className="text-sm">{t.vendorName || <span className="text-muted-foreground">-</span>}</TableCell>
@@ -488,7 +529,7 @@ export default function OutsourcePage() {
                   );
                 })}
                 {!transfersLoading && pendingTransfers.length === 0 && (
-                  <TableRow><TableCell colSpan={10} className="text-center py-12 text-muted-foreground">No pending outsource transfers.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={11} className="text-center py-12 text-muted-foreground">No pending outsource transfers.</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -512,6 +553,7 @@ export default function OutsourcePage() {
                   <TableHead className="py-4">ID</TableHead>
                   <TableHead>Alloc. #</TableHead>
                   <TableHead>Batch</TableHead>
+                  <TableHead>Source</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Vendor</TableHead>
                   <TableHead className="text-right">Sent</TableHead>
@@ -525,7 +567,7 @@ export default function OutsourcePage() {
               </TableHeader>
               <TableBody>
                 {transfersLoading ? (
-                  <TableRow><TableCell colSpan={11} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={12} className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
                 ) : transfers?.map((t) => (
                   <TableRow key={t.id} className="hover:bg-background/50">
                     <TableCell className="font-mono text-xs text-muted-foreground">#{t.id}</TableCell>
@@ -533,6 +575,15 @@ export default function OutsourcePage() {
                     <TableCell>
                       <div className="font-semibold text-primary text-sm">{t.batchNumber}</div>
                       <div className="text-xs text-muted-foreground">{t.productName}</div>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
+                        (t as any).sourceStage === "receiving"
+                          ? "bg-blue-500/10 text-blue-700 border-blue-500/20"
+                          : "bg-violet-500/10 text-violet-700 border-violet-500/20"
+                      }`}>
+                        {(t as any).sourceStage === "receiving" ? "Receiving" : "Allocation"}
+                      </span>
                     </TableCell>
                     <TableCell><CategoryLabel cat={t.outsourceCategory} /></TableCell>
                     <TableCell className="text-sm">{t.vendorName || <span className="text-muted-foreground">-</span>}</TableCell>
@@ -552,7 +603,7 @@ export default function OutsourcePage() {
                   </TableRow>
                 ))}
                 {!transfersLoading && (!transfers || transfers.length === 0) && (
-                  <TableRow><TableCell colSpan={canEdit ? 12 : 11} className="text-center py-12 text-muted-foreground">No outsource transfers found.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={canEdit ? 13 : 12} className="text-center py-12 text-muted-foreground">No outsource transfers found.</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>

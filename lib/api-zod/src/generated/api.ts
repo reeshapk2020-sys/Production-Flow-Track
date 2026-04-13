@@ -1092,6 +1092,7 @@ export const ListOutsourceTransfersResponseItem = zod.object({
   sendDate: zod.string().optional(),
   returnDate: zod.string().nullish(),
   status: zod.string().optional(),
+  sourceStage: zod.string().optional().describe("'allocation' or 'receiving'"),
   remarks: zod.string().nullish(),
   assigneeName: zod.string().optional(),
   allocationType: zod.string().optional(),
@@ -1126,6 +1127,30 @@ export const ListOutsourceAllocationsResponse = zod.array(
 );
 
 /**
+ * @summary List received allocations available for post-receiving outsource
+ */
+export const ListOutsourceReceivingBatchesResponseItem = zod.object({
+  id: zod.number(),
+  allocationNumber: zod.string().optional(),
+  batchNumber: zod.string().optional(),
+  productName: zod.string().optional(),
+  quantityIssued: zod.number(),
+  quantityReceived: zod.number().optional(),
+  workType: zod.string().optional(),
+  outsourceCategory: zod.string().nullish(),
+  assigneeName: zod.string().optional(),
+  allocationType: zod.string().optional(),
+  status: zod.string().optional(),
+  totalSentToOutsource: zod.number().optional(),
+  totalReturnedFromOutsource: zod.number().optional(),
+  totalDamagedInOutsource: zod.number().optional(),
+  availableToSend: zod.number().optional(),
+});
+export const ListOutsourceReceivingBatchesResponse = zod.array(
+  ListOutsourceReceivingBatchesResponseItem,
+);
+
+/**
  * @summary Send pieces to outsource vendor
  */
 export const SendToOutsourceBody = zod.object({
@@ -1134,6 +1159,7 @@ export const SendToOutsourceBody = zod.object({
   outsourceCategory: zod.string().optional(),
   vendorName: zod.string().optional(),
   sendDate: zod.string().optional(),
+  sourceStage: zod.string().optional().describe("'allocation' or 'receiving'"),
   remarks: zod.string().optional(),
 });
 
@@ -1168,6 +1194,7 @@ export const UpdateOutsourceTransferResponse = zod.object({
   sendDate: zod.string().optional(),
   returnDate: zod.string().nullish(),
   status: zod.string().optional(),
+  sourceStage: zod.string().optional().describe("'allocation' or 'receiving'"),
   remarks: zod.string().nullish(),
   assigneeName: zod.string().optional(),
   allocationType: zod.string().optional(),
@@ -1204,6 +1231,7 @@ export const ReturnFromOutsourceResponse = zod.object({
   sendDate: zod.string().optional(),
   returnDate: zod.string().nullish(),
   status: zod.string().optional(),
+  sourceStage: zod.string().optional().describe("'allocation' or 'receiving'"),
   remarks: zod.string().nullish(),
   assigneeName: zod.string().optional(),
   allocationType: zod.string().optional(),

@@ -3975,6 +3975,86 @@ export function useListOutsourceAllocations<
 }
 
 /**
+ * @summary List received allocations available for post-receiving outsource
+ */
+export const getListOutsourceReceivingBatchesUrl = () => {
+  return `/api/outsource/receiving-batches`;
+};
+
+export const listOutsourceReceivingBatches = async (
+  options?: RequestInit,
+): Promise<OutsourceAllocation[]> => {
+  return customFetch<OutsourceAllocation[]>(
+    getListOutsourceReceivingBatchesUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListOutsourceReceivingBatchesQueryKey = () => {
+  return [`/api/outsource/receiving-batches`] as const;
+};
+
+export const getListOutsourceReceivingBatchesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listOutsourceReceivingBatches>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listOutsourceReceivingBatches>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListOutsourceReceivingBatchesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listOutsourceReceivingBatches>>
+  > = ({ signal }) =>
+    listOutsourceReceivingBatches({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listOutsourceReceivingBatches>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListOutsourceReceivingBatchesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listOutsourceReceivingBatches>>
+>;
+export type ListOutsourceReceivingBatchesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List received allocations available for post-receiving outsource
+ */
+
+export function useListOutsourceReceivingBatches<
+  TData = Awaited<ReturnType<typeof listOutsourceReceivingBatches>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listOutsourceReceivingBatches>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListOutsourceReceivingBatchesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * @summary Send pieces to outsource vendor
  */
 export const getSendToOutsourceUrl = () => {

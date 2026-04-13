@@ -6,6 +6,7 @@ import {
   cuttingBatchesTable,
   allocationsTable,
   receivingsTable,
+  outsourceTransfersTable,
   productsTable,
   fabricsTable,
   materialsTable,
@@ -48,6 +49,29 @@ async function getTotalReceived(batchId: number): Promise<number> {
     .where(inArray(receivingsTable.allocationId, allocIds));
 
   return result?.total ?? 0;
+}
+
+async function getReceivingStageOutsourceNet(batchId: number): Promise<{ sent: number; returned: number }> {
+  const allocs = await db
+    .select({ id: allocationsTable.id })
+    .from(allocationsTable)
+    .where(eq(allocationsTable.cuttingBatchId, batchId));
+
+  if (allocs.length === 0) return { sent: 0, returned: 0 };
+
+  const allocIds = allocs.map((a) => a.id);
+  const [result] = await db
+    .select({
+      totalSent: sql<number>`COALESCE(SUM(${outsourceTransfersTable.quantitySent}), 0)::int`,
+      totalReturned: sql<number>`COALESCE(SUM(${outsourceTransfersTable.quantityReturned}), 0)::int`,
+    })
+    .from(outsourceTransfersTable)
+    .where(and(
+      inArray(outsourceTransfersTable.allocationId, allocIds),
+      eq(outsourceTransfersTable.sourceStage, "receiving"),
+    ));
+
+  return { sent: result?.totalSent ?? 0, returned: result?.totalReturned ?? 0 };
 }
 
 /** Total pieces already output in finishing for a given cutting batch */
@@ -141,13 +165,17 @@ router.get("/finishing/batch-info/:batchId", checkPermission("finishing", "view"
 
   const totalReceived = await getTotalReceived(batchId);
   const totalFinishingOutput = await getTotalFinishingOutput(batchId);
+  const osNet = await getReceivingStageOutsourceNet(batchId);
+  const atOutsource = osNet.sent - osNet.returned;
 
   res.json({
     batchId,
     batchNumber: batch.batchNumber,
     totalReceived,
     totalFinishingOutput,
-    availableForFinishing: Math.max(0, totalReceived - totalFinishingOutput),
+    outsourceFromReceivingSent: osNet.sent,
+    outsourceFromReceivingReturned: osNet.returned,
+    availableForFinishing: Math.max(0, totalReceived - totalFinishingOutput - atOutsource),
   });
 });
 
@@ -182,10 +210,11 @@ router.post("/finishing", checkPermission("finishing", "create"), async (req, re
     });
   }
 
-  // Validate against upstream: input cannot exceed what was received from stitchers
   const totalReceived = await getTotalReceived(Number(cuttingBatchId));
   const totalAlreadyOutput = await getTotalFinishingOutput(Number(cuttingBatchId));
-  const available = totalReceived - totalAlreadyOutput;
+  const osNet = await getReceivingStageOutsourceNet(Number(cuttingBatchId));
+  const atOutsource = osNet.sent - osNet.returned;
+  const available = totalReceived - totalAlreadyOutput - atOutsource;
 
   if (input > available) {
     return res.status(400).json({

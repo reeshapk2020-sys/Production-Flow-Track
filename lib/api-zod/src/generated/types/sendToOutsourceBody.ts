@@ -12,5 +12,7 @@ export interface SendToOutsourceBody {
   outsourceCategory?: string;
   vendorName?: string;
   sendDate?: string;
+  /** 'allocation' or 'receiving' */
+  sourceStage?: string;
   remarks?: string;
 }
