@@ -15,6 +15,7 @@ import {
   outsourceTransfersTable,
   manualPausesTable,
   offDaysTable,
+  timeSettingsTable,
 } from "@workspace/db/schema";
 import { eq, sql, and, gte, lte, ilike } from "drizzle-orm";
 import { checkPermission } from "./permissions.js";
@@ -631,6 +632,9 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
 
   const offDays = await getServerOffDays();
 
+  const [tsRow] = await db.select({ minutesPerPoint: timeSettingsTable.minutesPerPoint }).from(timeSettingsTable).where(eq(timeSettingsTable.id, 1));
+  const minutesPerPoint = tsRow?.minutesPerPoint ?? 20;
+
   const rows = await db
     .select({
       receivingId: receivingsTable.id,
@@ -720,7 +724,7 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
   for (const r of rows) {
     const ppp = r.manualPointsPerPiece != null ? Number(r.manualPointsPerPiece) : (r.snapshotPointsPerPiece != null ? Number(r.snapshotPointsPerPiece) : (Number(r.productPointsPerPiece) || 0));
     const pts = ppp * (r.quantityReceived || 0);
-    const expectedMin = pts * 20;
+    const expectedMin = pts * minutesPerPoint;
     const dateKey = r.receiveDate ? new Date(r.receiveDate).toISOString().slice(0, 10) : "";
 
     if (!allocMap[r.allocationId]) {
