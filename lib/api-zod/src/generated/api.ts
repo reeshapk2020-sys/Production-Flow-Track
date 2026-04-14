@@ -693,6 +693,8 @@ export const GetCuttingBatchResponse = zod.object({
       quantityPending: zod.number().optional(),
       quantityRejected: zod.number().optional(),
       workType: zod.string().optional(),
+      pointsPerPiece: zod.number().nullish(),
+      manualPointsPerPiece: zod.number().nullish(),
       outsourceCategory: zod.string().nullish(),
       outsourceSent: zod.number().nullish(),
       outsourceReturned: zod.number().nullish(),
@@ -814,6 +816,8 @@ export const ListAllocationsResponseItem = zod.object({
   quantityPending: zod.number().optional(),
   quantityRejected: zod.number().optional(),
   workType: zod.string().optional(),
+  pointsPerPiece: zod.number().nullish(),
+  manualPointsPerPiece: zod.number().nullish(),
   outsourceCategory: zod.string().nullish(),
   outsourceSent: zod.number().nullish(),
   outsourceReturned: zod.number().nullish(),
@@ -895,6 +899,8 @@ export const GetAllocationResponse = zod.object({
   quantityPending: zod.number().optional(),
   quantityRejected: zod.number().optional(),
   workType: zod.string().optional(),
+  pointsPerPiece: zod.number().nullish(),
+  manualPointsPerPiece: zod.number().nullish(),
   outsourceCategory: zod.string().nullish(),
   outsourceSent: zod.number().nullish(),
   outsourceReturned: zod.number().nullish(),
@@ -952,6 +958,8 @@ export const UpdateAllocationResponse = zod.object({
   quantityPending: zod.number().optional(),
   quantityRejected: zod.number().optional(),
   workType: zod.string().optional(),
+  pointsPerPiece: zod.number().nullish(),
+  manualPointsPerPiece: zod.number().nullish(),
   outsourceCategory: zod.string().nullish(),
   outsourceSent: zod.number().nullish(),
   outsourceReturned: zod.number().nullish(),
@@ -995,6 +1003,8 @@ export const ListReceivingsResponseItem = zod.object({
   hasDamage: zod.boolean().optional(),
   needsWash: zod.boolean().optional(),
   needsRework: zod.boolean().optional(),
+  pointsPerPiece: zod.number().nullish(),
+  manualPointsPerPiece: zod.number().nullish(),
   isLocked: zod.boolean().optional(),
   productionFor: zod.string().nullish(),
   poNumber: zod.string().nullish(),
@@ -1055,10 +1065,28 @@ export const UpdateReceivingResponse = zod.object({
   hasDamage: zod.boolean().optional(),
   needsWash: zod.boolean().optional(),
   needsRework: zod.boolean().optional(),
+  pointsPerPiece: zod.number().nullish(),
+  manualPointsPerPiece: zod.number().nullish(),
   isLocked: zod.boolean().optional(),
   productionFor: zod.string().nullish(),
   poNumber: zod.string().nullish(),
   orderNumber: zod.string().nullish(),
+});
+
+/**
+ * @summary Update manual points per piece for a batch at receiving
+ */
+export const UpdateBatchPointsParams = zod.object({
+  allocationId: zod.coerce.number(),
+});
+
+export const UpdateBatchPointsBody = zod.object({
+  manualPointsPerPiece: zod.number(),
+});
+
+export const UpdateBatchPointsResponse = zod.object({
+  id: zod.number().optional(),
+  manualPointsPerPiece: zod.string().nullish(),
 });
 
 /**

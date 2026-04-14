@@ -743,7 +743,10 @@ export default function AllocationPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-card border border-border rounded-xl p-3">
                     <div className="text-xs text-muted-foreground mb-1">Points / Piece</div>
-                    <div className="text-lg font-bold text-foreground">{ppp}</div>
+                    <div className="text-lg font-bold text-foreground">
+                      {ppp}
+                      {detailTarget.manualPointsPerPiece != null && <span className="text-xs font-normal text-amber-600 ml-1">(edited)</span>}
+                    </div>
                   </div>
                   <div className="bg-card border border-border rounded-xl p-3">
                     <div className="text-xs text-muted-foreground mb-1">Qty Issued</div>

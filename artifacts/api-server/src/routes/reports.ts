@@ -262,15 +262,17 @@ router.get("/reports/daily-production-detail", checkPermission("reports", "view"
   const ed = new Date(endStr); ed.setDate(ed.getDate() + 1);
   dateConditions.push(lte(allocationsTable.issueDate, ed));
 
-  const teamWhereConditions: any[] = [eq(teamsTable.isActive, true)];
-  if (productId) teamWhereConditions.push(eq(cuttingBatchesTable.productId, productId));
+  const recvDateStart = new Date(startStr);
+  const recvDateEnd = new Date(endStr); recvDateEnd.setDate(recvDateEnd.getDate() + 1);
 
-  const teamRows = await db
+  const teamAllocConditions: any[] = [eq(teamsTable.isActive, true)];
+  if (productId) teamAllocConditions.push(eq(cuttingBatchesTable.productId, productId));
+
+  const teamAllocRows = await db
     .select({
       teamId: teamsTable.id,
       teamName: teamsTable.name,
       totalAllocated: sql<number>`COALESCE(SUM(${allocationsTable.quantityIssued}), 0)::int`,
-      totalReceived: sql<number>`COALESCE(SUM(${allocationsTable.quantityReceived}), 0)::int`,
     })
     .from(teamsTable)
     .leftJoin(allocationsTable, and(
@@ -279,41 +281,82 @@ router.get("/reports/daily-production-detail", checkPermission("reports", "view"
       ...dateConditions
     ))
     .leftJoin(cuttingBatchesTable, eq(allocationsTable.cuttingBatchId, cuttingBatchesTable.id))
-    .where(and(...teamWhereConditions))
-    .groupBy(teamsTable.id, teamsTable.name)
-    .orderBy(sql`COALESCE(SUM(${allocationsTable.quantityIssued}), 0) desc`);
+    .where(and(...teamAllocConditions))
+    .groupBy(teamsTable.id, teamsTable.name);
 
-  const stitcherDateConditions: any[] = [
-    gte(allocationsTable.issueDate, new Date(startStr)),
-    lte(allocationsTable.issueDate, ed),
-  ];
+  const teamRecvProductCond: any[] = [];
+  if (productId) teamRecvProductCond.push(eq(cuttingBatchesTable.productId, productId));
+  const teamRecvRows = await db
+    .select({
+      teamId: allocationsTable.teamId,
+      totalReceived: sql<number>`COALESCE(SUM(${receivingsTable.quantityReceived}), 0)::int`,
+    })
+    .from(receivingsTable)
+    .innerJoin(allocationsTable, eq(receivingsTable.allocationId, allocationsTable.id))
+    .innerJoin(cuttingBatchesTable, eq(allocationsTable.cuttingBatchId, cuttingBatchesTable.id))
+    .where(and(
+      eq(allocationsTable.allocationType, "team"),
+      gte(receivingsTable.receiveDate, recvDateStart),
+      lte(receivingsTable.receiveDate, recvDateEnd),
+      ...teamRecvProductCond
+    ))
+    .groupBy(allocationsTable.teamId);
 
-  const stitcherWhereConditions: any[] = [eq(stitchersTable.isActive, true)];
-  if (productId) stitcherWhereConditions.push(eq(cuttingBatchesTable.productId, productId));
+  const teamRecvMap = new Map(teamRecvRows.map(r => [r.teamId, r.totalReceived]));
+  const teamRows = teamAllocRows.map(t => ({
+    ...t,
+    totalReceived: teamRecvMap.get(t.teamId) || 0,
+  }));
 
-  const stitcherRows = await db
+  const stitcherAllocConditions: any[] = [eq(stitchersTable.isActive, true)];
+  if (productId) stitcherAllocConditions.push(eq(cuttingBatchesTable.productId, productId));
+
+  const stitcherAllocRows = await db
     .select({
       stitcherId: stitchersTable.id,
       stitcherName: stitchersTable.name,
       teamName: teamsTable.name,
       totalAllocated: sql<number>`COALESCE(SUM(${allocationsTable.quantityIssued}), 0)::int`,
-      totalReceived: sql<number>`COALESCE(SUM(${allocationsTable.quantityReceived}), 0)::int`,
     })
     .from(stitchersTable)
     .leftJoin(teamsTable, eq(stitchersTable.teamId, teamsTable.id))
     .leftJoin(allocationsTable, and(
       eq(allocationsTable.stitcherId, stitchersTable.id),
       eq(allocationsTable.allocationType, "individual"),
-      ...stitcherDateConditions
+      gte(allocationsTable.issueDate, new Date(startStr)),
+      lte(allocationsTable.issueDate, ed),
     ))
     .leftJoin(cuttingBatchesTable, eq(allocationsTable.cuttingBatchId, cuttingBatchesTable.id))
-    .where(and(...stitcherWhereConditions))
-    .groupBy(stitchersTable.id, stitchersTable.name, teamsTable.name)
-    .orderBy(sql`COALESCE(SUM(${allocationsTable.quantityIssued}), 0) desc`);
+    .where(and(...stitcherAllocConditions))
+    .groupBy(stitchersTable.id, stitchersTable.name, teamsTable.name);
+
+  const stitcherRecvProductCond: any[] = [];
+  if (productId) stitcherRecvProductCond.push(eq(cuttingBatchesTable.productId, productId));
+  const stitcherRecvRows = await db
+    .select({
+      stitcherId: allocationsTable.stitcherId,
+      totalReceived: sql<number>`COALESCE(SUM(${receivingsTable.quantityReceived}), 0)::int`,
+    })
+    .from(receivingsTable)
+    .innerJoin(allocationsTable, eq(receivingsTable.allocationId, allocationsTable.id))
+    .innerJoin(cuttingBatchesTable, eq(allocationsTable.cuttingBatchId, cuttingBatchesTable.id))
+    .where(and(
+      eq(allocationsTable.allocationType, "individual"),
+      gte(receivingsTable.receiveDate, recvDateStart),
+      lte(receivingsTable.receiveDate, recvDateEnd),
+      ...stitcherRecvProductCond
+    ))
+    .groupBy(allocationsTable.stitcherId);
+
+  const stitcherRecvMap = new Map(stitcherRecvRows.map(r => [r.stitcherId, r.totalReceived]));
+  const stitcherRows = stitcherAllocRows.map(s => ({
+    ...s,
+    totalReceived: stitcherRecvMap.get(s.stitcherId) || 0,
+  }));
 
   res.json({
     teams: teamRows.filter(t => t.totalAllocated > 0 || t.totalReceived > 0),
-    stitchers: stitcherRows.filter(s => s.totalAllocated > 0 || s.totalReceived > 0),
+    stitchers: stitcherRows.filter(s => s.totalAllocated > 0 || s.totalReceived > 0).sort((a, b) => b.totalAllocated - a.totalAllocated),
   });
 });
 
@@ -436,6 +479,7 @@ router.get("/reports/stitcher-points", checkPermission("reports", "view"), async
       productName: productsTable.name,
       productPointsPerPiece: productsTable.pointsPerPiece,
       snapshotPointsPerPiece: allocationsTable.pointsPerPiece,
+      manualPointsPerPiece: allocationsTable.manualPointsPerPiece,
       completedQty: sql<number>`COALESCE(SUM(${receivingsTable.quantityReceived}), 0)::int`,
     })
     .from(receivingsTable)
@@ -445,11 +489,11 @@ router.get("/reports/stitcher-points", checkPermission("reports", "view"), async
     .innerJoin(stitchersTable, eq(allocationsTable.stitcherId, stitchersTable.id))
     .leftJoin(teamsTable, eq(stitchersTable.teamId, teamsTable.id))
     .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .groupBy(stitchersTable.id, stitchersTable.name, teamsTable.name, productsTable.id, productsTable.code, productsTable.name, productsTable.pointsPerPiece, allocationsTable.pointsPerPiece)
+    .groupBy(stitchersTable.id, stitchersTable.name, teamsTable.name, productsTable.id, productsTable.code, productsTable.name, productsTable.pointsPerPiece, allocationsTable.pointsPerPiece, allocationsTable.manualPointsPerPiece)
     .orderBy(stitchersTable.name, productsTable.code);
 
   const result = rows.map(r => {
-    const pts = r.snapshotPointsPerPiece != null ? Number(r.snapshotPointsPerPiece) : (r.productPointsPerPiece ? Number(r.productPointsPerPiece) : 0);
+    const pts = r.manualPointsPerPiece != null ? Number(r.manualPointsPerPiece) : (r.snapshotPointsPerPiece != null ? Number(r.snapshotPointsPerPiece) : (r.productPointsPerPiece ? Number(r.productPointsPerPiece) : 0));
     return {
       stitcherId: r.stitcherId,
       stitcherName: r.stitcherName,
@@ -481,6 +525,7 @@ router.get("/reports/team-points", checkPermission("reports", "view"), async (re
       productName: productsTable.name,
       productPointsPerPiece: productsTable.pointsPerPiece,
       snapshotPointsPerPiece: allocationsTable.pointsPerPiece,
+      manualPointsPerPiece: allocationsTable.manualPointsPerPiece,
       completedQty: sql<number>`COALESCE(SUM(${receivingsTable.quantityReceived}), 0)::int`,
     })
     .from(receivingsTable)
@@ -489,11 +534,11 @@ router.get("/reports/team-points", checkPermission("reports", "view"), async (re
     .innerJoin(productsTable, eq(cuttingBatchesTable.productId, productsTable.id))
     .innerJoin(teamsTable, eq(allocationsTable.teamId, teamsTable.id))
     .where(and(...conditions))
-    .groupBy(teamsTable.id, teamsTable.name, teamsTable.code, productsTable.id, productsTable.code, productsTable.name, productsTable.pointsPerPiece, allocationsTable.pointsPerPiece)
+    .groupBy(teamsTable.id, teamsTable.name, teamsTable.code, productsTable.id, productsTable.code, productsTable.name, productsTable.pointsPerPiece, allocationsTable.pointsPerPiece, allocationsTable.manualPointsPerPiece)
     .orderBy(teamsTable.name, productsTable.code);
 
   const result = rows.map(r => {
-    const pts = r.snapshotPointsPerPiece != null ? Number(r.snapshotPointsPerPiece) : (r.productPointsPerPiece ? Number(r.productPointsPerPiece) : 0);
+    const pts = r.manualPointsPerPiece != null ? Number(r.manualPointsPerPiece) : (r.snapshotPointsPerPiece != null ? Number(r.snapshotPointsPerPiece) : (r.productPointsPerPiece ? Number(r.productPointsPerPiece) : 0));
     return {
       teamId: r.teamId,
       teamName: r.teamName,
@@ -600,6 +645,7 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
       quantityReceived: receivingsTable.quantityReceived,
       productPointsPerPiece: productsTable.pointsPerPiece,
       snapshotPointsPerPiece: allocationsTable.pointsPerPiece,
+      manualPointsPerPiece: allocationsTable.manualPointsPerPiece,
       issueDate: allocationsTable.issueDate,
       receiveDate: receivingsTable.receiveDate,
       workType: allocationsTable.workType,
@@ -672,7 +718,7 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
   const allocMap: Record<number, AllocRecord> = {};
 
   for (const r of rows) {
-    const ppp = r.snapshotPointsPerPiece != null ? Number(r.snapshotPointsPerPiece) : (Number(r.productPointsPerPiece) || 0);
+    const ppp = r.manualPointsPerPiece != null ? Number(r.manualPointsPerPiece) : (r.snapshotPointsPerPiece != null ? Number(r.snapshotPointsPerPiece) : (Number(r.productPointsPerPiece) || 0));
     const pts = ppp * (r.quantityReceived || 0);
     const expectedMin = pts * 20;
     const dateKey = r.receiveDate ? new Date(r.receiveDate).toISOString().slice(0, 10) : "";

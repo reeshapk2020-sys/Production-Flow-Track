@@ -47,6 +47,7 @@ const allocSelect = {
   productName: productsTable.name,
   productPointsPerPiece: productsTable.pointsPerPiece,
   snapshotPointsPerPiece: allocationsTable.pointsPerPiece,
+  manualPointsPerPiece: allocationsTable.manualPointsPerPiece,
   fabricId: cuttingBatchesTable.fabricId,
   fabricCode: fabricsTable.code,
   fabricName: fabricsTable.name,
@@ -99,10 +100,12 @@ function allocJoins(q: any) {
 }
 
 function withItemCode(r: any) {
+  const manualPPP = r.manualPointsPerPiece != null ? Number(r.manualPointsPerPiece) : null;
   const isCompleted = r.status === "completed" || r.status === "received";
-  const effectivePPP = isCompleted && r.snapshotPointsPerPiece != null
+  const basePPP = isCompleted && r.snapshotPointsPerPiece != null
     ? r.snapshotPointsPerPiece
     : (r.productPointsPerPiece ?? r.snapshotPointsPerPiece);
+  const effectivePPP = manualPPP ?? basePPP;
   return {
     ...r,
     pointsPerPiece: effectivePPP,

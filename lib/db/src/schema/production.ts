@@ -237,6 +237,7 @@ export const allocationsTable = pgTable("allocations", {
   workType: text("work_type").notNull().default("simple_stitch"),
   outsourceCategory: text("outsource_category"),
   pointsPerPiece: numeric("points_per_piece", { precision: 10, scale: 2 }),
+  manualPointsPerPiece: numeric("manual_points_per_piece", { precision: 10, scale: 2 }),
   issueDate: timestamp("issue_date").notNull(),
   remarks: text("remarks"),
   status: text("status").notNull().default("pending"),

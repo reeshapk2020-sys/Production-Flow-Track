@@ -36,6 +36,8 @@ export interface Allocation {
   quantityPending?: number;
   quantityRejected?: number;
   workType?: string;
+  pointsPerPiece?: number | null;
+  manualPointsPerPiece?: number | null;
   outsourceCategory?: string | null;
   outsourceSent?: number | null;
   outsourceReturned?: number | null;

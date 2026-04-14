@@ -328,6 +328,8 @@ export interface Allocation {
   quantityPending?: number;
   quantityRejected?: number;
   workType?: string;
+  pointsPerPiece?: number | null;
+  manualPointsPerPiece?: number | null;
   outsourceCategory?: string | null;
   outsourceSent?: number | null;
   outsourceReturned?: number | null;
@@ -588,6 +590,8 @@ export interface Receiving {
   hasDamage?: boolean;
   needsWash?: boolean;
   needsRework?: boolean;
+  pointsPerPiece?: number | null;
+  manualPointsPerPiece?: number | null;
   isLocked?: boolean;
   productionFor?: string | null;
   poNumber?: string | null;
@@ -1133,6 +1137,15 @@ export type ListReceivingsParams = {
   endDate?: string;
   stitcherId?: number;
   batchNumber?: string;
+};
+
+export type UpdateBatchPointsBody = {
+  manualPointsPerPiece: number;
+};
+
+export type UpdateBatchPoints200 = {
+  id?: number;
+  manualPointsPerPiece?: string | null;
 };
 
 export type ListOutsourceTransfersParams = {

@@ -27,6 +27,8 @@ export interface Receiving {
   hasDamage?: boolean;
   needsWash?: boolean;
   needsRework?: boolean;
+  pointsPerPiece?: number | null;
+  manualPointsPerPiece?: number | null;
   isLocked?: boolean;
   productionFor?: string | null;
   poNumber?: string | null;

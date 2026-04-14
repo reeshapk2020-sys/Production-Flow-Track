@@ -123,6 +123,8 @@ export * from "./teamPerformance";
 export * from "./traceEvent";
 export * from "./traceSearchResult";
 export * from "./updateAllocationBody";
+export * from "./updateBatchPoints200";
+export * from "./updateBatchPointsBody";
 export * from "./updateColorBody";
 export * from "./updateCuttingBatchBody";
 export * from "./updateDispatchBody";

@@ -9,7 +9,7 @@ import { SearchableSelect } from "@/components/searchable-select";
 import {
   useListReceivings, useCreateReceiving, getListReceivingsQueryKey,
   useListAllocations, getListAllocationsQueryKey, useUpdateReceiving,
-  useListStitchers
+  useListStitchers, useUpdateBatchPoints
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -205,6 +205,28 @@ export default function ReceivingPage() {
   const [editTarget, setEditTarget] = useState<any>(null);
   const [timingOpen, setTimingOpen] = useState(false);
   const [timingTarget, setTimingTarget] = useState<any>(null);
+  const [editingPoints, setEditingPoints] = useState(false);
+  const [editPointsValue, setEditPointsValue] = useState("");
+  const [editPointsAllocId, setEditPointsAllocId] = useState<number | null>(null);
+
+  const { mutate: updateBatchPointsMutate, isPending: isUpdatingPoints } = useUpdateBatchPoints({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListReceivingsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListAllocationsQueryKey() });
+        toast({ title: "Points Updated", description: "Batch points per piece updated successfully." });
+        setEditingPoints(false);
+        setEditPointsAllocId(null);
+        if (timingTarget && timingTarget.allocationId === editPointsAllocId) {
+          setTimingOpen(false);
+          setTimingTarget(null);
+        }
+      },
+      onError: (err: any) => {
+        toast({ title: "Error", description: err?.response?.data?.error || "Failed to update points.", variant: "destructive" });
+      },
+    },
+  });
 
   const { mutate, isPending } = useCreateReceiving({
     mutation: {
@@ -980,9 +1002,55 @@ export default function ReceivingPage() {
                   )}
                   {actualBlock}
                   {remarksBlock}
-                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
-                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                    No points configured for this product. Set points in Product Master for full timing details.
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2 text-xs text-amber-700 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                      No points configured for this product. Set points in Product Master or edit manually below.
+                    </div>
+                    {canEdit && !editingPoints && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => {
+                          setEditingPoints(true);
+                          setEditPointsAllocId(timingTarget.allocationId);
+                          setEditPointsValue("");
+                        }}
+                      >
+                        <Pencil className="h-3 w-3 mr-1" /> Set Points for This Batch
+                      </Button>
+                    )}
+                    {editingPoints && editPointsAllocId === timingTarget.allocationId && (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="Points/Piece"
+                          className="w-24 border rounded px-2 py-1 text-sm bg-background text-foreground"
+                          value={editPointsValue}
+                          onChange={(e) => setEditPointsValue(e.target.value)}
+                          autoFocus
+                        />
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="h-7 px-2 text-xs"
+                          disabled={isUpdatingPoints || !editPointsValue}
+                          onClick={() => {
+                            const val = Number(editPointsValue);
+                            if (isNaN(val) || val < 0) return;
+                            updateBatchPointsMutate({ allocationId: editPointsAllocId!, data: { manualPointsPerPiece: val } });
+                          }}
+                        >
+                          {isUpdatingPoints ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 px-1 text-xs" onClick={() => { setEditingPoints(false); setEditPointsAllocId(null); }}>
+                          Cancel
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -994,8 +1062,56 @@ export default function ReceivingPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-card border border-border rounded-xl p-3">
-                    <div className="text-xs text-muted-foreground mb-1">Points / Piece</div>
-                    <div className="text-lg font-bold text-foreground">{ppp}</div>
+                    <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                      Points / Piece
+                      {canEdit && (
+                        <button
+                          className="ml-auto text-primary hover:text-primary/80"
+                          title="Edit points for this batch"
+                          onClick={() => {
+                            setEditingPoints(true);
+                            setEditPointsAllocId(timingTarget.allocationId);
+                            setEditPointsValue(String(ppp));
+                          }}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                    {editingPoints && editPointsAllocId === timingTarget.allocationId ? (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          className="w-16 border rounded px-1 py-0.5 text-sm bg-background text-foreground"
+                          value={editPointsValue}
+                          onChange={(e) => setEditPointsValue(e.target.value)}
+                          autoFocus
+                        />
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="h-6 px-2 text-xs"
+                          disabled={isUpdatingPoints}
+                          onClick={() => {
+                            const val = Number(editPointsValue);
+                            if (isNaN(val) || val < 0) return;
+                            updateBatchPointsMutate({ allocationId: editPointsAllocId!, data: { manualPointsPerPiece: val } });
+                          }}
+                        >
+                          {isUpdatingPoints ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-6 px-1 text-xs" onClick={() => { setEditingPoints(false); setEditPointsAllocId(null); }}>
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-lg font-bold text-foreground">
+                        {ppp}
+                        {timingTarget.manualPointsPerPiece != null && <span className="text-xs font-normal text-amber-600 ml-1">(edited)</span>}
+                      </div>
+                    )}
                   </div>
                   <div className="bg-card border border-border rounded-xl p-3">
                     <div className="text-xs text-muted-foreground mb-1">Qty Issued</div>

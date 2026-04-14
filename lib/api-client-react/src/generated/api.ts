@@ -109,6 +109,8 @@ import type {
   TeamPerformance,
   TraceSearchResult,
   UpdateAllocationBody,
+  UpdateBatchPoints200,
+  UpdateBatchPointsBody,
   UpdateColorBody,
   UpdateCuttingBatchBody,
   UpdateDispatchBody,
@@ -3793,6 +3795,96 @@ export const useUpdateReceiving = <
   TContext
 > => {
   return useMutation(getUpdateReceivingMutationOptions(options));
+};
+
+/**
+ * @summary Update manual points per piece for a batch at receiving
+ */
+export const getUpdateBatchPointsUrl = (allocationId: number) => {
+  return `/api/receiving/batch-points/${allocationId}`;
+};
+
+export const updateBatchPoints = async (
+  allocationId: number,
+  updateBatchPointsBody: UpdateBatchPointsBody,
+  options?: RequestInit,
+): Promise<UpdateBatchPoints200> => {
+  return customFetch<UpdateBatchPoints200>(
+    getUpdateBatchPointsUrl(allocationId),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(updateBatchPointsBody),
+    },
+  );
+};
+
+export const getUpdateBatchPointsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateBatchPoints>>,
+    TError,
+    { allocationId: number; data: BodyType<UpdateBatchPointsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateBatchPoints>>,
+  TError,
+  { allocationId: number; data: BodyType<UpdateBatchPointsBody> },
+  TContext
+> => {
+  const mutationKey = ["updateBatchPoints"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateBatchPoints>>,
+    { allocationId: number; data: BodyType<UpdateBatchPointsBody> }
+  > = (props) => {
+    const { allocationId, data } = props ?? {};
+
+    return updateBatchPoints(allocationId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateBatchPointsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateBatchPoints>>
+>;
+export type UpdateBatchPointsMutationBody = BodyType<UpdateBatchPointsBody>;
+export type UpdateBatchPointsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update manual points per piece for a batch at receiving
+ */
+export const useUpdateBatchPoints = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateBatchPoints>>,
+    TError,
+    { allocationId: number; data: BodyType<UpdateBatchPointsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateBatchPoints>>,
+  TError,
+  { allocationId: number; data: BodyType<UpdateBatchPointsBody> },
+  TContext
+> => {
+  return useMutation(getUpdateBatchPointsMutationOptions(options));
 };
 
 /**

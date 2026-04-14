@@ -932,6 +932,41 @@ paths:
                 $ref: "#/components/schemas/Receiving"
 
   # OUTSOURCE
+  /receiving/batch-points/{allocationId}:
+    patch:
+      operationId: updateBatchPoints
+      tags: [receiving]
+      summary: Update manual points per piece for a batch at receiving
+      parameters:
+        - name: allocationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                manualPointsPerPiece:
+                  type: number
+              required: [manualPointsPerPiece]
+      responses:
+        "200":
+          description: Updated allocation points
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  manualPointsPerPiece:
+                    type: string
+                    nullable: true
+
   /outsource:
     get:
       operationId: listOutsourceTransfers
@@ -3030,6 +3065,12 @@ components:
           type: integer
         workType:
           type: string
+        pointsPerPiece:
+          type: number
+          nullable: true
+        manualPointsPerPiece:
+          type: number
+          nullable: true
         outsourceCategory:
           type: string
           nullable: true
@@ -3288,6 +3329,12 @@ components:
           type: boolean
         needsRework:
           type: boolean
+        pointsPerPiece:
+          type: number
+          nullable: true
+        manualPointsPerPiece:
+          type: number
+          nullable: true
         isLocked:
           type: boolean
         productionFor:

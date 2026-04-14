@@ -186,6 +186,7 @@ router.get("/receiving", checkPermission("receiving", "view"), async (req, res) 
       outsourceCategory: allocationsTable.outsourceCategory,
       productPointsPerPiece: productsTable.pointsPerPiece,
       snapshotPointsPerPiece: allocationsTable.pointsPerPiece,
+      manualPointsPerPiece: allocationsTable.manualPointsPerPiece,
       allocationStatus: allocationsTable.status,
       quantityReceived: receivingsTable.quantityReceived,
       quantityRejected: receivingsTable.quantityRejected,
@@ -382,6 +383,7 @@ router.get("/receiving", checkPermission("receiving", "view"), async (req, res) 
     return {
       ...r,
       pointsPerPiece: (() => {
+        if (r.manualPointsPerPiece != null) return Number(r.manualPointsPerPiece);
         const isCompleted = r.allocationStatus === "completed" || r.allocationStatus === "received";
         const eff = isCompleted && r.snapshotPointsPerPiece != null
           ? r.snapshotPointsPerPiece
@@ -537,6 +539,36 @@ router.put("/receiving/:id", checkPermission("receiving", "edit"), async (req, r
     .returning();
   await logAudit(req, "UPDATE", "receivings", String(id), `Updated receiving record #${id}`);
   res.json({ ...row, isLocked });
+});
+
+router.patch("/receiving/batch-points/:allocationId", checkPermission("receiving", "edit"), async (req, res) => {
+  const allocationId = Number(req.params.allocationId);
+  const { manualPointsPerPiece } = req.body;
+
+  if (manualPointsPerPiece === undefined || manualPointsPerPiece === null) {
+    return res.status(400).json({ error: "manualPointsPerPiece is required." });
+  }
+
+  const ppp = Number(manualPointsPerPiece);
+  if (isNaN(ppp) || ppp < 0) {
+    return res.status(400).json({ error: "manualPointsPerPiece must be a non-negative number." });
+  }
+
+  const [allocation] = await db
+    .select({ id: allocationsTable.id })
+    .from(allocationsTable)
+    .where(eq(allocationsTable.id, allocationId));
+
+  if (!allocation) return res.status(404).json({ error: "Allocation not found." });
+
+  const [updated] = await db
+    .update(allocationsTable)
+    .set({ manualPointsPerPiece: String(ppp) })
+    .where(eq(allocationsTable.id, allocationId))
+    .returning({ id: allocationsTable.id, manualPointsPerPiece: allocationsTable.manualPointsPerPiece });
+
+  await logAudit(req, "UPDATE", "allocations", String(allocationId), `Manually set points per piece to ${ppp} for allocation #${allocationId}`);
+  res.json(updated);
 });
 
 export default router;
