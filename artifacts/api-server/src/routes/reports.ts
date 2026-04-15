@@ -666,7 +666,7 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
     .where(conditions.length > 0 ? and(...conditions) : undefined);
 
   const allocIds = [...new Set(rows.map(r => r.allocationId))];
-  let outsourceMap: Record<number, number> = {};
+  let outsourceMap: Record<number, { sendDate: Date; returnDate: Date }[]> = {};
   if (allocIds.length > 0) {
     const oRows = await db
       .select({
@@ -675,12 +675,16 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
         returnDate: outsourceTransfersTable.returnDate,
       })
       .from(outsourceTransfersTable)
-      .where(sql`${outsourceTransfersTable.allocationId} IN (${sql.join(allocIds.map(id => sql`${id}`), sql`, `)})`);
+      .where(and(
+        sql`${outsourceTransfersTable.allocationId} IN (${sql.join(allocIds.map(id => sql`${id}`), sql`, `)})`,
+        eq(outsourceTransfersTable.sourceStage, "allocation"),
+      ));
     for (const o of oRows) {
-      const send = new Date(o.sendDate);
-      const ret = o.returnDate ? new Date(o.returnDate) : new Date();
-      const osWorkMin = serverCalcWorkingMinutesBetween(send, ret, offDays);
-      outsourceMap[o.allocationId] = (outsourceMap[o.allocationId] || 0) + osWorkMin;
+      if (!outsourceMap[o.allocationId]) outsourceMap[o.allocationId] = [];
+      outsourceMap[o.allocationId].push({
+        sendDate: new Date(o.sendDate),
+        returnDate: o.returnDate ? new Date(o.returnDate) : new Date(),
+      });
     }
   }
 
@@ -713,6 +717,7 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
     totalPoints: number;
     expectedMinutes: number;
     issueDate: Date | null;
+    firstReceiveDate: Date | null;
     lastReceiveDate: Date | null;
     lastReceiveDateKey: string;
     batchNumber: string | null;
@@ -739,6 +744,7 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
         totalPoints: 0,
         expectedMinutes: 0,
         issueDate: r.issueDate,
+        firstReceiveDate: r.receiveDate,
         lastReceiveDate: r.receiveDate,
         lastReceiveDateKey: dateKey,
         batchNumber: r.batchNumber,
@@ -749,9 +755,14 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
     const a = allocMap[r.allocationId];
     a.totalPoints += pts;
     a.expectedMinutes += expectedMin;
-    if (r.receiveDate && (!a.lastReceiveDate || new Date(r.receiveDate) > new Date(a.lastReceiveDate))) {
-      a.lastReceiveDate = r.receiveDate;
-      a.lastReceiveDateKey = dateKey;
+    if (r.receiveDate) {
+      if (!a.firstReceiveDate || new Date(r.receiveDate) < new Date(a.firstReceiveDate)) {
+        a.firstReceiveDate = r.receiveDate;
+      }
+      if (!a.lastReceiveDate || new Date(r.receiveDate) > new Date(a.lastReceiveDate)) {
+        a.lastReceiveDate = r.receiveDate;
+        a.lastReceiveDateKey = dateKey;
+      }
     }
   }
 
@@ -780,10 +791,16 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
   const dailyAgg: Record<string, { date: string; totalExpected: number; totalEffective: number; count: number }> = {};
 
   for (const a of Object.values(allocMap)) {
-    const elapsedMin = a.issueDate && a.lastReceiveDate
-      ? serverCalcWorkingMinutesBetween(new Date(a.issueDate), new Date(a.lastReceiveDate), offDays)
+    const elapsedMin = a.issueDate && a.firstReceiveDate
+      ? serverCalcWorkingMinutesBetween(new Date(a.issueDate), new Date(a.firstReceiveDate), offDays)
       : 0;
-    const osMin = outsourceMap[a.allocationId] || 0;
+    const firstRecvDt = a.firstReceiveDate ? new Date(a.firstReceiveDate) : null;
+    let osMin = 0;
+    for (const o of (outsourceMap[a.allocationId] || [])) {
+      const capEnd = firstRecvDt && o.returnDate > firstRecvDt ? firstRecvDt : o.returnDate;
+      const capStart = firstRecvDt && o.sendDate > firstRecvDt ? firstRecvDt : o.sendDate;
+      if (capEnd > capStart) osMin += serverCalcWorkingMinutesBetween(capStart, capEnd, offDays);
+    }
     const mpMin = manualPauseMap[a.allocationId] || 0;
     const effectiveMin = Math.max(0, elapsedMin - osMin - mpMin);
     const isOnTime = a.expectedMinutes > 0 && effectiveMin > 0 ? effectiveMin <= a.expectedMinutes : true;
