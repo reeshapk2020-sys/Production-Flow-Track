@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Database, Layers, Scissors, Send,
   Inbox, Settings2, Package, Box, BarChart3,
   GitBranch, Shield, Users, LogOut, Loader2, ChevronRight, KeyRound, ArrowUpRight,
-  FileText, ShoppingCart, PackageOpen, Truck, Moon, Sun, Sparkles, ChevronDown, Clock, CalendarOff
+  FileText, ShoppingCart, PackageOpen, Truck, Moon, Sun, Sparkles, ChevronDown, Clock, CalendarOff, PauseCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { path: "/allocation", label: "Allocation", icon: Send, roles: ["admin", "allocation"] },
   { path: "/outsource", label: "Outsource", icon: ArrowUpRight, roles: ["admin", "outsource"] },
   { path: "/receiving", label: "Receiving", icon: Inbox, roles: ["admin", "stitching"] },
+  { path: "/manual-pause", label: "Manual Pause", icon: PauseCircle, roles: ["admin", "stitching"] },
   { path: "/finishing", label: "Finishing", icon: Settings2, roles: ["admin", "finishing"] },
   { path: "/finished-goods", label: "Finished Goods", icon: Package, roles: ["admin", "store"] },
   { path: "/opening-finished-goods", label: "Opening Stock", icon: PackageOpen, roles: ["admin", "store"] },
@@ -61,6 +62,7 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
     "/fabric-rolls": "fabric-rolls",
     "/cutting": "cutting",
     "/allocation": "allocation",
+    "/manual-pause": "receiving",
     "/outsource": "outsource",
     "/receiving": "receiving",
     "/finishing": "finishing",

@@ -31,6 +31,7 @@ import OrdersPage from "./pages/orders";
 import DispatchPage from "./pages/dispatch";
 import TimeSettingsPage from "./pages/time-settings";
 import OffDaysPage from "./pages/off-days";
+import ManualPausePage from "./pages/manual-pause";
 import NotFound from "./pages/not-found";
 
 const queryClient = new QueryClient({
@@ -77,6 +78,7 @@ const PATH_TO_MODULE: Record<string, string> = {
   "/fabric-rolls": "fabric-rolls",
   "/cutting": "cutting",
   "/allocation": "allocation",
+  "/manual-pause": "receiving",
   "/outsource": "outsource",
   "/receiving": "receiving",
   "/finishing": "finishing",
@@ -153,6 +155,7 @@ function Router() {
       <Route path="/audit" component={() => <ProtectedRoute component={AuditPage} path="/audit" />} />
       <Route path="/time-settings" component={() => <ProtectedRoute component={TimeSettingsPage} path="/time-settings" />} />
       <Route path="/off-days" component={() => <ProtectedRoute component={OffDaysPage} path="/off-days" />} />
+      <Route path="/manual-pause" component={() => <ProtectedRoute component={ManualPausePage} path="/manual-pause" />} />
       <Route component={NotFound} />
     </Switch>
   );

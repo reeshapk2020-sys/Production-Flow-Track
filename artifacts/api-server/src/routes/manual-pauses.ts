@@ -1,11 +1,38 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db } from "@workspace/db";
-import { manualPausesTable, allocationsTable } from "@workspace/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { manualPausesTable, allocationsTable, stitchersTable } from "@workspace/db/schema";
+import { eq, and, sql, desc, inArray, isNull } from "drizzle-orm";
 import { logAudit } from "../lib/audit.js";
 import { checkPermission } from "./permissions.js";
 
 const router: IRouter = Router();
+
+router.get("/manual-pauses", checkPermission("receiving", "view"), async (_req: Request, res: Response) => {
+  const rows = await db
+    .select({
+      id: manualPausesTable.id,
+      allocationId: manualPausesTable.allocationId,
+      pauseStart: manualPausesTable.pauseStart,
+      pauseEnd: manualPausesTable.pauseEnd,
+      reason: manualPausesTable.reason,
+      remarks: manualPausesTable.remarks,
+      createdAt: manualPausesTable.createdAt,
+      stitcherId: allocationsTable.stitcherId,
+      stitcherName: stitchersTable.name,
+      allocationNumber: allocationsTable.allocationNumber,
+    })
+    .from(manualPausesTable)
+    .leftJoin(allocationsTable, eq(manualPausesTable.allocationId, allocationsTable.id))
+    .leftJoin(stitchersTable, eq(allocationsTable.stitcherId, stitchersTable.id))
+    .orderBy(desc(manualPausesTable.pauseStart));
+
+  res.json(rows.map(r => ({
+    ...r,
+    pauseStart: r.pauseStart instanceof Date ? r.pauseStart.toISOString() : r.pauseStart,
+    pauseEnd: r.pauseEnd instanceof Date ? r.pauseEnd.toISOString() : r.pauseEnd,
+    createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt,
+  })));
+});
 
 router.get("/manual-pauses/:allocationId", checkPermission("receiving", "view"), async (req: Request, res: Response) => {
   const allocationId = Number(req.params.allocationId);
@@ -26,10 +53,10 @@ router.get("/manual-pauses/:allocationId", checkPermission("receiving", "view"),
 });
 
 router.post("/manual-pauses", checkPermission("receiving", "create"), async (req: Request, res: Response) => {
-  const { allocationId, pauseStart, pauseEnd, reason, remarks } = req.body;
+  const { allocationId: rawAllocationId, stitcherId, pauseStart, pauseEnd, reason, remarks } = req.body;
 
-  if (!allocationId || !pauseStart || !pauseEnd) {
-    return res.status(400).json({ error: "allocationId, pauseStart, and pauseEnd are required" });
+  if ((!rawAllocationId && !stitcherId) || !pauseStart || !pauseEnd) {
+    return res.status(400).json({ error: "stitcherId (or allocationId), pauseStart, and pauseEnd are required" });
   }
 
   const pStart = new Date(pauseStart);
@@ -40,6 +67,23 @@ router.post("/manual-pauses", checkPermission("receiving", "create"), async (req
   }
   if (pEnd <= pStart) {
     return res.status(400).json({ error: "Pause end must be after pause start" });
+  }
+
+  let allocationId = rawAllocationId ? Number(rawAllocationId) : null;
+  if (!allocationId && stitcherId) {
+    const [activeAlloc] = await db
+      .select({ id: allocationsTable.id })
+      .from(allocationsTable)
+      .where(and(
+        eq(allocationsTable.stitcherId, Number(stitcherId)),
+        eq(allocationsTable.allocationType, "individual"),
+      ))
+      .orderBy(desc(allocationsTable.issueDate))
+      .limit(1);
+    if (!activeAlloc) {
+      return res.status(400).json({ error: "Selected stitcher has no allocations to attach the pause to" });
+    }
+    allocationId = activeAlloc.id;
   }
 
   const [alloc] = await db
