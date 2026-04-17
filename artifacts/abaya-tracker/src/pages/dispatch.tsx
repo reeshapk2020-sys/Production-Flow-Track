@@ -354,7 +354,7 @@ function AddDispatchDialog({ onClose, onSuccess }: { onClose: () => void; onSucc
               <Label>Item Code *</Label>
               <Select value={form.itemCode} onValueChange={(v) => setForm({ ...form, itemCode: v })}>
                 <SelectTrigger className="rounded-xl"><SelectValue placeholder="Select item" /></SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px] overflow-y-auto">
                   {availableStock?.map((s) => (
                     <SelectItem key={s.itemCode} value={s.itemCode}>
                       {s.itemCode} (avail: {s.available})
