@@ -688,21 +688,29 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
     }
   }
 
-  let manualPauseMap: Record<number, number> = {};
-  if (allocIds.length > 0) {
-    const mpRows = await db
-      .select({
-        allocationId: manualPausesTable.allocationId,
-        pauseStart: manualPausesTable.pauseStart,
-        pauseEnd: manualPausesTable.pauseEnd,
-      })
-      .from(manualPausesTable)
-      .where(sql`${manualPausesTable.allocationId} IN (${sql.join(allocIds.map(id => sql`${id}`), sql`, `)})`);
-    for (const mp of mpRows) {
-      const ps = new Date(mp.pauseStart);
-      const pe = new Date(mp.pauseEnd);
-      const mpWorkMin = serverCalcWorkingMinutesBetween(ps, pe, offDays);
-      manualPauseMap[mp.allocationId] = (manualPauseMap[mp.allocationId] || 0) + mpWorkMin;
+  const stitcherIdsInScope = [...new Set(rows.map(r => r.stitcherId).filter((v): v is number => v != null))];
+  let manualPausesByStitcher: Record<number, { pauseStart: Date; pauseEnd: Date }[]> = {};
+  if (stitcherIdsInScope.length > 0) {
+    try {
+      const mpRows = await db
+        .select({
+          stitcherId: allocationsTable.stitcherId,
+          pauseStart: manualPausesTable.pauseStart,
+          pauseEnd: manualPausesTable.pauseEnd,
+        })
+        .from(manualPausesTable)
+        .innerJoin(allocationsTable, eq(manualPausesTable.allocationId, allocationsTable.id))
+        .where(sql`${allocationsTable.stitcherId} IN (${sql.join(stitcherIdsInScope.map(id => sql`${id}`), sql`, `)})`);
+      for (const mp of mpRows) {
+        if (mp.stitcherId == null) continue;
+        if (!manualPausesByStitcher[mp.stitcherId]) manualPausesByStitcher[mp.stitcherId] = [];
+        manualPausesByStitcher[mp.stitcherId].push({
+          pauseStart: new Date(mp.pauseStart),
+          pauseEnd: new Date(mp.pauseEnd),
+        });
+      }
+    } catch {
+      manualPausesByStitcher = {};
     }
   }
 
@@ -795,14 +803,43 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
       ? serverCalcWorkingMinutesBetween(new Date(a.issueDate), new Date(a.firstReceiveDate), offDays)
       : 0;
     const firstRecvDt = a.firstReceiveDate ? new Date(a.firstReceiveDate) : null;
+    const issueDt = a.issueDate ? new Date(a.issueDate) : null;
+    const pauseWindows: { start: Date; end: Date }[] = [];
+    for (const o of (outsourceMap[a.allocationId] || [])) {
+      const capEnd = firstRecvDt && o.returnDate > firstRecvDt ? firstRecvDt : o.returnDate;
+      const capStart = firstRecvDt && o.sendDate > firstRecvDt ? firstRecvDt : o.sendDate;
+      if (capEnd > capStart) pauseWindows.push({ start: capStart, end: capEnd });
+    }
+    const stitcherPauses = a.stitcherId != null ? (manualPausesByStitcher[a.stitcherId] || []) : [];
+    for (const mp of stitcherPauses) {
+      let s = mp.pauseStart;
+      let e = mp.pauseEnd;
+      if (issueDt && s < issueDt) s = issueDt;
+      if (firstRecvDt && e > firstRecvDt) e = firstRecvDt;
+      if (firstRecvDt && s > firstRecvDt) continue;
+      if (e > s) pauseWindows.push({ start: s, end: e });
+    }
+    pauseWindows.sort((x, y) => x.start.getTime() - y.start.getTime());
+    const mergedWindows: { start: Date; end: Date }[] = [];
+    for (const w of pauseWindows) {
+      const last = mergedWindows[mergedWindows.length - 1];
+      if (last && w.start.getTime() <= last.end.getTime()) {
+        if (w.end.getTime() > last.end.getTime()) last.end = w.end;
+      } else {
+        mergedWindows.push({ start: w.start, end: w.end });
+      }
+    }
     let osMin = 0;
     for (const o of (outsourceMap[a.allocationId] || [])) {
       const capEnd = firstRecvDt && o.returnDate > firstRecvDt ? firstRecvDt : o.returnDate;
       const capStart = firstRecvDt && o.sendDate > firstRecvDt ? firstRecvDt : o.sendDate;
       if (capEnd > capStart) osMin += serverCalcWorkingMinutesBetween(capStart, capEnd, offDays);
     }
-    const mpMin = manualPauseMap[a.allocationId] || 0;
-    const effectiveMin = Math.max(0, elapsedMin - osMin - mpMin);
+    let totalPauseMin = 0;
+    for (const m of mergedWindows) {
+      totalPauseMin += serverCalcWorkingMinutesBetween(m.start, m.end, offDays);
+    }
+    const effectiveMin = Math.max(0, elapsedMin - totalPauseMin);
     const isOnTime = a.expectedMinutes > 0 && effectiveMin > 0 ? effectiveMin <= a.expectedMinutes : true;
 
     const batchEfficiency = effectiveMin > 0 ? Math.round((a.expectedMinutes / effectiveMin) * 100) : 0;
@@ -813,7 +850,7 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
       points: Math.round(a.totalPoints * 100) / 100,
       expectedMinutes: a.expectedMinutes,
       effectiveMinutes: effectiveMin,
-      outsourceMinutes: osMin + mpMin,
+      outsourceMinutes: totalPauseMin,
       efficiency: batchEfficiency,
       rating: batchRating,
       status: isOnTime ? "On Time" : "Late",
@@ -832,7 +869,7 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
       s.totalPoints += a.totalPoints;
       s.expectedMinutes += a.expectedMinutes;
       s.totalElapsedMinutes += elapsedMin;
-      s.outsourceMinutes += osMin + mpMin;
+      s.outsourceMinutes += totalPauseMin;
       s.allocCount++;
       s.batches.push(batchDetail);
       if (a.expectedMinutes > 0 && effectiveMin > 0) { isOnTime ? s.onTimeCount++ : s.lateCount++; }
@@ -852,7 +889,7 @@ router.get("/reports/efficiency", checkPermission("reports", "view"), async (req
       t.totalPoints += a.totalPoints;
       t.expectedMinutes += a.expectedMinutes;
       t.totalElapsedMinutes += elapsedMin;
-      t.outsourceMinutes += osMin + mpMin;
+      t.outsourceMinutes += totalPauseMin;
       t.allocCount++;
       t.batches.push(batchDetail);
       if (a.expectedMinutes > 0 && effectiveMin > 0) { isOnTime ? t.onTimeCount++ : t.lateCount++; }

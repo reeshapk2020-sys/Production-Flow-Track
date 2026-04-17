@@ -359,22 +359,46 @@ router.get("/receiving", checkPermission("receiving", "view"), async (req, res) 
 
   const allAllocIds = [...new Set(rows.map((r: any) => r.allocationId))];
   const manualPauseMap = new Map<number, any[]>();
+  const manualPauseByStitcher = new Map<number, any[]>();
   if (allAllocIds.length > 0) {
-    const mpRows = await db
-      .select()
-      .from(manualPausesTable)
-      .where(sql`${manualPausesTable.allocationId} IN (${sql.join(allAllocIds.map(id => sql`${id}`), sql`, `)})`)
-      .orderBy(manualPausesTable.pauseStart);
-    for (const mp of mpRows) {
-      const arr = manualPauseMap.get(mp.allocationId) || [];
-      arr.push({
-        id: mp.id,
-        pauseStart: mp.pauseStart instanceof Date ? mp.pauseStart.toISOString() : mp.pauseStart,
-        pauseEnd: mp.pauseEnd instanceof Date ? mp.pauseEnd.toISOString() : mp.pauseEnd,
-        reason: mp.reason,
-        remarks: mp.remarks,
-      });
-      manualPauseMap.set(mp.allocationId, arr);
+    try {
+      const stitcherIdsForMp = [...new Set(rows.map((r: any) => r.stitcherId).filter((v: any) => v != null))] as number[];
+      if (stitcherIdsForMp.length > 0) {
+        const mpRows = await db
+          .select({
+            id: manualPausesTable.id,
+            allocationId: manualPausesTable.allocationId,
+            pauseStart: manualPausesTable.pauseStart,
+            pauseEnd: manualPausesTable.pauseEnd,
+            reason: manualPausesTable.reason,
+            remarks: manualPausesTable.remarks,
+            sourceStitcherId: allocationsTable.stitcherId,
+          })
+          .from(manualPausesTable)
+          .innerJoin(allocationsTable, eq(manualPausesTable.allocationId, allocationsTable.id))
+          .where(sql`${allocationsTable.stitcherId} IN (${sql.join(stitcherIdsForMp.map(id => sql`${id}`), sql`, `)})`)
+          .orderBy(manualPausesTable.pauseStart);
+        for (const mp of mpRows) {
+          const item = {
+            id: mp.id,
+            pauseStart: mp.pauseStart instanceof Date ? mp.pauseStart.toISOString() : mp.pauseStart,
+            pauseEnd: mp.pauseEnd instanceof Date ? mp.pauseEnd.toISOString() : mp.pauseEnd,
+            reason: mp.reason,
+            remarks: mp.remarks,
+          };
+          const arr = manualPauseMap.get(mp.allocationId) || [];
+          arr.push(item);
+          manualPauseMap.set(mp.allocationId, arr);
+          if (mp.sourceStitcherId != null) {
+            const sArr = manualPauseByStitcher.get(mp.sourceStitcherId) || [];
+            sArr.push(item);
+            manualPauseByStitcher.set(mp.sourceStitcherId, sArr);
+          }
+        }
+      }
+    } catch {
+      manualPauseMap.clear();
+      manualPauseByStitcher.clear();
     }
   }
 

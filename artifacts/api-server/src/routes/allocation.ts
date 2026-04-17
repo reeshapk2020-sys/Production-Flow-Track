@@ -321,25 +321,56 @@ router.get("/allocation", checkPermission("allocation", "view"), async (req, res
 
   const mpAllocIds = finalRows.map((r: any) => r.id);
   if (mpAllocIds.length > 0) {
-    const mpRows = await db
-      .select()
-      .from(manualPausesTable)
-      .where(sql`${manualPausesTable.allocationId} IN (${sql.join(mpAllocIds.map((id: number) => sql`${id}`), sql`, `)})`)
-      .orderBy(manualPausesTable.pauseStart);
-    const mpMap = new Map<number, any[]>();
-    for (const mp of mpRows) {
-      const arr = mpMap.get(mp.allocationId) || [];
-      arr.push({
-        id: mp.id,
-        pauseStart: mp.pauseStart instanceof Date ? mp.pauseStart.toISOString() : mp.pauseStart,
-        pauseEnd: mp.pauseEnd instanceof Date ? mp.pauseEnd.toISOString() : mp.pauseEnd,
-        reason: mp.reason,
-        remarks: mp.remarks,
-      });
-      mpMap.set(mp.allocationId, arr);
-    }
-    for (const row of finalRows) {
-      (row as any).manualPauses = mpMap.get((row as any).id) || [];
+    try {
+      const stitcherIdsForMp = [...new Set(finalRows.map((r: any) => r.stitcherId).filter((v: any) => v != null))] as number[];
+      const mpByStitcher = new Map<number, any[]>();
+      const mpByAlloc = new Map<number, any[]>();
+      if (stitcherIdsForMp.length > 0) {
+        const mpRows = await db
+          .select({
+            id: manualPausesTable.id,
+            allocationId: manualPausesTable.allocationId,
+            pauseStart: manualPausesTable.pauseStart,
+            pauseEnd: manualPausesTable.pauseEnd,
+            reason: manualPausesTable.reason,
+            remarks: manualPausesTable.remarks,
+            sourceStitcherId: allocationsTable.stitcherId,
+          })
+          .from(manualPausesTable)
+          .innerJoin(allocationsTable, eq(manualPausesTable.allocationId, allocationsTable.id))
+          .where(sql`${allocationsTable.stitcherId} IN (${sql.join(stitcherIdsForMp.map(id => sql`${id}`), sql`, `)})`)
+          .orderBy(manualPausesTable.pauseStart);
+        for (const mp of mpRows) {
+          const item = {
+            id: mp.id,
+            pauseStart: mp.pauseStart instanceof Date ? mp.pauseStart.toISOString() : mp.pauseStart,
+            pauseEnd: mp.pauseEnd instanceof Date ? mp.pauseEnd.toISOString() : mp.pauseEnd,
+            reason: mp.reason,
+            remarks: mp.remarks,
+          };
+          const ownArr = mpByAlloc.get(mp.allocationId) || [];
+          ownArr.push(item);
+          mpByAlloc.set(mp.allocationId, ownArr);
+          if (mp.sourceStitcherId != null) {
+            const sArr = mpByStitcher.get(mp.sourceStitcherId) || [];
+            sArr.push(item);
+            mpByStitcher.set(mp.sourceStitcherId, sArr);
+          }
+        }
+      }
+      for (const row of finalRows) {
+        const r: any = row;
+        const isActive = (r.quantityReceived || 0) === 0 && r.status !== "received" && r.status !== "completed";
+        if (isActive && r.stitcherId != null) {
+          (r as any).manualPauses = mpByStitcher.get(r.stitcherId) || [];
+        } else {
+          (r as any).manualPauses = mpByAlloc.get(r.id) || [];
+        }
+      }
+    } catch {
+      for (const row of finalRows) {
+        (row as any).manualPauses = (row as any).manualPauses || [];
+      }
     }
   }
 
