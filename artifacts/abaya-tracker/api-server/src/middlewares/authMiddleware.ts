@@ -1,5 +1,5 @@
 import * as oidc from "openid-client";
-import { type Request, type Response, type NextFunction } from "express";
+import { type Request, type Response } from "express";
 import { db } from "@workspace/db";
 import { appUsersTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
@@ -30,7 +30,7 @@ declare global {
     interface User extends AuthUser {}
 
     interface Request {
-      isAuthenticated(): this is AuthedRequest;
+      isAuthenticated(): boolean;
       user?: User | undefined;
     }
 
@@ -66,16 +66,12 @@ async function refreshIfExpired(
   }
 }
 
-export async function authMiddleware(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) {
-  req.isAuthenticated = function (this: Request) {
+export async function authMiddleware(req: any, res: any, next: any): Promise<void> {
+  req.isAuthenticated = function () {
     return this.user != null;
-  } as Request["isAuthenticated"];
+  };
 
-  const sid = getSessionId(req);
+  const sid = getSessionId(req as Request);
   if (!sid) {
     next();
     return;
@@ -83,7 +79,7 @@ export async function authMiddleware(
 
   const session = await getSession(sid);
   if (!session) {
-    await clearSession(res, sid);
+    await clearSession(res as Response, sid);
     next();
     return;
   }
@@ -95,7 +91,7 @@ export async function authMiddleware(
       .where(eq(appUsersTable.id, session.staffUserId));
 
     if (!staffUser || !staffUser.isActive) {
-      await clearSession(res, sid);
+      await clearSession(res as Response, sid);
       next();
       return;
     }
@@ -119,7 +115,7 @@ export async function authMiddleware(
   if (session.loginType === "replit" && session.user?.id) {
     const refreshed = await refreshIfExpired(sid, session);
     if (!refreshed) {
-      await clearSession(res, sid);
+      await clearSession(res as Response, sid);
       next();
       return;
     }
@@ -141,6 +137,6 @@ export async function authMiddleware(
     return;
   }
 
-  await clearSession(res, sid);
+  await clearSession(res as Response, sid);
   next();
 }
