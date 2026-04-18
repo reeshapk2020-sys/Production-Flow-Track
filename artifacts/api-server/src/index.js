@@ -1,8 +1,37 @@
-import app from "../api-server/src/app.js";  // Adjust path to your app
-import { initializeAdminOnStartup } from "../api-server/src/init.js";
+import app from "../api-server/src/app.js";
 
-// Initialize admin user (will run once per cold start)
-await initializeAdminOnStartup();
+// Your admin user creation needs to run here
+import bcrypt from "bcryptjs";
+import { eq } from "drizzle-orm";
+import { db } from "@workspace/db";
+import { appUsersTable } from "@workspace/db/schema";
 
-// Export the Express app for Vercel serverless functions
+// Run admin setup on first request
+async function setupAdmin() {
+  try {
+    const [existing] = await db
+      .select()
+      .from(appUsersTable)
+      .where(eq(appUsersTable.username, "admin"));
+
+    if (!existing) {
+      const passwordHash = await bcrypt.hash("Admin@1234", 12);
+      await db.insert(appUsersTable).values({
+        username: "admin",
+        fullName: "Administrator",
+        passwordHash,
+        role: "admin",
+        isActive: true,
+      });
+      console.log("Admin created");
+    }
+  } catch (err) {
+    console.error("Admin setup error:", err);
+  }
+}
+
+// Run setup (won't block the response)
+setupAdmin();
+
+// That's it - just export your app
 export default app;
