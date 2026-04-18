@@ -103,7 +103,7 @@ router.post("/users", async (req: Request, res: Response) => {
 router.put("/users/:id", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
 
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params.id as string);
   if (isNaN(id)) {
     res.status(400).json({ error: "Invalid user ID" });
     return;
@@ -146,7 +146,7 @@ router.put("/users/:id", async (req: Request, res: Response) => {
 router.post("/users/:id/reset-password", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
 
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params.id as string);
   if (isNaN(id)) {
     res.status(400).json({ error: "Invalid user ID" });
     return;
@@ -177,7 +177,7 @@ router.post("/users/:id/reset-password", async (req: Request, res: Response) => 
 router.delete("/users/:id", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
 
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params.id as string);
   const currentUser = req.user as any;
 
   if (currentUser?.appUserId === id) {

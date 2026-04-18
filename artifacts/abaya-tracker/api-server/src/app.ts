@@ -1,10 +1,10 @@
-import express, { type Express } from "express";
+import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { authMiddleware } from "./middlewares/authMiddleware.js";
 import router from "./routes/index.js";
 
-const app: Express = express();
+const app = express();
 
 app.use(cors({ credentials: true, origin: true }));
 app.use(cookieParser());
