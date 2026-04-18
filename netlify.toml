@@ -1,0 +1,26 @@
+[build]
+  base    = "."
+  command = "corepack enable && pnpm install --frozen-lockfile=false && pnpm --filter @workspace/abaya-tracker run build"
+  publish = "artifacts/abaya-tracker/dist/public"
+
+[build.environment]
+  NODE_VERSION   = "20"
+  PNPM_VERSION   = "9"
+  NPM_FLAGS      = "--version"
+  BASE_PATH      = "/"
+
+# Optional API proxy: set API_BACKEND in Netlify site settings to your
+# deployed API server URL (e.g. https://your-api.example.com) to forward
+# /api/* requests from Netlify to it. If not set, /api/* will 404.
+[[redirects]]
+  from   = "/api/*"
+  to     = "https://your-api-host.example.com/api/:splat"
+  status = 200
+  force  = true
+
+# SPA fallback: send all unmatched routes to index.html so React Router
+# (wouter) handles deep links and refreshes correctly.
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
