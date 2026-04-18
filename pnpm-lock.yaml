@@ -363,14 +363,14 @@ importers:
         specifier: 'catalog:'
         version: 3.25.76
 
-  artifacts/api-server:
+  artifacts/abaya-tracker/api-server:
     dependencies:
       '@workspace/api-zod':
         specifier: workspace:*
-        version: link:../../lib/api-zod
+        version: link:../../../lib/api-zod
       '@workspace/db':
         specifier: workspace:*
-        version: link:../../lib/db
+        version: link:../../../lib/db
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
