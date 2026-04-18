@@ -115,7 +115,7 @@ router.get("/outsource/allocations", checkPermission("outsource", "view"), async
   const transferMap = new Map(transfers.map(t => [t.allocationId, t]));
 
   res.json(rows.map((r: any) => {
-    const t = transferMap.get(r.id) || { totalSent: 0, totalReturned: 0, totalDamaged: 0 };
+    const t: any = transferMap.get(r.id) || { totalSent: 0, totalReturned: 0, totalDamaged: 0 };
     return {
       ...r,
       assigneeName: r.allocationType === "team" ? r.teamName : r.stitcherName,
@@ -182,7 +182,7 @@ router.get("/outsource/receiving-batches", checkPermission("outsource", "view"),
   }
 
   res.json(rows.map((r: any) => {
-    const t = transferMap.get(r.id) || { totalSent: 0, totalReturned: 0, totalDamaged: 0 };
+    const t: any = transferMap.get(r.id) || { totalSent: 0, totalReturned: 0, totalDamaged: 0 };
     const finishingOutput = finishingMap.get(r.cuttingBatchId) || 0;
     return {
       ...r,
