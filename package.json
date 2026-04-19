@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "build": "pnpm -r --if-present run build",
+    "build": "pnpm -r --if-present run build --no-frozen-lockfile",
     "typecheck:libs": "echo 'Skipping typecheck on Vercel'",
     "typecheck": "echo 'Skipping typecheck on Vercel'"
   },
