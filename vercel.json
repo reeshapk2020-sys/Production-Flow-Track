@@ -1,4 +1,0 @@
-{
-  "buildCommand": "cd artifacts/abaya-tracker && npm run build",
-  "outputDirectory": "artifacts/abaya-tracker/dist"
-}
