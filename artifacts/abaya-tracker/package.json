@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --config vite.config.ts --host 0.0.0.0",
-    "build": "vite build && mkdir -p ../../ && cp -r dist/* ../../",
+    "build": "vite build ",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "echo 'Skipping typecheck on Vercel'"
   },
