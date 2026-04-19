@@ -1,14 +1,26 @@
 {
-  "buildCommand": "pnpm run build",
-  "outputDirectory": "artifacts/abaya-tracker/dist",
-  "rewrites": [
+  "version": 2,
+  "builds": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/index.js"
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "artifacts/abaya-tracker/dist"
+      }
     },
     {
-      "source": "/(.*)",
-      "destination": "/abaya-tracker/index.html"
+      "src": "artifacts/abaya-tracker/api-server/src/index.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/artifacts/abaya-tracker/api-server/src/index.ts"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
     }
   ]
 }

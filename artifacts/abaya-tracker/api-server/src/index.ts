@@ -50,8 +50,6 @@ async function ensureAdminUser() {
   }
 }
 
-ensureAdminUser().then(() => {
-  app.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
-  });
-});
+ensureAdminUser().catch(console.error);
+
+export default app;
