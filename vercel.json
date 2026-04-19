@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "outputDirectory": "/artifacts/abaya-tracker/dist",
   "builds": [
     {
       "src": "artifacts/abaya-tracker/**",
