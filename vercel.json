@@ -1,3 +1,29 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }]
+  "version": 2,
+  "builds": [
+    {
+      "src": "artifacts/abaya-tracker/**",
+      "use": "@vercel/static-build"
+    },
+    {
+      "src": "artifacts/abaya-tracker/api-server/src/**/*.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "artifacts/abaya-tracker/api-server/src/index.ts"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "artifacts/abaya-tracker/dist/$1"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/index"
+    }
+  ]
 }
