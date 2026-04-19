@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "buildCommand": "cd artifacts/abaya-tracker && npm run build",
+  "outputDirectory": "artifacts/abaya-tracker/dist",
+  "installCommand": "pnpm install",
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/artifacts/abaya-tracker/api-server/src/index.ts"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/artifacts/abaya-tracker/dist/$1"
+    }
+  ]
+}
