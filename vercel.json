@@ -1,0 +1,14 @@
+{
+  "buildCommand": "pnpm run build",
+  "outputDirectory": "artifacts/abaya-tracker/dist",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/abaya-tracker/index.html"
+    }
+  ]
+}
